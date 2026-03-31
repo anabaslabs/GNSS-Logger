@@ -36,6 +36,7 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# Expo app example
 app-example
 
 # generated native folders
@@ -44,3 +45,7 @@ app-example
 
 # skills
 .agents
+
+# IDE
+.vscode
+.idea
