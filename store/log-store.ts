@@ -1,0 +1,233 @@
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import type { LogSession } from '@/types/gnss';
+
+interface LogState {
+  sessions: LogSession[];
+  activeSessionId: string | null;
+  exportDirectoryUri: string | null;
+}
+
+interface LogActions {
+  startSession: (nmeaLines: string[]) => Promise<string | null>;
+  endSession: (sessionId: string, nmeaLines: string[], fixCount: number) => Promise<void>;
+  exportNmea: (sessionId: string) => Promise<void>;
+  exportCsv: (sessionId: string) => Promise<void>;
+  deleteSession: (sessionId: string) => Promise<void>;
+  clearAll: () => Promise<void>;
+  setExportDirectory: () => Promise<void>;
+  resetExportDirectory: () => void;
+}
+
+const LOGS_DIR = `${FileSystem.documentDirectory}gnss-logs/`;
+
+async function ensureLogsDir(): Promise<void> {
+  const info = await FileSystem.getInfoAsync(LOGS_DIR);
+  if (!info.exists) {
+    await FileSystem.makeDirectoryAsync(LOGS_DIR, { intermediates: true });
+  }
+}
+
+/** Convert raw NMEA lines to CSV rows */
+function nmeaToCsv(lines: string[]): string {
+  const header = 'timestamp,raw_sentence,type,talker,lat,lon,alt,speed_kmh,sats,hdop,quality';
+  const rows = lines.map((line) => {
+    const now = new Date().toISOString();
+    const parts = line.split(',');
+    const sentenceId = parts[0]?.slice(1) ?? '';
+    const talker = sentenceId.slice(0, 2);
+    const type = sentenceId.slice(2);
+    // For GGA lines, try to extract key fields
+    if (type === 'GGA' && parts.length >= 15) {
+      const lat = parts[2] ?? '';
+      const latDir = parts[3] ?? '';
+      const lon = parts[4] ?? '';
+      const lonDir = parts[5] ?? '';
+      const quality = parts[6] ?? '';
+      const sats = parts[7] ?? '';
+      const hdop = parts[8] ?? '';
+      const alt = parts[9] ?? '';
+      return `${now},${JSON.stringify(line)},${type},${talker},${lat}${latDir},${lon}${lonDir},${alt},,${sats},${hdop},${quality}`;
+    }
+    if (type === 'VTG' && parts.length >= 9) {
+      const speed = parts[7] ?? '';
+      return `${now},${JSON.stringify(line)},${type},${talker},,,,${speed},,,`;
+    }
+    return `${now},${JSON.stringify(line)},${type},${talker},,,,,,`;
+  });
+  return [header, ...rows].join('\n');
+}
+
+export const useLogStore = create<LogState & LogActions>()(
+  persist(
+    (set, get) => ({
+      sessions: [],
+      activeSessionId: null,
+      exportDirectoryUri: null,
+
+  startSession: async (nmeaLines) => {
+    await ensureLogsDir();
+    const id = `session_${Date.now()}`;
+    const startTime = Date.now();
+    const filePath = `${LOGS_DIR}${id}.nmea`;
+    const filePathCsv = `${LOGS_DIR}${id}.csv`;
+
+    await FileSystem.writeAsStringAsync(filePath, nmeaLines.join('\n') + '\n');
+    await FileSystem.writeAsStringAsync(filePathCsv, nmeaToCsv(nmeaLines));
+
+    const session: LogSession = {
+      id,
+      startTime,
+      endTime: null,
+      fixCount: 0,
+      filePath,
+      filePathCsv,
+    };
+
+    set((s) => ({ sessions: [session, ...s.sessions], activeSessionId: id }));
+    return id;
+  },
+
+  endSession: async (sessionId, nmeaLines, fixCount) => {
+    const session = get().sessions.find((s) => s.id === sessionId);
+    if (!session) return;
+
+    await FileSystem.writeAsStringAsync(session.filePath, nmeaLines.join('\n') + '\n');
+    await FileSystem.writeAsStringAsync(session.filePathCsv, nmeaToCsv(nmeaLines));
+
+    set((s) => ({
+      sessions: s.sessions.map((sess) =>
+        sess.id === sessionId
+          ? { ...sess, endTime: Date.now(), fixCount }
+          : sess,
+      ),
+      activeSessionId: null,
+    }));
+  },
+
+  exportNmea: async (sessionId) => {
+    const session = get().sessions.find((s) => s.id === sessionId);
+    if (!session) return;
+    try {
+      let directoryUri = get().exportDirectoryUri;
+      
+      if (!directoryUri) {
+        Alert.alert(
+          'One-Tap Save',
+          'Please select a folder (like "Download") once. After this, your logs will save there instantly with one tap.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Select Folder', 
+              onPress: async () => {
+                const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                if (permissions.granted) {
+                  set({ exportDirectoryUri: permissions.directoryUri });
+                  // Retry the export with the new URI
+                  get().exportNmea(sessionId);
+                }
+              }
+            }
+          ]
+        );
+        return;
+      }
+
+      const content = await FileSystem.readAsStringAsync(session.filePath);
+      const uri = await FileSystem.StorageAccessFramework.createFileAsync(
+        directoryUri,
+        `gnss_log_${sessionId}.nmea`,
+        'text/plain'
+      );
+      await FileSystem.writeAsStringAsync(uri, content, { encoding: FileSystem.EncodingType.UTF8 });
+      Alert.alert('Success', `Saved NMEA log directly to the selected folder.`);
+    } catch (e) {
+      console.error('Export NMEA failed:', e);
+      Alert.alert('Export Failed', 'Could not save the file. You may need to reset the folder permission in Settings.');
+    }
+  },
+
+  exportCsv: async (sessionId) => {
+    const session = get().sessions.find((s) => s.id === sessionId);
+    if (!session) return;
+    try {
+      let directoryUri = get().exportDirectoryUri;
+      
+      if (!directoryUri) {
+        Alert.alert(
+          'One-Tap Save',
+          'Please select a folder (like "Download") once. After this, your logs will save there instantly with one tap.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Select Folder', 
+              onPress: async () => {
+                const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                if (permissions.granted) {
+                  set({ exportDirectoryUri: permissions.directoryUri });
+                  // Retry the export with the new URI
+                  get().exportCsv(sessionId);
+                }
+              }
+            }
+          ]
+        );
+        return;
+      }
+
+      const content = await FileSystem.readAsStringAsync(session.filePathCsv);
+      const uri = await FileSystem.StorageAccessFramework.createFileAsync(
+        directoryUri,
+        `gnss_log_${sessionId}.csv`,
+        'text/csv'
+      );
+      await FileSystem.writeAsStringAsync(uri, content, { encoding: FileSystem.EncodingType.UTF8 });
+      Alert.alert('Success', `Saved CSV log directly to the selected folder.`);
+    } catch (e) {
+      console.error('Export CSV failed:', e);
+      Alert.alert('Export Failed', 'Could not save the file. You may need to reset the folder permission in Settings.');
+    }
+  },
+
+    deleteSession: async (sessionId) => {
+      const session = get().sessions.find((s) => s.id === sessionId);
+      if (!session) return;
+      try { await FileSystem.deleteAsync(session.filePath, { idempotent: true }); } catch { /* noop */ }
+      try { await FileSystem.deleteAsync(session.filePathCsv, { idempotent: true }); } catch { /* noop */ }
+      set((s) => ({ sessions: s.sessions.filter((sess) => sess.id !== sessionId) }));
+    },
+
+    clearAll: async () => {
+      const { sessions } = get();
+      for (const session of sessions) {
+        try { await FileSystem.deleteAsync(session.filePath, { idempotent: true }); } catch { /* noop */ }
+        try { await FileSystem.deleteAsync(session.filePathCsv, { idempotent: true }); } catch { /* noop */ }
+      }
+      set({ sessions: [], activeSessionId: null });
+    },
+
+    setExportDirectory: async () => {
+      try {
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (permissions.granted) {
+          set({ exportDirectoryUri: permissions.directoryUri });
+          Alert.alert('Success', 'Export directory updated.');
+        }
+      } catch (e) {
+        console.error('Set export directory failed:', e);
+      }
+    },
+    resetExportDirectory: () => set({ exportDirectoryUri: null }),
+  }),
+  {
+    name: 'log-storage',
+    storage: createJSONStorage(() => AsyncStorage),
+    partialize: (state) => ({ 
+      sessions: state.sessions, 
+      exportDirectoryUri: state.exportDirectoryUri 
+    }),
+  }
+));

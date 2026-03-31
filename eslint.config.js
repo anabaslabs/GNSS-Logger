@@ -7,4 +7,11 @@ module.exports = defineConfig([
   {
     ignores: ['dist/*'],
   },
+  {
+    rules: {
+      // TypeScript handles @/ path alias resolution; ESLint's import resolver
+      // doesn't support tsconfig paths without extra plugins
+      'import/no-unresolved': 'off',
+    },
+  },
 ]);
