@@ -82,8 +82,8 @@ export default function SettingsScreen() {
     message: string;
     confirmText?: string;
     isDestructive?: boolean;
+    showCancel?: boolean;
     onConfirm: () => void;
-    onCancel?: () => void;
   }>({
     visible: false,
     title: "",
@@ -121,8 +121,10 @@ export default function SettingsScreen() {
         confirmText={confirmConfig.confirmText}
         isDestructive={confirmConfig.isDestructive}
         onConfirm={confirmConfig.onConfirm}
-        onCancel={() =>
-          setConfirmConfig((prev) => ({ ...prev, visible: false }))
+        onCancel={
+          confirmConfig.showCancel !== false
+            ? () => setConfirmConfig((prev) => ({ ...prev, visible: false }))
+            : undefined
         }
       />
       <ScrollView
@@ -342,6 +344,7 @@ export default function SettingsScreen() {
                       visible: true,
                       title: "Success",
                       message: "Export directory updated.",
+                      showCancel: false,
                       onConfirm: () =>
                         setConfirmConfig((prev) => ({
                           ...prev,
@@ -543,7 +546,7 @@ export default function SettingsScreen() {
                     { color: colors.textSecondary },
                   ]}
                 >
-                  2025-2026{" "}
+                  2026-2027{" "}
                   <Text
                     style={{ color: colors.tint, fontFamily: "Lexend_700Bold" }}
                     onPress={() => Linking.openURL("https://anabaslabs.com")}

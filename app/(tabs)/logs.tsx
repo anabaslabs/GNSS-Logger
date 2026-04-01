@@ -325,12 +325,13 @@ export default function LogsScreen() {
       title: "Clear All Logs",
       message:
         "This will permanently delete all recorded sessions and their files. Continue?",
-      confirmText: "Delete All",
+      confirmText: "Clear",
       isDestructive: true,
       onConfirm: () => {
         setConfirmConfig((prev) => ({ ...prev, visible: false }));
         clearAll();
       },
+      onCancel: () => setConfirmConfig((prev) => ({ ...prev, visible: false })),
     });
   }
 
@@ -345,6 +346,7 @@ export default function LogsScreen() {
         setConfirmConfig((prev) => ({ ...prev, visible: false }));
         deleteSession(id);
       },
+      onCancel: () => setConfirmConfig((prev) => ({ ...prev, visible: false })),
     });
   }
 
