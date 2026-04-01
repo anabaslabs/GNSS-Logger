@@ -7,8 +7,6 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "paths": {
-
-
       "@/*": [
         "./*"
       ]

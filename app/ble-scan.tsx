@@ -1,8 +1,4 @@
-import {
-  IconBluetoothOff,
-  IconSearch,
-  IconX,
-} from "@tabler/icons-react-native";
+import { IconBluetoothOff, IconSearch } from "@tabler/icons-react-native";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
