@@ -1,6 +1,14 @@
-import { useAppTheme } from '@/hooks/useAppTheme';
-import React, { useEffect, useMemo, useRef } from 'react';
-import { FlatList, NativeScrollEvent, NativeSyntheticEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useAppTheme } from "@/hooks/useAppTheme";
+import React, { useEffect, useMemo, useRef } from "react";
+import {
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export type WheelPickerProps = {
   items: string[];
@@ -11,47 +19,58 @@ export type WheelPickerProps = {
 
 const DEFAULT_ITEM_HEIGHT = 44;
 
-const PickerItem = React.memo(({ 
-  item,
-  index, 
-  isSelected, 
-  itemHeight, 
-  onPress, 
-  colors 
-}: { 
-  item: string; 
-  index: number; 
-  isSelected: boolean; 
-  itemHeight: number; 
-  onPress: (idx: number) => void;
-  colors: any;
-}) => {
-  return (
-    <Pressable 
-      onPress={() => onPress(index - 1)}
-      style={[styles.item, { height: itemHeight }]}
-    >
-      <Text style={[
-        styles.itemText, 
-        { 
-          color: isSelected ? colors.text : colors.textSecondary,
-          opacity: isSelected ? 1 : 0.5,
-          fontSize: isSelected ? 18 : 16,
-          fontFamily: isSelected ? 'Lexend_600SemiBold' : 'Lexend_400Regular',
-        }
-      ]}>
-        {item}
-      </Text>
-    </Pressable>
-  );
-});
+const PickerItem = React.memo(
+  ({
+    item,
+    index,
+    isSelected,
+    itemHeight,
+    onPress,
+    colors,
+  }: {
+    item: string;
+    index: number;
+    isSelected: boolean;
+    itemHeight: number;
+    onPress: (idx: number) => void;
+    colors: any;
+  }) => {
+    return (
+      <Pressable
+        onPress={() => onPress(index - 1)}
+        style={[styles.item, { height: itemHeight }]}
+      >
+        <Text
+          style={[
+            styles.itemText,
+            {
+              color: isSelected ? colors.text : colors.textSecondary,
+              opacity: isSelected ? 1 : 0.5,
+              fontSize: isSelected ? 18 : 16,
+              fontFamily: isSelected
+                ? "Lexend_600SemiBold"
+                : "Lexend_400Regular",
+            },
+          ]}
+        >
+          {item}
+        </Text>
+      </Pressable>
+    );
+  },
+);
 
-export function WheelPicker({ items, value, onValueChange, itemHeight = DEFAULT_ITEM_HEIGHT }: WheelPickerProps) {
+export function WheelPicker({
+  items,
+  value,
+  onValueChange,
+  itemHeight = DEFAULT_ITEM_HEIGHT,
+}: WheelPickerProps) {
   const { colors } = useAppTheme();
   const flatListRef = useRef<FlatList>(null);
 
-  const extendedItems = useMemo(() => ['', ...items, ''], [items]);
-  
+  const extendedItems = useMemo(() => ["", ...items, ""], [items]);
+
   const currentIndex = items.indexOf(value);
   const initialScrollIndex = currentIndex !== -1 ? currentIndex : 0;
 
@@ -87,21 +106,21 @@ export function WheelPicker({ items, value, onValueChange, itemHeight = DEFAULT_
 
   return (
     <View style={[styles.container, { height: itemHeight * 3 }]}>
-      <View 
+      <View
         pointerEvents="none"
         style={[
-          styles.selectionOverlay, 
-          { 
-            height: itemHeight, 
-            top: itemHeight, 
-            backgroundColor: colors.borderLight + '22',
+          styles.selectionOverlay,
+          {
+            height: itemHeight,
+            top: itemHeight,
+            backgroundColor: colors.borderLight + "22",
             borderColor: colors.borderLight,
             borderTopWidth: 1,
             borderBottomWidth: 1,
-          }
-        ]} 
+          },
+        ]}
       />
-      
+
       <FlatList
         ref={flatListRef}
         data={extendedItems}
@@ -140,21 +159,21 @@ export function WheelPicker({ items, value, onValueChange, itemHeight = DEFAULT_
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    overflow: 'hidden',
+    width: "100%",
+    overflow: "hidden",
   },
   selectionOverlay: {
-    position: 'absolute',
+    position: "absolute",
     left: 8,
     right: 8,
     borderRadius: 8,
     zIndex: 1,
   },
   item: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   itemText: {
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

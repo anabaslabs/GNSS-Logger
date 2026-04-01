@@ -1,11 +1,11 @@
-import React from 'react';
-import { Pressable, PressableProps, StyleProp, ViewStyle } from 'react-native';
-import Animated, { 
-  useAnimatedStyle, 
-  useSharedValue, 
-  withSpring, 
-  withTiming 
-} from 'react-native-reanimated';
+import React from "react";
+import { Pressable, PressableProps, StyleProp, ViewStyle } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
 interface PressableScaleProps extends PressableProps {
   children: React.ReactNode;
@@ -15,13 +15,13 @@ interface PressableScaleProps extends PressableProps {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function PressableScale({ 
-  children, 
-  style, 
-  activeScale = 0.95, 
-  onPressIn, 
-  onPressOut, 
-  ...props 
+export function PressableScale({
+  children,
+  style,
+  activeScale = 0.95,
+  onPressIn,
+  onPressOut,
+  ...props
 }: PressableScaleProps) {
   const scale = useSharedValue(1);
 

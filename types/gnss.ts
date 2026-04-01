@@ -1,4 +1,4 @@
-import { FixQuality } from '@/constants/nmea';
+import { FixQuality } from "@/constants/nmea";
 
 /** Parsed GNSS fix from GGA + RMC sentences */
 export interface NmeaFix {
@@ -74,13 +74,13 @@ export interface NmeaDop {
 
 /** Full parsed NMEA result from a single sentence */
 export type NmeaParsedSentence =
-  | { type: 'GGA'; data: Partial<NmeaFix> }
-  | { type: 'RMC'; data: Partial<NmeaFix & NmeaVelocity> }
-  | { type: 'VTG'; data: NmeaVelocity }
-  | { type: 'GSA'; data: NmeaDop }
-  | { type: 'GSV'; data: { talkerId: string; satellites: NmeaSatellite[] } }
-  | { type: 'GLL'; data: Partial<NmeaFix> }
-  | { type: 'UNKNOWN'; raw: string };
+  | { type: "GGA"; data: Partial<NmeaFix> }
+  | { type: "RMC"; data: Partial<NmeaFix & NmeaVelocity> }
+  | { type: "VTG"; data: NmeaVelocity }
+  | { type: "GSA"; data: NmeaDop }
+  | { type: "GSV"; data: { talkerId: string; satellites: NmeaSatellite[] } }
+  | { type: "GLL"; data: Partial<NmeaFix> }
+  | { type: "UNKNOWN"; raw: string };
 
 /** BLE device scan result */
 export interface BleDevice {

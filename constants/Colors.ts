@@ -1,41 +1,41 @@
-const tintColorLight = '#007AFF';
-const tintColorDark = '#0A84FF';
+const tintColorLight = "#007AFF";
+const tintColorDark = "#0A84FF";
 
 export const Colors = {
   light: {
-    text: '#000000',
-    textSecondary: '#636366',
-    textTertiary: '#8E8E93',
-    background: '#F2F2F7',
-    surface: '#FFFFFF',
-    border: '#D1D1D6',
-    borderLight: '#E5E5EA',
+    text: "#000000",
+    textSecondary: "#636366",
+    textTertiary: "#8E8E93",
+    background: "#F2F2F7",
+    surface: "#FFFFFF",
+    border: "#D1D1D6",
+    borderLight: "#E5E5EA",
     tint: tintColorLight,
-    iconDefault: '#AEAEB2',
-    iconSecondary: '#AEAEB2',
-    tabIconDefault: '#AEAEB2',
+    iconDefault: "#AEAEB2",
+    iconSecondary: "#AEAEB2",
+    tabIconDefault: "#AEAEB2",
     tabIconSelected: tintColorLight,
-    danger: '#FF3B30',
-    dangerSurface: '#FFEBEE',
-    dangerBorder: '#FFCDD2',
-    statusActive: '#007AFF',
+    danger: "#FF3B30",
+    dangerSurface: "#FFEBEE",
+    dangerBorder: "#FFCDD2",
+    statusActive: "#007AFF",
   },
   dark: {
-    text: '#FFFFFF',
-    textSecondary: '#A1A1A6',
-    textTertiary: '#6E6E73',
-    background: '#000000', // True Black
-    surface: '#151517', // Deeper Surface
-    border: '#252528',
-    borderLight: '#2C2C2E',
-    tint: '#0EA5E9', // Electric Blue
-    iconDefault: '#8E8E93',
-    iconSecondary: '#8E8E93',
-    tabIconDefault: '#8E8E93',
-    tabIconSelected: '#0EA5E9',
-    danger: '#F43F5E', // Neon Rose
-    dangerSurface: '#241011',
-    dangerBorder: '#4C1D1F',
-    statusActive: '#10B981', // Emerald Neon
+    text: "#FFFFFF",
+    textSecondary: "#A1A1A6",
+    textTertiary: "#6E6E73",
+    background: "#000000",
+    surface: "#151517",
+    border: "#252528",
+    borderLight: "#2C2C2E",
+    tint: "#0EA5E9",
+    iconDefault: "#8E8E93",
+    iconSecondary: "#8E8E93",
+    tabIconDefault: "#8E8E93",
+    tabIconSelected: "#0EA5E9",
+    danger: "#F43F5E",
+    dangerSurface: "#241011",
+    dangerBorder: "#4C1D1F",
+    statusActive: "#10B981",
   },
 };

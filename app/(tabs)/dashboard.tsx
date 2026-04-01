@@ -1,24 +1,21 @@
-import React, { useEffect, useRef } from 'react';
+import { ConnectionBanner } from "@/components/connection-banner";
+import { GnssCard } from "@/components/gnss-card";
+import { StatusBadge } from "@/components/status-badge";
 import {
-  ScrollView,
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-} from 'react-native';
-import { useGnssStore } from '@/store/gnss-store';
-import { ConnectionBanner } from '@/components/connection-banner';
-import { GnssCard } from '@/components/gnss-card';
-import { StatusBadge } from '@/components/status-badge';
-import { useAppTheme } from '@/hooks/useAppTheme';
-import { CONSTELLATION_COLOR, CONSTELLATION_LABEL, FixQuality } from '@/constants/nmea';
-import { formatCoord, formatNmeaTime } from '@/lib/nmea-parser';
+  CONSTELLATION_COLOR,
+  CONSTELLATION_LABEL,
+  FixQuality,
+} from "@/constants/nmea";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { formatCoord, formatNmeaTime } from "@/lib/nmea-parser";
+import { useGnssStore } from "@/store/gnss-store";
+import React, { useEffect, useRef } from "react";
+import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 
 export default function DashboardScreen() {
   const { colors } = useAppTheme();
   const { fix, velocity, satellites } = useGnssStore();
 
-  // Pulse animation when data is flowing
   const pulse = useRef(new Animated.Value(1)).current;
   const prevUpdatedAt = useRef(0);
 
@@ -26,18 +23,25 @@ export default function DashboardScreen() {
     if (fix.updatedAt !== prevUpdatedAt.current && fix.updatedAt > 0) {
       prevUpdatedAt.current = fix.updatedAt;
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.15, duration: 120, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.timing(pulse, {
+          toValue: 1.15,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
       ]).start();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fix.updatedAt]);
 
-  // Count satellites per constellation
   const constellationCounts: Record<string, number> = {};
   for (const sat of satellites) {
     if (sat.usedInFix) {
-      constellationCounts[sat.talkerId] = (constellationCounts[sat.talkerId] ?? 0) + 1;
+      constellationCounts[sat.talkerId] =
+        (constellationCounts[sat.talkerId] ?? 0) + 1;
     }
   }
 
@@ -45,110 +49,141 @@ export default function DashboardScreen() {
   const speedKmh = velocity.speedKmh ?? 0;
   const heading = velocity.courseTrue;
 
-
-
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       style={[styles.scroll, { backgroundColor: colors.background }]}
       contentContainerStyle={[styles.container, { paddingBottom: 40 }]}
     >
-      {/* BLE Connection Banner */}
       <ConnectionBanner />
 
-      {/* Fix Status */}
-      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.section,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
         <View style={styles.fixHeader}>
-          <StatusBadge quality={fix.quality} satellitesInUse={fix.satellitesInUse} />
+          <StatusBadge
+            quality={fix.quality}
+            satellitesInUse={fix.satellitesInUse}
+          />
           <Animated.View style={{ transform: [{ scale: pulse }] }}>
-            <View style={[
-              styles.liveIndicator, 
-              { 
-                backgroundColor: hasFix ? '#10B981' : colors.textTertiary,
-                shadowColor: hasFix ? '#10B981' : 'transparent',
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.8,
-                shadowRadius: 6,
-                elevation: 4,
-                borderColor: colors.surface,
-                borderWidth: 2,
-              }
-            ]} />
+            <View
+              style={[
+                styles.liveIndicator,
+                {
+                  backgroundColor: hasFix ? "#10B981" : colors.textTertiary,
+                  shadowColor: hasFix ? "#10B981" : "transparent",
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 0.8,
+                  shadowRadius: 6,
+                  elevation: 4,
+                  borderColor: colors.surface,
+                  borderWidth: 2,
+                },
+              ]}
+            />
           </Animated.View>
         </View>
 
-        {/* Coordinates */}
         <View style={styles.coordRow}>
           <View style={styles.coordItem}>
-            <Text style={[styles.coordLabel, { color: colors.textTertiary }]}>LATITUDE</Text>
-            <Text style={[styles.coordValue, { color: colors.text }]} selectable>
-              {formatCoord(fix.latitude, 'lat')}
+            <Text style={[styles.coordLabel, { color: colors.textTertiary }]}>
+              LATITUDE
+            </Text>
+            <Text
+              style={[styles.coordValue, { color: colors.text }]}
+              selectable
+            >
+              {formatCoord(fix.latitude, "lat")}
             </Text>
           </View>
           <View style={styles.coordItem}>
-            <Text style={[styles.coordLabel, { color: colors.textTertiary }]}>LONGITUDE</Text>
-            <Text style={[styles.coordValue, { color: colors.text }]} selectable>
-              {formatCoord(fix.longitude, 'lon')}
+            <Text style={[styles.coordLabel, { color: colors.textTertiary }]}>
+              LONGITUDE
+            </Text>
+            <Text
+              style={[styles.coordValue, { color: colors.text }]}
+              selectable
+            >
+              {formatCoord(fix.longitude, "lon")}
             </Text>
           </View>
         </View>
-        <Text style={[styles.timeText, { color: colors.textSecondary }]}>{formatNmeaTime(fix.utcTime)}</Text>
+        <Text style={[styles.timeText, { color: colors.textSecondary }]}>
+          {formatNmeaTime(fix.utcTime)}
+        </Text>
       </View>
 
-      {/* Metric Cards Row 1 */}
       <View style={styles.cardRow}>
         <GnssCard
           label="Altitude"
-          value={fix.altitudeMsl !== null ? fix.altitudeMsl.toFixed(1) : '-'}
+          value={fix.altitudeMsl !== null ? fix.altitudeMsl.toFixed(1) : "-"}
           unit="m"
           accent="#6366F1"
         />
         <GnssCard
           label="Speed"
-          value={hasFix ? speedKmh.toFixed(1) : '-'}
+          value={hasFix ? speedKmh.toFixed(1) : "-"}
           unit="km/h"
           accent="#F59E0B"
         />
       </View>
 
-      {/* Metric Cards Row 2 */}
       <View style={styles.cardRow}>
         <GnssCard
           label="HDOP"
-          value={fix.hdop !== null ? fix.hdop.toFixed(2) : '-'}
+          value={fix.hdop !== null ? fix.hdop.toFixed(2) : "-"}
           accent="#10B981"
           secondary={fix.hdop !== null ? hdopQuality(fix.hdop) : undefined}
         />
         <GnssCard
           label="Heading"
-          value={heading !== null ? `${heading.toFixed(1)}°` : '-'}
+          value={heading !== null ? `${heading.toFixed(1)}°` : "-"}
           accent="#38BDF8"
           secondary={heading !== null ? compassPoint(heading) : undefined}
         />
       </View>
 
-      {/* Constellation breakdown */}
-      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Constellations In Fix</Text>
+      <View
+        style={[
+          styles.section,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
+        <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>
+          Constellations In Fix
+        </Text>
         <View style={styles.constellationRow}>
           {Object.entries(constellationCounts).length === 0 ? (
-            <Text style={[styles.noData, { color: colors.textTertiary }]}>No fix - waiting for satellites…</Text>
+            <Text style={[styles.noData, { color: colors.textTertiary }]}>
+              No fix - waiting for satellites…
+            </Text>
           ) : (
             Object.entries(constellationCounts).map(([id, count]) => (
               <View
                 key={id}
                 style={[
                   styles.constBadge,
-                  { backgroundColor: (CONSTELLATION_COLOR[id] ?? '#6B7280') + '22' },
+                  {
+                    backgroundColor:
+                      (CONSTELLATION_COLOR[id] ?? "#6B7280") + "22",
+                  },
                 ]}
               >
                 <View
                   style={[
                     styles.constDot,
-                    { backgroundColor: CONSTELLATION_COLOR[id] ?? '#6B7280' },
+                    { backgroundColor: CONSTELLATION_COLOR[id] ?? "#6B7280" },
                   ]}
                 />
-                <Text style={[styles.constLabel, { color: CONSTELLATION_COLOR[id] ?? '#6B7280' }]}>
+                <Text
+                  style={[
+                    styles.constLabel,
+                    { color: CONSTELLATION_COLOR[id] ?? "#6B7280" },
+                  ]}
+                >
                   {CONSTELLATION_LABEL[id] ?? id}
                 </Text>
                 <Text style={styles.constCount}>{count}</Text>
@@ -157,42 +192,39 @@ export default function DashboardScreen() {
           )}
         </View>
       </View>
-
-
-
     </ScrollView>
   );
 }
 
 function hdopQuality(hdop: number): string {
-  if (hdop <= 1) return 'Ideal';
-  if (hdop <= 2) return 'Excellent';
-  if (hdop <= 5) return 'Good';
-  if (hdop <= 10) return 'Moderate';
-  if (hdop <= 20) return 'Fair';
-  return 'Poor';
+  if (hdop <= 1) return "Ideal";
+  if (hdop <= 2) return "Excellent";
+  if (hdop <= 5) return "Good";
+  if (hdop <= 10) return "Moderate";
+  if (hdop <= 20) return "Fair";
+  return "Poor";
 }
 
 function compassPoint(deg: number): string {
-  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-  return dirs[Math.round(deg / 45) % 8] ?? 'N';
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round(deg / 45) % 8] ?? "N";
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1 }, 
-  container: { padding: 16, paddingBottom: 40, gap: 16 }, // larger gap
+  scroll: { flex: 1 },
+  container: { padding: 16, paddingBottom: 40, gap: 16 },
   section: {
     borderRadius: 24,
-    borderCurve: 'continuous',
+    borderCurve: "continuous",
     borderWidth: 1,
     paddingHorizontal: 20,
     paddingVertical: 24,
     gap: 16,
   } as any,
   fixHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   liveIndicator: {
     width: 10,
@@ -208,50 +240,49 @@ const styles = StyleSheet.create({
   },
   coordLabel: {
     fontSize: 10,
-    fontFamily: 'Lexend_800ExtraBold',
+    fontFamily: "Lexend_800ExtraBold",
     letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   coordValue: {
     fontSize: 26,
-    fontFamily: 'Lexend_600SemiBold',
-    fontVariant: ['tabular-nums'],
+    fontFamily: "Lexend_600SemiBold",
+    fontVariant: ["tabular-nums"],
     letterSpacing: -1,
     marginTop: 2,
   },
   timeText: {
     fontSize: 12,
     marginTop: 12,
-    fontFamily: 'Lexend_500Medium',
-    fontVariant: ['tabular-nums'],
+    fontFamily: "Lexend_500Medium",
+    fontVariant: ["tabular-nums"],
   },
-  cardRow: { flexDirection: 'row', gap: 16 },
+  cardRow: { flexDirection: "row", gap: 16 },
   sectionTitle: {
     fontSize: 12,
-    fontFamily: 'Lexend_800ExtraBold',
+    fontFamily: "Lexend_800ExtraBold",
     letterSpacing: 1,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   constellationRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
   },
   constBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   constDot: { width: 8, height: 8, borderRadius: 4 },
-  constLabel: { fontSize: 13, fontFamily: 'Lexend_700Bold' },
+  constLabel: { fontSize: 13, fontFamily: "Lexend_700Bold" },
   constCount: {
     fontSize: 15,
-    fontFamily: 'Lexend_800ExtraBold',
-    fontVariant: ['tabular-nums'],
+    fontFamily: "Lexend_800ExtraBold",
+    fontVariant: ["tabular-nums"],
   },
-  noData: { fontSize: 14, fontFamily: 'Lexend_500Medium' },
-
+  noData: { fontSize: 14, fontFamily: "Lexend_500Medium" },
 });

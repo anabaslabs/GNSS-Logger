@@ -1,13 +1,13 @@
-import { create } from 'zustand';
-import type { BleDevice } from '@/types/gnss';
+import type { BleDevice } from "@/types/gnss";
+import { create } from "zustand";
 
 export type BleStatus =
-  | 'idle'
-  | 'scanning'
-  | 'connecting'
-  | 'connected'
-  | 'disconnecting'
-  | 'error';
+  | "idle"
+  | "scanning"
+  | "connecting"
+  | "connected"
+  | "disconnecting"
+  | "error";
 
 interface BleState {
   status: BleStatus;
@@ -31,7 +31,7 @@ interface BleActions {
 }
 
 export const useBleStore = create<BleState & BleActions>((set) => ({
-  status: 'idle',
+  status: "idle",
   connectedDeviceId: null,
   connectedDeviceName: null,
   scannedDevices: [],
@@ -42,10 +42,20 @@ export const useBleStore = create<BleState & BleActions>((set) => ({
   setStatus: (status) => set({ status }),
 
   setConnected: (id, name) =>
-    set({ status: 'connected', connectedDeviceId: id, connectedDeviceName: name, lastError: null }),
+    set({
+      status: "connected",
+      connectedDeviceId: id,
+      connectedDeviceName: name,
+      lastError: null,
+    }),
 
   setDisconnected: () =>
-    set({ status: 'idle', connectedDeviceId: null, connectedDeviceName: null, rssi: null }),
+    set({
+      status: "idle",
+      connectedDeviceId: null,
+      connectedDeviceName: null,
+      rssi: null,
+    }),
 
   addScannedDevice: (device) =>
     set((s) => {
@@ -62,7 +72,7 @@ export const useBleStore = create<BleState & BleActions>((set) => ({
 
   setRssi: (rssi) => set({ rssi }),
 
-  setError: (lastError) => set({ lastError, status: 'error' }),
+  setError: (lastError) => set({ lastError, status: "error" }),
 
   setAutoReconnect: (autoReconnect) => set({ autoReconnect }),
 }));

@@ -3,8 +3,10 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
+    "build": "pnpm prebuild && pnpm build:android",
+    "build:android": "cd android && ./gradlew.bat assembleRelease",
     "prebuild": "expo prebuild",
-    "start": "expo start --clear --go",
+    "start": "expo start --go",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",

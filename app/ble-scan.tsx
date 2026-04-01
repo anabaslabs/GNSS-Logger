@@ -1,34 +1,40 @@
-import { IconBluetoothOff, IconSearch } from '@tabler/icons-react-native';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import { IconBluetoothOff, IconSearch } from "@tabler/icons-react-native";
+import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
   FlatList,
-  Modal as RNModal,
-  Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
-import { ConfirmModal } from '@/components/confirm-modal';
-import { BLE_SCAN_DURATION } from '@/constants/ble';
-import { useAppTheme } from '@/hooks/useAppTheme';
-import { connectAndSubscribe, isBleAvailable, startScan, stopScan } from '@/lib/ble-manager';
-import { useBleStore } from '@/store/ble-store';
-import type { BleDevice } from '@/types/gnss';
-import { PressableScale } from '@/components/pressable-scale';
+import { ConfirmModal } from "@/components/confirm-modal";
+import { PressableScale } from "@/components/pressable-scale";
+import { BLE_SCAN_DURATION } from "@/constants/ble";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import {
+  connectAndSubscribe,
+  isBleAvailable,
+  startScan,
+  stopScan,
+} from "@/lib/ble-manager";
+import { useBleStore } from "@/store/ble-store";
+import type { BleDevice } from "@/types/gnss";
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
 function RssiBars({ rssi, trackColor }: { rssi: number; trackColor: string }) {
   const { colors } = useAppTheme();
   const level = rssi >= -60 ? 4 : rssi >= -70 ? 3 : rssi >= -80 ? 2 : 1;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 16 }}>
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "flex-end",
+        gap: 2,
+        height: 16,
+      }}
+    >
       {[1, 2, 3, 4].map((bar) => (
         <View
           key={bar}
@@ -63,91 +69,120 @@ function DeviceRow({
       onPress={onPress}
     >
       <View style={styles.deviceInfo}>
-        <Text style={[styles.deviceName, { color: colors.text }]} numberOfLines={1}>
-          {device.name || 'Unnamed Device'}
+        <Text
+          style={[styles.deviceName, { color: colors.text }]}
+          numberOfLines={1}
+        >
+          {device.name || "Unnamed Device"}
         </Text>
-        <Text style={[styles.deviceId, { color: colors.textSecondary }]}>{device.id}</Text>
+        <Text style={[styles.deviceId, { color: colors.textSecondary }]}>
+          {device.id}
+        </Text>
       </View>
       <RssiBars rssi={device.rssi} trackColor={colors.border} />
-      <Text style={[styles.rssiText, { color: colors.textSecondary }]}>{device.rssi} dBm</Text>
-      <View style={[styles.connectPill, { backgroundColor: colors.tint + '15' }]}>
+      <Text style={[styles.rssiText, { color: colors.textSecondary }]}>
+        {device.rssi} dBm
+      </Text>
+      <View
+        style={[styles.connectPill, { backgroundColor: colors.tint + "15" }]}
+      >
         {connecting ? (
           <ActivityIndicator size="small" color={colors.tint} />
         ) : (
-          <Text style={[styles.connectLabel, { color: colors.tint }]}>Connect</Text>
+          <Text style={[styles.connectLabel, { color: colors.tint }]}>
+            Connect
+          </Text>
         )}
       </View>
     </PressableScale>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Unavailable screen for Expo Go
-// ---------------------------------------------------------------------------
 function BleUnavailableScreen() {
   const { colors } = useAppTheme();
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.unavailableBox}>
         <IconBluetoothOff color={colors.textTertiary} size={64} />
-        <Text style={[styles.unavailableTitle, { color: colors.text }]}>Custom Build Required</Text>
-        <Text style={[styles.unavailableDesc, { color: colors.textSecondary }]}>
-          Bluetooth is a native API and is not available in Expo Go. You need a custom
-          development build to use BLE.
+        <Text style={[styles.unavailableTitle, { color: colors.text }]}>
+          Custom Build Required
         </Text>
-        <View style={[styles.codeBlock, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
-          <Text style={[styles.codeText, { color: colors.statusActive }]} selectable>
+        <Text style={[styles.unavailableDesc, { color: colors.textSecondary }]}>
+          Bluetooth is a native API and is not available in Expo Go. You need a
+          custom development build to use BLE.
+        </Text>
+        <View
+          style={[
+            styles.codeBlock,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.borderLight,
+            },
+          ]}
+        >
+          <Text
+            style={[styles.codeText, { color: colors.statusActive }]}
+            selectable
+          >
             npx expo run:android
           </Text>
         </View>
         <Text style={[styles.unavailableDesc, { color: colors.textSecondary }]}>
-          Connect your Android phone via USB with debugging enabled, then run the
-          command above in the project directory. The app will compile and install
-          automatically.
+          Connect your Android phone via USB with debugging enabled, then run
+          the command above in the project directory. The app will compile and
+          install automatically.
         </Text>
       </View>
     </View>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main exported screen
-// ---------------------------------------------------------------------------
 export default function BleScanModal() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const { status, scannedDevices, clearScannedDevices, setStatus, setConnected, setError } =
-    useBleStore();
+  const {
+    status,
+    scannedDevices,
+    clearScannedDevices,
+    setStatus,
+    setConnected,
+    setError,
+  } = useBleStore();
 
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(BLE_SCAN_DURATION);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Custom Modal State
   const [modalConfig, setModalConfig] = useState<{
     visible: boolean;
     title: string;
     message: string;
   }>({
     visible: false,
-    title: '',
-    message: '',
+    title: "",
+    message: "",
   });
 
-  // Show instructions when running in Expo Go
   if (!isBleAvailable) {
     return <BleUnavailableScreen />;
   }
 
-  // Pulse dot animation
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (status === 'scanning') {
+    if (status === "scanning") {
       const anim = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulse, { toValue: 1.4, duration: 700, useNativeDriver: true }),
-          Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+          Animated.timing(pulse, {
+            toValue: 1.4,
+            duration: 700,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulse, {
+            toValue: 1,
+            duration: 700,
+            useNativeDriver: true,
+          }),
         ]),
       );
       anim.start();
@@ -157,12 +192,12 @@ export default function BleScanModal() {
 
   async function handleStartScan() {
     clearScannedDevices();
-    setStatus('scanning');
+    setStatus("scanning");
     setTimeLeft(BLE_SCAN_DURATION);
 
     const ok = await startScan();
     if (!ok) {
-      setError('Bluetooth permission denied or hardware unavailable');
+      setError("Bluetooth permission denied or hardware unavailable");
       return;
     }
 
@@ -170,7 +205,7 @@ export default function BleScanModal() {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
-          setStatus('idle');
+          setStatus("idle");
           return 0;
         }
         return prev - 1;
@@ -182,7 +217,7 @@ export default function BleScanModal() {
     if (connectingId) return;
     await stopScan();
     clearInterval(timerRef.current!);
-    setStatus('connecting');
+    setStatus("connecting");
     setConnectingId(device.id);
 
     try {
@@ -193,10 +228,10 @@ export default function BleScanModal() {
       setConnectingId(null);
       setModalConfig({
         visible: true,
-        title: 'Connection Failed',
+        title: "Connection Failed",
         message: String(err),
       });
-      setStatus('idle');
+      setStatus("idle");
     }
   }
 
@@ -208,7 +243,7 @@ export default function BleScanModal() {
     };
   }, []);
 
-  const scanning = status === 'scanning';
+  const scanning = status === "scanning";
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -216,9 +251,10 @@ export default function BleScanModal() {
         visible={modalConfig.visible}
         title={modalConfig.title}
         message={modalConfig.message}
-        onConfirm={() => setModalConfig((prev) => ({ ...prev, visible: false }))}
+        onConfirm={() =>
+          setModalConfig((prev) => ({ ...prev, visible: false }))
+        }
       />
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.statusRow}>
           <Animated.View
@@ -226,44 +262,57 @@ export default function BleScanModal() {
               width: 10,
               height: 10,
               borderRadius: 5,
-              backgroundColor: scanning ? colors.statusActive : colors.iconSecondary,
+              backgroundColor: scanning
+                ? colors.statusActive
+                : colors.iconSecondary,
               transform: [{ scale: scanning ? pulse : 1 }],
             }}
           />
           <Text style={[styles.statusText, { color: colors.textSecondary }]}>
-            {scanning ? `Scanning… ${timeLeft}s` : `Found ${scannedDevices.length} device(s)`}
+            {scanning
+              ? `Scanning… ${timeLeft}s`
+              : `Found ${scannedDevices.length} device(s)`}
           </Text>
         </View>
         <PressableScale
           style={[
             styles.scanButton,
             { backgroundColor: colors.surface },
-            scanning && { backgroundColor: colors.tint + '1A' }
+            scanning && { backgroundColor: colors.tint + "1A" },
           ]}
           onPress={
             scanning
               ? async () => {
                   await stopScan();
-                  setStatus('idle');
+                  setStatus("idle");
                 }
               : handleStartScan
           }
         >
-          <Text style={[styles.scanButtonText, { color: scanning ? colors.tint : colors.text }]}>
-            {scanning ? 'Stop' : 'Re-scan'}
+          <Text
+            style={[
+              styles.scanButtonText,
+              { color: scanning ? colors.tint : colors.text },
+            ]}
+          >
+            {scanning ? "Stop" : "Re-scan"}
           </Text>
         </PressableScale>
       </View>
 
-      {/* ESP32 hint */}
-      <View style={[styles.hintBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.hintBox,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
         <Text style={[styles.hintText, { color: colors.textSecondary }]}>
-          Make sure the ESP32 is powered and advertising BLE (Nordic UART Service). If not
-          visible, check the device name filter or ensure firmware is running.
+          Make sure the ESP32 is powered and advertising BLE (Nordic UART
+          Service). If not visible, check the device name filter or ensure
+          firmware is running.
         </Text>
       </View>
 
-      {/* Device list */}
       <FlatList
         data={[...scannedDevices].sort((a, b) => b.rssi - a.rssi)}
         keyExtractor={(d) => d.id}
@@ -281,9 +330,14 @@ export default function BleScanModal() {
             ) : (
               <>
                 <IconSearch color={colors.textTertiary} size={64} />
-                <Text style={[styles.emptyText, { color: colors.text }]}>No devices found</Text>
-                <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>
-                  Tap Re-scan or check your ESP32 is powered and BLE is enabled on your phone.
+                <Text style={[styles.emptyText, { color: colors.text }]}>
+                  No devices found
+                </Text>
+                <Text
+                  style={[styles.emptySubtext, { color: colors.textTertiary }]}
+                >
+                  Tap Re-scan or check your ESP32 is powered and BLE is enabled
+                  on your phone.
                 </Text>
               </>
             )}
@@ -298,25 +352,24 @@ export default function BleScanModal() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  // Unavailable screen styles
   unavailableBox: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 32,
     gap: 20,
   },
   unavailableTitle: {
     fontSize: 22,
-    fontFamily: 'Lexend_800ExtraBold',
-    textAlign: 'center',
+    fontFamily: "Lexend_800ExtraBold",
+    textAlign: "center",
     letterSpacing: -0.5,
   },
   unavailableDesc: {
     fontSize: 14,
-    fontFamily: 'Lexend_400Regular',
+    fontFamily: "Lexend_400Regular",
     lineHeight: 22,
-    textAlign: 'center',
+    textAlign: "center",
     maxWidth: 300,
   },
   codeBlock: {
@@ -327,30 +380,29 @@ const styles = StyleSheet.create({
   },
   codeText: {
     fontSize: 15,
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
   },
-  // Scan screen styles
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
     borderBottomWidth: 1,
   },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  statusText: { fontSize: 14, fontFamily: 'Lexend_600SemiBold' },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  statusText: { fontSize: 14, fontFamily: "Lexend_600SemiBold" },
   scanButton: {
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  scanButtonText: { fontSize: 13, fontFamily: 'Lexend_700Bold' },
+  scanButtonText: { fontSize: 13, fontFamily: "Lexend_700Bold" },
   connectPill: {
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     minWidth: 90,
   },
   hintBox: {
@@ -359,39 +411,39 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
   },
-  hintText: { fontSize: 13, lineHeight: 20, fontFamily: 'Lexend_400Regular' },
+  hintText: { fontSize: 13, lineHeight: 20, fontFamily: "Lexend_400Regular" },
   list: { padding: 16, gap: 16, flexGrow: 1 },
   deviceRow: {
     borderRadius: 24,
     borderWidth: 1,
     padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   deviceInfo: { flex: 1, gap: 3 },
-  deviceName: { fontSize: 16, fontFamily: 'Lexend_700Bold' },
-  deviceId: { fontSize: 11, fontFamily: 'monospace' },
+  deviceName: { fontSize: 16, fontFamily: "Lexend_700Bold" },
+  deviceId: { fontSize: 11, fontFamily: "monospace" },
   rssiText: {
     fontSize: 12,
-    fontFamily: 'Lexend_600SemiBold',
-    fontVariant: ['tabular-nums'],
+    fontFamily: "Lexend_600SemiBold",
+    fontVariant: ["tabular-nums"],
     minWidth: 52,
-    textAlign: 'right',
+    textAlign: "right",
   },
-  connectLabel: { fontSize: 14, fontFamily: 'Lexend_700Bold' },
+  connectLabel: { fontSize: 14, fontFamily: "Lexend_700Bold" },
   empty: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingTop: 80,
     gap: 16,
   },
-  emptyText: { fontSize: 18, fontFamily: 'Lexend_800ExtraBold' },
+  emptyText: { fontSize: 18, fontFamily: "Lexend_800ExtraBold" },
   emptySubtext: {
     fontSize: 14,
-    fontFamily: 'Lexend_400Regular',
-    textAlign: 'center',
+    fontFamily: "Lexend_400Regular",
+    textAlign: "center",
     lineHeight: 22,
     maxWidth: 280,
   },

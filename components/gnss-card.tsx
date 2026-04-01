@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useAppTheme } from '@/hooks/useAppTheme';
+import { useAppTheme } from "@/hooks/useAppTheme";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 interface GnssCardProps {
   label: string;
@@ -10,24 +10,54 @@ interface GnssCardProps {
   secondary?: string;
 }
 
-export function GnssCard({ label, value, unit, accent = '#38BDF8', secondary }: GnssCardProps) {
+export function GnssCard({
+  label,
+  value,
+  unit,
+  accent = "#38BDF8",
+  secondary,
+}: GnssCardProps) {
   const { colors } = useAppTheme();
 
   return (
-    <View style={[styles.card, { borderColor: accent + '33', backgroundColor: colors.surface }]}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <View
+      style={[
+        styles.card,
+        { borderColor: accent + "33", backgroundColor: colors.surface },
+      ]}
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+        }}
+      >
         <Text style={[styles.label, { color: accent }]}>{label}</Text>
         {secondary && (
-          <View style={[styles.secondaryBadge, { backgroundColor: accent + '22' }]}>
-            <Text style={[styles.secondaryText, { color: accent }]}>{secondary}</Text>
+          <View
+            style={[styles.secondaryBadge, { backgroundColor: accent + "22" }]}
+          >
+            <Text style={[styles.secondaryText, { color: accent }]}>
+              {secondary}
+            </Text>
           </View>
         )}
       </View>
       <View style={styles.valueRow}>
-        <Text style={[styles.value, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit selectable>
+        <Text
+          style={[styles.value, { color: colors.text }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          selectable
+        >
           {value}
         </Text>
-        {unit && <Text style={[styles.unit, { color: colors.textSecondary }]}>{unit}</Text>}
+        {unit && (
+          <Text style={[styles.unit, { color: colors.textSecondary }]}>
+            {unit}
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -37,7 +67,7 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     borderRadius: 24,
-    borderCurve: 'continuous',
+    borderCurve: "continuous",
     borderWidth: 1.5,
     paddingHorizontal: 20,
     paddingVertical: 22,
@@ -45,36 +75,36 @@ const styles = StyleSheet.create({
   } as any,
   label: {
     fontSize: 12,
-    fontFamily: 'Lexend_700Bold',
+    fontFamily: "Lexend_700Bold",
     letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   valueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     gap: 4,
     marginTop: 4,
   },
   value: {
     fontSize: 28,
-    fontFamily: 'Lexend_600SemiBold',
-    fontVariant: ['tabular-nums'],
+    fontFamily: "Lexend_600SemiBold",
+    fontVariant: ["tabular-nums"],
     letterSpacing: -0.8,
   },
   unit: {
     fontSize: 14,
-    fontFamily: 'Lexend_600SemiBold',
+    fontFamily: "Lexend_600SemiBold",
     marginBottom: 4,
   },
   secondaryBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    borderCurve: 'continuous',
+    borderCurve: "continuous",
   },
   secondaryText: {
     fontSize: 10,
-    fontFamily: 'Lexend_800ExtraBold',
-    textTransform: 'uppercase',
+    fontFamily: "Lexend_800ExtraBold",
+    textTransform: "uppercase",
   },
 });

@@ -1,44 +1,46 @@
-import React, { useEffect } from 'react';
-import { Text, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
+import { useAppTheme } from "@/hooks/useAppTheme";
 import {
-  useFonts,
+  destroyBle,
+  initializeBle,
+  onConnectionChange,
+  onDeviceFound,
+  onNmeaLine,
+} from "@/lib/ble-manager";
+import { parseNmea } from "@/lib/nmea-parser";
+import { useBleStore } from "@/store/ble-store";
+import { useGnssStore } from "@/store/gnss-store";
+import type { BleDevice } from "@/types/gnss";
+import {
   Lexend_300Light,
   Lexend_400Regular,
   Lexend_500Medium,
   Lexend_600SemiBold,
   Lexend_700Bold,
   Lexend_800ExtraBold,
-} from '@expo-google-fonts/lexend';
+  useFonts,
+} from "@expo-google-fonts/lexend";
 import {
-  initializeBle,
-  onNmeaLine,
-  onConnectionChange,
-  onDeviceFound,
-  destroyBle,
-} from '@/lib/ble-manager';
-import { parseNmea } from '@/lib/nmea-parser';
-import { useGnssStore } from '@/store/gnss-store';
-import { useBleStore } from '@/store/ble-store';
-import { useAppTheme } from '@/hooks/useAppTheme';
-import type { BleDevice } from '@/types/gnss';
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import React, { useEffect } from "react";
+import { Text, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-// Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
-// Override global Text font-family fallback
 interface TextWithDefaultProps extends React.FC {
   defaultProps?: any;
 }
 const TextComp = Text as unknown as TextWithDefaultProps;
 if (!TextComp.defaultProps) TextComp.defaultProps = {};
 TextComp.defaultProps.style = [
-  { fontFamily: 'Lexend_400Regular' },
+  { fontFamily: "Lexend_400Regular" },
   TextComp.defaultProps.style,
 ];
 
@@ -54,7 +56,8 @@ export default function RootLayout() {
     Lexend_800ExtraBold,
   });
 
-  const { applyGga, applyRmc, applyVtg, applyGsa, applyGsv, appendRaw } = useGnssStore();
+  const { applyGga, applyRmc, applyVtg, applyGsa, applyGsv, appendRaw } =
+    useGnssStore();
   const { setConnected, setDisconnected, addScannedDevice } = useBleStore();
 
   useEffect(() => {
@@ -64,22 +67,31 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   useEffect(() => {
-    // Register NMEA line handler
     onNmeaLine((line) => {
       appendRaw(line);
       const parsed = parseNmea(line);
       if (!parsed) return;
       switch (parsed.type) {
-        case 'GGA': applyGga(parsed.data); break;
-        case 'RMC': applyRmc(parsed.data); break;
-        case 'VTG': applyVtg(parsed.data); break;
-        case 'GSA': applyGsa(parsed.data); break;
-        case 'GSV': applyGsv(parsed.data.talkerId, parsed.data.satellites); break;
-        default: break;
+        case "GGA":
+          applyGga(parsed.data);
+          break;
+        case "RMC":
+          applyRmc(parsed.data);
+          break;
+        case "VTG":
+          applyVtg(parsed.data);
+          break;
+        case "GSA":
+          applyGsa(parsed.data);
+          break;
+        case "GSV":
+          applyGsv(parsed.data.talkerId, parsed.data.satellites);
+          break;
+        default:
+          break;
       }
     });
 
-    // Register connection handler
     onConnectionChange((deviceId, connected) => {
       if (connected) {
         setConnected(deviceId, null);
@@ -88,7 +100,6 @@ export default function RootLayout() {
       }
     });
 
-    // Register device scan handler
     onDeviceFound((peripheral) => {
       const device: BleDevice = {
         id: peripheral.id,
@@ -98,7 +109,6 @@ export default function RootLayout() {
       addScannedDevice(device);
     });
 
-    // Initialize BLE
     initializeBle().catch(() => {});
 
     return () => {
@@ -121,19 +131,19 @@ export default function RootLayout() {
                 headerShown: false,
                 headerStyle: { backgroundColor: colors.background },
                 headerTintColor: colors.text,
-                headerTitleStyle: { fontFamily: 'Lexend_700Bold' },
+                headerTitleStyle: { fontFamily: "Lexend_700Bold" },
                 contentStyle: { backgroundColor: colors.background },
-                animation: 'ios_from_right',
+                animation: "ios_from_right",
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen
                 name="ble-scan"
                 options={{
-                  title: 'Connect to Device',
-                  presentation: 'modal',
+                  title: "Connect to Device",
+                  presentation: "modal",
                   headerStyle: { backgroundColor: colors.surface },
-                  headerTitleStyle: { fontFamily: 'Lexend_700Bold' },
+                  headerTitleStyle: { fontFamily: "Lexend_700Bold" },
                 }}
               />
             </Stack>

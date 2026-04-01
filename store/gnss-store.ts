@@ -1,6 +1,11 @@
-import { create } from 'zustand';
-import type { NmeaFix, NmeaSatellite, NmeaVelocity, NmeaDop } from '@/types/gnss';
-import { FixQuality } from '@/constants/nmea';
+import { FixQuality } from "@/constants/nmea";
+import type {
+  NmeaDop,
+  NmeaFix,
+  NmeaSatellite,
+  NmeaVelocity,
+} from "@/types/gnss";
+import { create } from "zustand";
 
 const RAW_BUFFER_MAX = 200;
 
@@ -9,9 +14,7 @@ interface GnssState {
   satellites: NmeaSatellite[];
   velocity: NmeaVelocity;
   dop: NmeaDop | null;
-  /** Rolling buffer of raw NMEA lines for debug view */
   rawBuffer: string[];
-  /** Lines queued for writing to log file */
   sessionBuffer: string[];
   isLogging: boolean;
 }
@@ -29,8 +32,8 @@ interface GnssActions {
 }
 
 const defaultFix: NmeaFix = {
-  utcTime: '',
-  utcDate: '',
+  utcTime: "",
+  utcDate: "",
   latitude: null,
   longitude: null,
   quality: FixQuality.NoFix,
@@ -47,7 +50,7 @@ const defaultVelocity: NmeaVelocity = {
   speedKnots: null,
   courseTrue: null,
   courseMagnetic: null,
-  mode: 'N',
+  mode: "N",
 };
 
 export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
@@ -64,7 +67,14 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
   },
 
   applyRmc: (data) => {
-    const { speedKmh, speedKnots, courseTrue, courseMagnetic, mode, ...fixData } = data as Partial<NmeaFix & NmeaVelocity>;
+    const {
+      speedKmh,
+      speedKnots,
+      courseTrue,
+      courseMagnetic,
+      mode,
+      ...fixData
+    } = data as Partial<NmeaFix & NmeaVelocity>;
     set((s) => ({
       fix: { ...s.fix, ...fixData },
       velocity: {
@@ -83,11 +93,10 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
   },
 
   applyGsa: (data) => {
-    // Mark satellites as used/not-used based on GSA PRN list
     set((s) => {
       const usedSet = new Set(data.satellitesUsed);
       const updatedSats = s.satellites.map((sat) =>
-        sat.talkerId === data.talkerId || data.talkerId === 'GN'
+        sat.talkerId === data.talkerId || data.talkerId === "GN"
           ? { ...sat, usedInFix: usedSet.has(sat.prn) }
           : sat,
       );
@@ -97,7 +106,6 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
 
   applyGsv: (talkerId, newSats) => {
     set((s) => {
-      // Merge: keep existing sats from other constellations, replace this constellation's sats
       const otherSats = s.satellites.filter((sat) => sat.talkerId !== talkerId);
       return { satellites: [...otherSats, ...newSats] };
     });
@@ -106,7 +114,9 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
   appendRaw: (line) => {
     set((s) => {
       const raw = [line, ...s.rawBuffer].slice(0, RAW_BUFFER_MAX);
-      const session = s.isLogging ? [...s.sessionBuffer, line] : s.sessionBuffer;
+      const session = s.isLogging
+        ? [...s.sessionBuffer, line]
+        : s.sessionBuffer;
       return { rawBuffer: raw, sessionBuffer: session };
     });
   },
