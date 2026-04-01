@@ -1,20 +1,22 @@
+import { IconBluetoothOff, IconSearch } from '@tabler/icons-react-native';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Animated,
   FlatList,
+  Modal as RNModal,
   Pressable,
   StyleSheet,
-  Animated,
-  ActivityIndicator,
-  Alert,
+  Text,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { IconBluetoothOff, IconSearch } from '@tabler/icons-react-native';
-import { useBleStore } from '@/store/ble-store';
-import { useAppTheme } from '@/hooks/useAppTheme';
-import { startScan, stopScan, connectAndSubscribe, isBleAvailable } from '@/lib/ble-manager';
+
+import { ConfirmModal } from '@/components/confirm-modal';
 import { BLE_SCAN_DURATION } from '@/constants/ble';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { connectAndSubscribe, isBleAvailable, startScan, stopScan } from '@/lib/ble-manager';
+import { useBleStore } from '@/store/ble-store';
 import type { BleDevice } from '@/types/gnss';
 
 // ---------------------------------------------------------------------------
@@ -121,6 +123,17 @@ export default function BleScanModal() {
   const [timeLeft, setTimeLeft] = useState(BLE_SCAN_DURATION);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Custom Modal State
+  const [modalConfig, setModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
+
   // Show instructions when running in Expo Go
   if (!isBleAvailable) {
     return <BleUnavailableScreen />;
@@ -180,7 +193,11 @@ export default function BleScanModal() {
       router.back();
     } catch (err) {
       setConnectingId(null);
-      Alert.alert('Connection Failed', String(err), [{ text: 'OK' }]);
+      setModalConfig({
+        visible: true,
+        title: 'Connection Failed',
+        message: String(err),
+      });
       setStatus('idle');
     }
   }
@@ -199,6 +216,12 @@ export default function BleScanModal() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ConfirmModal
+        visible={modalConfig.visible}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        onConfirm={() => setModalConfig((prev) => ({ ...prev, visible: false }))}
+      />
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.statusRow}>

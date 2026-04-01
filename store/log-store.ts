@@ -1,8 +1,7 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { LogSession } from '@/types/gnss';
 
 interface LogState {
@@ -14,11 +13,11 @@ interface LogState {
 interface LogActions {
   startSession: (nmeaLines: string[]) => Promise<string | null>;
   endSession: (sessionId: string, nmeaLines: string[], fixCount: number) => Promise<void>;
-  exportNmea: (sessionId: string) => Promise<void>;
-  exportCsv: (sessionId: string) => Promise<void>;
+  exportNmea: (sessionId: string) => Promise<{ success: boolean; message: string; needsPermission?: boolean }>;
+  exportCsv: (sessionId: string) => Promise<{ success: boolean; message: string; needsPermission?: boolean }>;
   deleteSession: (sessionId: string) => Promise<void>;
   clearAll: () => Promise<void>;
-  setExportDirectory: () => Promise<void>;
+  setExportDirectory: () => Promise<boolean>;
   resetExportDirectory: () => void;
 }
 
@@ -110,30 +109,16 @@ export const useLogStore = create<LogState & LogActions>()(
 
   exportNmea: async (sessionId) => {
     const session = get().sessions.find((s) => s.id === sessionId);
-    if (!session) return;
+    if (!session) return { success: false, message: 'Session not found.' };
     try {
       let directoryUri = get().exportDirectoryUri;
       
       if (!directoryUri) {
-        Alert.alert(
-          'One-Tap Save',
-          'Please select a folder (like "Download") once. After this, your logs will save there instantly with one tap.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Select Folder', 
-              onPress: async () => {
-                const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-                if (permissions.granted) {
-                  set({ exportDirectoryUri: permissions.directoryUri });
-                  // Retry the export with the new URI
-                  get().exportNmea(sessionId);
-                }
-              }
-            }
-          ]
-        );
-        return;
+        return { 
+          success: false, 
+          needsPermission: true, 
+          message: 'Please select a folder (like "Download") once. After this, your logs will save there instantly with one tap.' 
+        };
       }
 
       const content = await FileSystem.readAsStringAsync(session.filePath);
@@ -143,39 +128,25 @@ export const useLogStore = create<LogState & LogActions>()(
         'text/plain'
       );
       await FileSystem.writeAsStringAsync(uri, content, { encoding: FileSystem.EncodingType.UTF8 });
-      Alert.alert('Success', `Saved NMEA log directly to the selected folder.`);
+      return { success: true, message: 'Saved NMEA log directly to the selected folder.' };
     } catch (e) {
       console.error('Export NMEA failed:', e);
-      Alert.alert('Export Failed', 'Could not save the file. You may need to reset the folder permission in Settings.');
+      return { success: false, message: 'Could not save the file. You may need to reset the folder permission in Settings.' };
     }
   },
 
   exportCsv: async (sessionId) => {
     const session = get().sessions.find((s) => s.id === sessionId);
-    if (!session) return;
+    if (!session) return { success: false, message: 'Session not found.' };
     try {
       let directoryUri = get().exportDirectoryUri;
       
       if (!directoryUri) {
-        Alert.alert(
-          'One-Tap Save',
-          'Please select a folder (like "Download") once. After this, your logs will save there instantly with one tap.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Select Folder', 
-              onPress: async () => {
-                const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-                if (permissions.granted) {
-                  set({ exportDirectoryUri: permissions.directoryUri });
-                  // Retry the export with the new URI
-                  get().exportCsv(sessionId);
-                }
-              }
-            }
-          ]
-        );
-        return;
+        return { 
+          success: false, 
+          needsPermission: true, 
+          message: 'Please select a folder (like "Download") once. After this, your logs will save there instantly with one tap.' 
+        };
       }
 
       const content = await FileSystem.readAsStringAsync(session.filePathCsv);
@@ -185,10 +156,10 @@ export const useLogStore = create<LogState & LogActions>()(
         'text/csv'
       );
       await FileSystem.writeAsStringAsync(uri, content, { encoding: FileSystem.EncodingType.UTF8 });
-      Alert.alert('Success', `Saved CSV log directly to the selected folder.`);
+      return { success: true, message: 'Saved CSV log directly to the selected folder.' };
     } catch (e) {
       console.error('Export CSV failed:', e);
-      Alert.alert('Export Failed', 'Could not save the file. You may need to reset the folder permission in Settings.');
+      return { success: false, message: 'Could not save the file. You may need to reset the folder permission in Settings.' };
     }
   },
 
@@ -214,10 +185,12 @@ export const useLogStore = create<LogState & LogActions>()(
         const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
         if (permissions.granted) {
           set({ exportDirectoryUri: permissions.directoryUri });
-          Alert.alert('Success', 'Export directory updated.');
+          return true;
         }
+        return false;
       } catch (e) {
         console.error('Set export directory failed:', e);
+        return false;
       }
     },
     resetExportDirectory: () => set({ exportDirectoryUri: null }),

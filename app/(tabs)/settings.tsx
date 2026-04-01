@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { ScrollView, View, Text, Switch, StyleSheet, Pressable, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { ConfirmModal } from '@/components/confirm-modal';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { useBleStore } from '@/store/ble-store';
 import { useGnssStore } from '@/store/gnss-store';
 import { useLogStore } from '@/store/log-store';
-import { useAppTheme } from '@/hooks/useAppTheme';
+import * as IntentLauncher from 'expo-intent-launcher';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { disconnectDevice } from '@/lib/ble-manager';
-import { NUS_SERVICE_UUID, NUS_TX_CHAR_UUID, NUS_RX_CHAR_UUID } from '@/constants/ble';
-import { ConfirmModal } from '@/components/confirm-modal';
+import { NUS_RX_CHAR_UUID, NUS_SERVICE_UUID, NUS_TX_CHAR_UUID } from '@/constants/ble';
 
 function SettingRow({
   label,
@@ -51,6 +52,7 @@ export default function SettingsScreen() {
     confirmText?: string;
     isDestructive?: boolean;
     onConfirm: () => void;
+    onCancel?: () => void;
   }>({
     visible: false,
     title: '',
@@ -191,7 +193,17 @@ export default function SettingsScreen() {
           right={
             <Pressable
               style={[styles.actionButton, { backgroundColor: colors.borderLight, borderColor: colors.borderLight }]}
-              onPress={setExportDirectory}
+              onPress={async () => {
+                const ok = await setExportDirectory();
+                if (ok) {
+                  setConfirmConfig({
+                    visible: true,
+                    title: 'Success',
+                    message: 'Export directory updated.',
+                    onConfirm: () => setConfirmConfig((prev) => ({ ...prev, visible: false })),
+                  });
+                }
+              }}
               accessibilityRole="button"
             >
               <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>
@@ -201,19 +213,61 @@ export default function SettingsScreen() {
           }
         />
         {exportDirectoryUri && (
-          <SettingRow
-            label="Reset Permission"
+          <>
+            <SettingRow
+              label="Open Folder"
+              description="View your logs in the external file manager"
+              right={
+                <Pressable
+                  style={[styles.actionButton, { backgroundColor: colors.borderLight, borderColor: colors.borderLight }]}
+                  onPress={async () => {
+                    try {
+                      if (Platform.OS === 'android' && exportDirectoryUri) {
+                        // Transform tree URI to document URI for specific folder targeting
+                        const documentUri = exportDirectoryUri.replace('/tree/', '/document/');
+                        await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+                          data: documentUri,
+                          type: 'vnd.android.document/directory',
+                        });
+                      } else if (exportDirectoryUri) {
+                        await Linking.openURL(exportDirectoryUri);
+                      }
+                    } catch (e) {
+                      console.error('Failed to open folder:', e);
+                    }
+                  }}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>Open</Text>
+                </Pressable>
+              }
+            />
+            <SettingRow
+              label="Reset Permission"
             description="Clear the saved folder and ask again on next export"
             right={
               <Pressable
                 style={[styles.actionButton, { backgroundColor: colors.borderLight, borderColor: colors.borderLight }]}
-                onPress={resetExportDirectory}
+                onPress={() => {
+                  setConfirmConfig({
+                    visible: true,
+                    title: 'Reset Permission',
+                    message: 'Clear the saved folder? You will be asked to select it again on your next export.',
+                    confirmText: 'Reset',
+                    isDestructive: true,
+                    onConfirm: () => {
+                      setConfirmConfig((prev) => ({ ...prev, visible: false }));
+                      resetExportDirectory();
+                    },
+                  });
+                }}
                 accessibilityRole="button"
               >
                 <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>Reset</Text>
               </Pressable>
             }
           />
+          </>
         )}
       </View>
 

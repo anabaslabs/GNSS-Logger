@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "prebuild": "expo prebuild",
-    "start": "expo start",
+    "start": "expo start --clear --go",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -24,6 +24,7 @@
     "expo-dev-client": "~6.0.20",
     "expo-file-system": "^55.0.12",
     "expo-font": "~14.0.11",
+    "expo-intent-launcher": "^55.0.9",
     "expo-router": "~6.0.23",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",

@@ -1,13 +1,13 @@
-import React from 'react';
-import { Modal, View, Text, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import React from 'react';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export type ConfirmModalProps = {
   visible: boolean;
   title: string;
   message: string;
   onConfirm: () => void;
-  onCancel: () => void;
+  onCancel?: () => void; // Optional for single-button alert
   confirmText?: string;
   cancelText?: string;
   isDestructive?: boolean;
@@ -24,30 +24,39 @@ export function ConfirmModal({
   isDestructive = false,
 }: ConfirmModalProps) {
   const { colors } = useAppTheme();
+  const isAlert = !onCancel;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onCancel}>
-        {/* We catch the press on the inner Box so it doesn't trigger the overlay cancellation */}
-        <Pressable style={[styles.modalBox, { backgroundColor: colors.surface, borderColor: colors.borderLight }]} onPress={() => {}}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel || onConfirm}>
+      <TouchableOpacity 
+        style={styles.overlay} 
+        activeOpacity={1} 
+        onPress={onCancel || onConfirm}
+      >
+        <Pressable 
+          style={[styles.modalBox, { backgroundColor: colors.surface, borderColor: colors.borderLight }]} 
+          onPress={() => {}}
+        >
           <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
           
           <View style={styles.buttonRow}>
-            <Pressable hitSlop={12} onPress={onCancel} style={styles.button}>
-              <Text style={{ color: colors.textSecondary, fontSize: 16, fontFamily: 'Lexend_600SemiBold' }}>
-                {cancelText.toUpperCase()}
-              </Text>
-            </Pressable>
+            {!isAlert && (
+              <Pressable hitSlop={12} onPress={onCancel} style={styles.button}>
+                <Text style={{ color: colors.textSecondary, fontSize: 15, fontFamily: 'Lexend_600SemiBold' }}>
+                  {cancelText.toUpperCase()}
+                </Text>
+              </Pressable>
+            )}
             <Pressable hitSlop={12} onPress={onConfirm} style={styles.button}>
               <Text
                 style={{
                   color: isDestructive ? colors.danger : colors.statusActive,
-                  fontSize: 16,
-                  fontFamily: 'Lexend_600SemiBold',
+                  fontSize: 15,
+                  fontFamily: 'Lexend_700Bold',
                 }}
               >
-                {confirmText.toUpperCase()}
+                {isAlert ? 'OK' : confirmText.toUpperCase()}
               </Text>
             </Pressable>
           </View>
@@ -60,24 +69,29 @@ export function ConfirmModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: 'rgba(0,0,0,0.75)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 28,
   },
   modalBox: {
     width: '100%',
     maxWidth: 340,
-    borderRadius: 24,
+    borderRadius: 32,
     borderCurve: 'continuous',
     borderWidth: 1,
     padding: 28,
-    boxShadow: "0 10px 20px rgba(0,0,0,0.25)",
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
   },
   title: {
     fontSize: 22,
-    fontFamily: 'Lexend_700Bold',
-    marginBottom: 12,
+    fontFamily: 'Lexend_800ExtraBold',
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   message: {
     fontSize: 15,
@@ -88,7 +102,7 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 32,
+    gap: 24,
   },
   button: {
     paddingVertical: 8,
