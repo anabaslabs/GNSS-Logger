@@ -237,11 +237,15 @@ export function parseNmeaBuffer(buffer: string): NmeaParsedSentence[] {
 export function formatCoord(
   value: number | null,
   axis: 'lat' | 'lon',
-  decimals = 6,
 ): string {
   if (value === null) return '-';
   const dir = axis === 'lat' ? (value >= 0 ? 'N' : 'S') : (value >= 0 ? 'E' : 'W');
-  return `${Math.abs(value).toFixed(decimals)}° ${dir}`;
+  const absVal = Math.abs(value);
+  const degrees = Math.floor(absVal);
+  const minutesFloat = (absVal - degrees) * 60;
+  const minutes = Math.floor(minutesFloat);
+  const seconds = (minutesFloat - minutes) * 60;
+  return `${degrees}° ${String(minutes).padStart(2, '0')}' ${seconds.toFixed(2)}" ${dir}`;
 }
 
 /** Format UTC NMEA time string (HHmmss.ss) to HH:MM:SS */

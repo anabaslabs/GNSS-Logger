@@ -67,6 +67,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     borderRadius: 12,
+    borderCurve: 'continuous',
     borderWidth: 1,
     paddingHorizontal: 6,
     paddingVertical: 3,

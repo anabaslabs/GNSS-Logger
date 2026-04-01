@@ -219,7 +219,7 @@ export default function BleScanModal() {
           style={[
             styles.scanButton,
             { backgroundColor: colors.surface, borderColor: colors.borderLight },
-            scanning && { backgroundColor: colors.statusActiveSurface, borderColor: colors.statusActive }
+            scanning && { backgroundColor: colors.statusActive + '1A', borderColor: colors.statusActive }
           ]}
           onPress={
             scanning
@@ -238,7 +238,7 @@ export default function BleScanModal() {
       {/* ESP32 hint */}
       <View style={[styles.hintBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[styles.hintText, { color: colors.textSecondary }]}>
-          💡 Make sure the ESP32 is powered and advertising BLE (Nordic UART Service). If not
+          Make sure the ESP32 is powered and advertising BLE (Nordic UART Service). If not
           visible, check the device name filter or ensure firmware is running.
         </Text>
       </View>

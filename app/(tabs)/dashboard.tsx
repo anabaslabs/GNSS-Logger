@@ -5,22 +5,18 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Pressable,
 } from 'react-native';
 import { useGnssStore } from '@/store/gnss-store';
-import { useLogStore } from '@/store/log-store';
 import { ConnectionBanner } from '@/components/connection-banner';
 import { GnssCard } from '@/components/gnss-card';
 import { StatusBadge } from '@/components/status-badge';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { CONSTELLATION_COLOR, CONSTELLATION_LABEL, FixQuality } from '@/constants/nmea';
 import { formatCoord, formatNmeaTime } from '@/lib/nmea-parser';
-import { IconPlayerRecordFilled, IconSquareRoundedFilled } from '@tabler/icons-react-native';
+
 export default function DashboardScreen() {
   const { colors } = useAppTheme();
-  const { fix, velocity, satellites, isLogging, setLogging, sessionBuffer, clearSession } =
-    useGnssStore();
-  const { startSession, endSession, activeSessionId } = useLogStore();
+  const { fix, velocity, satellites } = useGnssStore();
 
   // Pulse animation when data is flowing
   const pulse = useRef(new Animated.Value(1)).current;
@@ -49,21 +45,11 @@ export default function DashboardScreen() {
   const speedKmh = velocity.speedKmh ?? 0;
   const heading = velocity.courseTrue;
 
-  async function toggleLogging() {
-    if (isLogging && activeSessionId) {
-      const fixCount = sessionBuffer.filter((l) => l.includes('GGA')).length;
-      await endSession(activeSessionId, sessionBuffer, fixCount);
-      clearSession();
-      setLogging(false);
-    } else {
-      setLogging(true);
-      await startSession([]);
-    }
-  }
+
 
   return (
     <ScrollView
-      contentInsetAdjustmentBehavior="never"
+      contentInsetAdjustmentBehavior="automatic"
       style={[styles.scroll, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.container}
     >
@@ -160,28 +146,7 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* Logging Control */}
-      <Pressable
-        style={[
-          styles.logButton,
-          { backgroundColor: colors.surface, borderColor: colors.borderLight },
-          isLogging && { backgroundColor: colors.dangerSurface, borderColor: colors.dangerBorder }
-        ]}
-        onPress={toggleLogging}
-        accessibilityRole="button"
-        accessibilityLabel={isLogging ? 'Stop logging' : 'Start logging'}
-      >
-        {isLogging ? (
-          <IconSquareRoundedFilled color={colors.danger} size={24} />
-        ) : (
-          <IconPlayerRecordFilled color={colors.iconSecondary} size={24} />
-        )}
-        <Text style={[styles.logLabel, { color: colors.textSecondary }, isLogging && { color: colors.danger }]}>
-          {isLogging
-            ? `Recording — ${sessionBuffer.length} lines`
-            : 'Start Recording Session'}
-        </Text>
-      </Pressable>
+
 
       {/* Bottom padding */}
       <View style={{ height: 20 }} />
@@ -224,8 +189,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   coordRow: {
-    flexDirection: 'row',
-    gap: 20,
+    gap: 12,
     marginTop: 8,
   },
   coordItem: {
@@ -277,16 +241,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Lexend_800ExtraBold',
     fontVariant: ['tabular-nums'],
   },
-  noData: { fontSize: 14, fontStyle: 'italic', fontFamily: 'Lexend_500Medium' },
-  logButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderRadius: 24,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    padding: 20,
-    justifyContent: 'center',
-  } as any,
-  logLabel: { fontSize: 16, fontFamily: 'Lexend_700Bold' },
+  noData: { fontSize: 14, fontFamily: 'Lexend_500Medium' },
+
 });

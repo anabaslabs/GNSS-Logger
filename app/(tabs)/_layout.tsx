@@ -13,8 +13,7 @@ export default function TabLayout() {
         headerShown: true,
         headerStyle: {
           backgroundColor: colors.background,
-          elevation: 0,
-          shadowOpacity: 0,
+          boxShadow: 'none',
           height: 75, 
         },
         headerTitleAlign: 'left',

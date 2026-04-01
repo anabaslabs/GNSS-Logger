@@ -34,6 +34,7 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: 1,
     borderRadius: 24,
+    borderCurve: 'continuous',
     paddingHorizontal: 16,
     paddingVertical: 6,
     alignSelf: 'flex-start',

@@ -31,7 +31,7 @@ export default function SatellitesScreen() {
 
   return (
     <ScrollView
-      contentInsetAdjustmentBehavior="never"
+      contentInsetAdjustmentBehavior="automatic"
       style={[styles.scroll, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.container}
     >
@@ -46,7 +46,7 @@ export default function SatellitesScreen() {
           <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Used in Fix</Text>
         </View>
         {/* NavIC specific callout */}
-        <View style={[styles.summaryChip, { backgroundColor: colors.surface, borderColor: colors.navicBorder }]}>
+        <View style={[styles.summaryChip, { backgroundColor: CONSTELLATION_COLOR.GI + '1A', borderColor: CONSTELLATION_COLOR.GI + '40' }]}>
           <Text style={[styles.summaryNum, { color: CONSTELLATION_COLOR.GI }]}>
             {satellites.filter((s) => s.talkerId === TALKER_ID.NAVIC).length}
           </Text>
@@ -103,7 +103,7 @@ export default function SatellitesScreen() {
 
       {/* NavIC highlight box */}
       {satellites.some((s) => s.talkerId === TALKER_ID.NAVIC) && (
-        <View style={[styles.navicBox, { backgroundColor: colors.navicHighlight, borderColor: colors.navicBorder }]}>
+        <View style={[styles.navicBox, { backgroundColor: CONSTELLATION_COLOR.GI + '1A', borderColor: CONSTELLATION_COLOR.GI + '40' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <IconSatellite color={CONSTELLATION_COLOR.GI} size={20} />
             <Text style={styles.navicTitle}>NavIC / IRNSS (L5)</Text>
@@ -192,7 +192,6 @@ const styles = StyleSheet.create({
   noSats: {
     fontSize: 14,
     fontFamily: 'Lexend_400Regular',
-    fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 24,
   },

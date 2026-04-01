@@ -24,7 +24,7 @@ export function GnssCard({ label, value, unit, accent = '#38BDF8', secondary }: 
         )}
       </View>
       <View style={styles.valueRow}>
-        <Text style={[styles.value, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>
+        <Text style={[styles.value, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit selectable>
           {value}
         </Text>
         {unit && <Text style={[styles.unit, { color: colors.textSecondary }]}>{unit}</Text>}
@@ -69,6 +69,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    borderCurve: 'continuous',
   },
   secondaryText: {
     fontSize: 10,

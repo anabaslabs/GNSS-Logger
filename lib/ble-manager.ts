@@ -63,7 +63,7 @@ const subscriptions: ReturnType<NativeEventEmitter['addListener']>[] = [];
 // Permission helpers
 // ---------------------------------------------------------------------------
 async function requestAndroidPermissions(): Promise<boolean> {
-  if (Platform.OS !== 'android') return true;
+  if (process.env.EXPO_OS !== 'android') return true;
 
   const apiLevel = parseInt(String(Platform.Version), 10);
 

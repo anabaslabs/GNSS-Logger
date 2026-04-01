@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -116,7 +116,7 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StatusBar style="auto" />
         <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-          <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -138,7 +138,7 @@ export default function RootLayout() {
                 }}
               />
             </Stack>
-          </SafeAreaView>
+          </View>
         </ThemeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>

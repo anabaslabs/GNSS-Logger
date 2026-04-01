@@ -1,5 +1,5 @@
-import React from 'react';
-import { ScrollView, View, Text, Switch, StyleSheet, Pressable, Alert, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, View, Text, Switch, StyleSheet, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useBleStore } from '@/store/ble-store';
 import { useGnssStore } from '@/store/gnss-store';
@@ -7,6 +7,7 @@ import { useLogStore } from '@/store/log-store';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { disconnectDevice } from '@/lib/ble-manager';
 import { NUS_SERVICE_UUID, NUS_TX_CHAR_UUID, NUS_RX_CHAR_UUID } from '@/constants/ble';
+import { ConfirmModal } from '@/components/confirm-modal';
 
 function SettingRow({
   label,
@@ -43,27 +44,51 @@ export default function SettingsScreen() {
   const { reset } = useGnssStore();
   const { exportDirectoryUri, setExportDirectory, resetExportDirectory } = useLogStore();
 
+  const [confirmConfig, setConfirmConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    isDestructive?: boolean;
+    onConfirm: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
   const isConnected = status === 'connected';
 
   async function handleDisconnect() {
     if (!connectedDeviceId) return;
-    Alert.alert('Disconnect', `Disconnect from ${connectedDeviceName ?? connectedDeviceId}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Disconnect',
-        style: 'destructive',
-        onPress: async () => {
-          await disconnectDevice(connectedDeviceId);
-          reset();
-        },
+    setConfirmConfig({
+      visible: true,
+      title: 'Disconnect',
+      message: `Disconnect from ${connectedDeviceName ?? connectedDeviceId}?`,
+      confirmText: 'Disconnect',
+      isDestructive: true,
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, visible: false }));
+        await disconnectDevice(connectedDeviceId);
+        reset();
       },
-    ]);
+    });
   }
 
   return (
     <View key={isDark ? 'dark' : 'light'} style={[styles.container, { backgroundColor: colors.background }]}>
+      <ConfirmModal
+        visible={confirmConfig.visible}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        isDestructive={confirmConfig.isDestructive}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig((prev) => ({ ...prev, visible: false }))}
+      />
       <ScrollView
-        contentInsetAdjustmentBehavior="never"
+        contentInsetAdjustmentBehavior="automatic"
         style={styles.scroll}
         contentContainerStyle={styles.scrollContainer}
       >
@@ -103,7 +128,7 @@ export default function SettingsScreen() {
               value={autoReconnect}
               onValueChange={setAutoReconnect}
               trackColor={{ false: colors.borderLight, true: colors.statusActive }}
-              thumbColor={colors.surface}
+              thumbColor={isDark ? '#FFFFFF' : colors.iconSecondary}
             />
           }
         />
@@ -137,10 +162,17 @@ export default function SettingsScreen() {
             <Pressable
               style={[styles.actionButton, { backgroundColor: colors.borderLight, borderColor: colors.borderLight }]}
               onPress={() => {
-                Alert.alert('Clear Data', 'Reset all live GNSS data?', [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Clear', onPress: () => reset() },
-                ]);
+                setConfirmConfig({
+                  visible: true,
+                  title: 'Clear Data',
+                  message: 'Reset all live GNSS data?',
+                  confirmText: 'Clear',
+                  isDestructive: true,
+                  onConfirm: () => {
+                    setConfirmConfig((prev) => ({ ...prev, visible: false }));
+                    reset();
+                  },
+                });
               }}
               accessibilityRole="button"
             >
@@ -191,9 +223,7 @@ export default function SettingsScreen() {
         <View style={styles.aboutBlock}>
           <Text style={[styles.aboutTitle, { color: colors.text }]}>GNSS Logger</Text>
           <Text style={[styles.aboutDesc, { color: colors.textSecondary }]}>
-            Final Year B.Tech Project - Edge-Optimized NavIC L5 Band Receiver Integration{'\n'}
-            Streams NMEA 0183 from Quectel L89HA via ESP32 BLE (Nordic UART Service){'\n\n'}
-            Supported Constellations: GPS (L1), NavIC/IRNSS (L5), GLONASS, Galileo, BeiDou, QZSS
+            Final Year B.Tech Project:{'\n'}Edge-Optimized NavIC L5 Band Receiver Integration Streams NMEA 0183 from Quectel L89HA via ESP32 BLE (Nordic UART Service){'\n\n'}Supported Constellations:{'\n'}GPS (L1), NavIC/IRNSS (L5), GLONASS, Galileo, BeiDou, QZSS
           </Text>
         </View>
       </View>
