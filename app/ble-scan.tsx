@@ -1,12 +1,18 @@
-import { IconBluetoothOff, IconSearch } from "@tabler/icons-react-native";
+import {
+  IconBluetoothOff,
+  IconSearch,
+  IconX,
+} from "@tabler/icons-react-native";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -27,21 +33,14 @@ function RssiBars({ rssi, trackColor }: { rssi: number; trackColor: string }) {
   const { colors } = useAppTheme();
   const level = rssi >= -60 ? 4 : rssi >= -70 ? 3 : rssi >= -80 ? 2 : 1;
   return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "flex-end",
-        gap: 2,
-        height: 16,
-      }}
-    >
+    <View style={styles.rssiContainer}>
       {[1, 2, 3, 4].map((bar) => (
         <View
           key={bar}
           style={{
-            width: 5,
-            height: 4 + bar * 4,
-            borderRadius: 3,
+            width: 4,
+            height: 4 + bar * 3.5,
+            borderRadius: 2,
             backgroundColor: bar <= level ? colors.statusActive : trackColor,
           }}
         />
@@ -73,18 +72,20 @@ function DeviceRow({
           style={[styles.deviceName, { color: colors.text }]}
           numberOfLines={1}
         >
-          {device.name || "Unnamed Device"}
+          {device.name || "Unknown"}
         </Text>
         <Text style={[styles.deviceId, { color: colors.textSecondary }]}>
           {device.id}
         </Text>
       </View>
-      <RssiBars rssi={device.rssi} trackColor={colors.border} />
-      <Text style={[styles.rssiText, { color: colors.textSecondary }]}>
-        {device.rssi} dBm
-      </Text>
+      <View style={styles.rssiWrapper}>
+        <RssiBars rssi={device.rssi} trackColor={colors.border} />
+        <Text style={[styles.rssiText, { color: colors.textTertiary }]}>
+          {device.rssi} dBm
+        </Text>
+      </View>
       <View
-        style={[styles.connectPill, { backgroundColor: colors.tint + "15" }]}
+        style={[styles.connectPill, { backgroundColor: colors.tint + "12" }]}
       >
         {connecting ? (
           <ActivityIndicator size="small" color={colors.tint} />
@@ -100,38 +101,54 @@ function DeviceRow({
 
 function BleUnavailableScreen() {
   const { colors } = useAppTheme();
+  const router = useRouter();
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.unavailableBox}>
-        <IconBluetoothOff color={colors.textTertiary} size={64} />
-        <Text style={[styles.unavailableTitle, { color: colors.text }]}>
-          Custom Build Required
-        </Text>
-        <Text style={[styles.unavailableDesc, { color: colors.textSecondary }]}>
-          Bluetooth is a native API and is not available in Expo Go. You need a
-          custom development build to use BLE.
-        </Text>
-        <View
-          style={[
-            styles.codeBlock,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.borderLight,
-            },
-          ]}
-        >
-          <Text
-            style={[styles.codeText, { color: colors.statusActive }]}
-            selectable
-          >
-            npx expo run:android
+    <View style={styles.overlay}>
+      <TouchableOpacity
+        style={StyleSheet.absoluteFill}
+        activeOpacity={1}
+        onPress={() => router.back()}
+      />
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
+        <View style={styles.unavailableBox}>
+          <IconBluetoothOff color={colors.danger} size={48} />
+          <Text style={[styles.modalTitle, { color: colors.text }]}>
+            Native BLE Required
           </Text>
+          <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+            Bluetooth is not available in Expo Go. You need a custom development
+            build to use BLE.
+          </Text>
+          <View
+            style={[
+              styles.codeBlock,
+              {
+                backgroundColor: colors.borderLight + "22",
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[styles.codeText, { color: colors.statusActive }]}
+              selectable
+            >
+              npx expo run:android
+            </Text>
+          </View>
+          <PressableScale
+            style={[styles.closeBtn, { backgroundColor: colors.borderLight }]}
+            onPress={() => router.back()}
+          >
+            <Text style={[styles.closeBtnText, { color: colors.text }]}>
+              Dismiss
+            </Text>
+          </PressableScale>
         </View>
-        <Text style={[styles.unavailableDesc, { color: colors.textSecondary }]}>
-          Connect your Android phone via USB with debugging enabled, then run
-          the command above in the project directory. The app will compile and
-          install automatically.
-        </Text>
       </View>
     </View>
   );
@@ -170,13 +187,13 @@ export default function BleScanModal() {
       const anim = Animated.loop(
         Animated.sequence([
           Animated.timing(pulse, {
-            toValue: 1.4,
-            duration: 700,
+            toValue: 1.5,
+            duration: 800,
             useNativeDriver: true,
           }),
           Animated.timing(pulse, {
             toValue: 1,
-            duration: 700,
+            duration: 800,
             useNativeDriver: true,
           }),
         ]),
@@ -193,10 +210,18 @@ export default function BleScanModal() {
 
     const ok = await startScan();
     if (!ok) {
-      setError("Bluetooth permission denied or hardware unavailable");
+      setError("Bluetooth unavailable or permission denied");
+      setModalConfig({
+        visible: true,
+        title: "Permission Required",
+        message:
+          "Please enable Bluetooth and Location permissions for this app in settings.",
+      });
+      setStatus("idle");
       return;
     }
 
+    if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -212,7 +237,7 @@ export default function BleScanModal() {
   async function handleConnect(device: BleDevice) {
     if (connectingId) return;
     await stopScan();
-    clearInterval(timerRef.current!);
+    if (timerRef.current) clearInterval(timerRef.current);
     setStatus("connecting");
     setConnectingId(device.id);
 
@@ -224,7 +249,7 @@ export default function BleScanModal() {
       setConnectingId(null);
       setModalConfig({
         visible: true,
-        title: "Connection Failed",
+        title: "Connection Error",
         message: String(err),
       });
       setStatus("idle");
@@ -248,7 +273,14 @@ export default function BleScanModal() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={styles.overlay}>
+      <TouchableOpacity
+        style={StyleSheet.absoluteFill}
+        activeOpacity={1}
+        onPress={() => {
+          if (status !== "connecting") router.back();
+        }}
+      />
       <ConfirmModal
         visible={modalConfig.visible}
         title={modalConfig.title}
@@ -257,196 +289,304 @@ export default function BleScanModal() {
           setModalConfig((prev) => ({ ...prev, visible: false }))
         }
       />
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <View style={styles.statusRow}>
-          <Animated.View
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: 5,
-              backgroundColor: scanning
-                ? colors.statusActive
-                : colors.iconSecondary,
-              transform: [{ scale: scanning ? pulse : 1 }],
-            }}
-          />
-          <Text style={[styles.statusText, { color: colors.textSecondary }]}>
-            {scanning
-              ? `Scanning… ${timeLeft}s`
-              : `Found ${scannedDevices.length} device(s)`}
-          </Text>
-        </View>
-        <PressableScale
+
+      <View style={styles.cardContainer}>
+        <View
           style={[
-            styles.scanButton,
-            { backgroundColor: colors.surface },
-            scanning && { backgroundColor: colors.tint + "1A" },
+            styles.card,
+            { backgroundColor: colors.surface, borderColor: colors.border },
           ]}
-          onPress={
-            scanning
-              ? async () => {
-                  await stopScan();
-                  setStatus("idle");
-                }
-              : handleStartScan
-          }
         >
-          <Text
-            style={[
-              styles.scanButtonText,
-              { color: scanning ? colors.tint : colors.text },
-            ]}
-          >
-            {scanning ? "Stop" : "Re-scan"}
-          </Text>
-        </PressableScale>
-      </View>
-
-      <View
-        style={[
-          styles.hintBox,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-        ]}
-      >
-        <Text style={[styles.hintText, { color: colors.textSecondary }]}>
-          Make sure the ESP32 is powered and advertising BLE (Nordic UART
-          Service). If not visible, check the device name filter or ensure
-          firmware is running.
-        </Text>
-      </View>
-
-      <FlatList
-        data={[...scannedDevices].sort((a, b) => b.rssi - a.rssi)}
-        keyExtractor={(d) => d.id}
-        renderItem={({ item }) => (
-          <DeviceRow
-            device={item}
-            onPress={() => handleConnect(item)}
-            connecting={connectingId === item.id}
-          />
-        )}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            {scanning ? (
-              <ActivityIndicator size="large" color={colors.statusActive} />
-            ) : (
-              <>
-                <IconSearch color={colors.textTertiary} size={64} />
-                <Text style={[styles.emptyText, { color: colors.text }]}>
-                  No devices found
-                </Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerTitleRow}>
+              <View style={styles.statusBox}>
                 <Text
-                  style={[styles.emptySubtext, { color: colors.textTertiary }]}
+                  style={[styles.modalTitle, { color: colors.text }]}
+                  numberOfLines={1}
                 >
-                  Tap Re-scan or check your ESP32 is powered and BLE is enabled
-                  on your phone.
+                  Connect Device
                 </Text>
-              </>
-            )}
+              </View>
+            </View>
+            <Text
+              style={[styles.modalSubtitle, { color: colors.textSecondary }]}
+            >
+              {scanning
+                ? `Searching... (${timeLeft}s remaining)`
+                : `Scanning stopped · ${scannedDevices.length} found`}
+            </Text>
           </View>
-        }
-        contentContainerStyle={styles.list}
-        style={{ flex: 1 }}
-      />
+
+          {/* Device List Area */}
+          <View style={styles.content}>
+            <FlatList
+              data={[...scannedDevices].sort((a, b) => b.rssi - a.rssi)}
+              keyExtractor={(d) => d.id}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <DeviceRow
+                  device={item}
+                  onPress={() => handleConnect(item)}
+                  connecting={connectingId === item.id}
+                />
+              )}
+              ListHeaderComponent={
+                <View
+                  style={[
+                    styles.hintBox,
+                    {
+                      backgroundColor: colors.border + "08",
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.hintText, { color: colors.textSecondary }]}
+                  >
+                    Ensure your ESP32 is powered and the BLE service is active.
+                  </Text>
+                </View>
+              }
+              ListEmptyComponent={
+                <View style={styles.empty}>
+                  {scanning ? (
+                    <ActivityIndicator
+                      size="large"
+                      color={colors.statusActive}
+                    />
+                  ) : (
+                    <>
+                      <IconSearch color={colors.textTertiary} size={48} />
+                      <Text style={[styles.emptyText, { color: colors.text }]}>
+                        No Devices Found
+                      </Text>
+                    </>
+                  )}
+                </View>
+              }
+              contentContainerStyle={styles.listContainer}
+              style={{ maxHeight: 400 }}
+            />
+          </View>
+
+          {/* Footer Actions */}
+          <View style={styles.modalFooter}>
+            <Pressable
+              hitSlop={12}
+              onPress={() => router.back()}
+              style={styles.footerBtn}
+            >
+              <Text
+                style={[styles.footerBtnText, { color: colors.textSecondary }]}
+              >
+                Cancel
+              </Text>
+            </Pressable>
+
+            <Pressable
+              hitSlop={12}
+              onPress={
+                scanning
+                  ? async () => {
+                      await stopScan();
+                      setStatus("idle");
+                      if (timerRef.current) clearInterval(timerRef.current);
+                    }
+                  : handleStartScan
+              }
+              style={[
+                styles.footerBtn,
+                {
+                  backgroundColor: scanning
+                    ? colors.danger + "15"
+                    : colors.statusActive,
+                  paddingHorizontal: 24,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.footerBtnText,
+                  { color: scanning ? colors.danger : "#fff" },
+                ]}
+              >
+                {scanning ? "Stop" : "Scan"}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  unavailableBox: {
+  overlay: {
     flex: 1,
-    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.7)",
     justifyContent: "center",
-    padding: 32,
-    gap: 20,
+    padding: 20,
   },
-  unavailableTitle: {
-    fontSize: 22,
-    fontFamily: "Lexend_800ExtraBold",
-    textAlign: "center",
-    letterSpacing: -0.5,
+  cardContainer: {
+    width: "100%",
+    alignItems: "center",
   },
-  unavailableDesc: {
-    fontSize: 14,
-    fontFamily: "Lexend_400Regular",
-    lineHeight: 22,
-    textAlign: "center",
-    maxWidth: 300,
-  },
-  codeBlock: {
-    borderRadius: 16,
+  card: {
+    width: "100%",
+    borderRadius: 32,
     borderWidth: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-  },
-  codeText: {
-    fontSize: 15,
-    fontFamily: "monospace",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 12,
+    overflow: "hidden",
   },
   header: {
+    padding: 24,
+    paddingBottom: 20,
+  },
+  headerTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
-    borderBottomWidth: 1,
+    marginBottom: 6,
   },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  statusText: { fontSize: 14, fontFamily: "Lexend_600SemiBold" },
-  scanButton: {
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  scanButtonText: { fontSize: 13, fontFamily: "Lexend_700Bold" },
-  connectPill: {
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 90,
-  },
-  hintBox: {
-    margin: 16,
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 1,
-  },
-  hintText: { fontSize: 13, lineHeight: 20, fontFamily: "Lexend_400Regular" },
-  list: { padding: 16, gap: 16, flexGrow: 1 },
-  deviceRow: {
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: 20,
+  statusBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
-  deviceInfo: { flex: 1, gap: 3 },
-  deviceName: { fontSize: 16, fontFamily: "Lexend_700Bold" },
-  deviceId: { fontSize: 11, fontFamily: "monospace" },
-  rssiText: {
-    fontSize: 12,
-    fontFamily: "Lexend_600SemiBold",
-    fontVariant: ["tabular-nums"],
-    minWidth: 52,
-    textAlign: "right",
+  modalTitle: {
+    fontSize: 22,
+    fontFamily: "Lexend_800ExtraBold",
+    letterSpacing: -0.5,
   },
-  connectLabel: { fontSize: 14, fontFamily: "Lexend_700Bold" },
-  empty: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 80,
-    gap: 16,
-  },
-  emptyText: { fontSize: 18, fontFamily: "Lexend_800ExtraBold" },
-  emptySubtext: {
+  modalSubtitle: {
     fontSize: 14,
     fontFamily: "Lexend_400Regular",
+  },
+  content: {
+    paddingHorizontal: 0,
+  },
+  listContainer: {
+    padding: 24,
+    paddingTop: 12,
+    gap: 12,
+  },
+  hintBox: {
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    marginBottom: 8,
+  },
+  hintText: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: "Lexend_400Regular",
     textAlign: "center",
-    lineHeight: 22,
-    maxWidth: 280,
+  },
+  deviceRow: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  deviceInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  deviceName: {
+    fontSize: 15,
+    fontFamily: "Lexend_700Bold",
+  },
+  deviceId: {
+    fontSize: 10,
+    fontFamily: "monospace",
+    opacity: 0.6,
+  },
+  rssiWrapper: {
+    alignItems: "center",
+    gap: 4,
+    marginRight: 4,
+  },
+  rssiContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 2,
+    height: 16,
+  },
+  rssiText: {
+    fontSize: 9,
+    fontFamily: "Lexend_600SemiBold",
+    fontVariant: ["tabular-nums"],
+  },
+  connectPill: {
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  connectLabel: {
+    fontSize: 13,
+    fontFamily: "Lexend_700Bold",
+  },
+  modalFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 24,
+    paddingTop: 0,
+    marginTop: 8,
+  },
+  footerBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  footerBtnText: { fontSize: 15, fontFamily: "Lexend_700Bold" },
+
+  empty: {
+    paddingVertical: 40,
+    alignItems: "center",
+    gap: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontFamily: "Lexend_700Bold",
+    opacity: 0.8,
+  },
+  unavailableBox: {
+    padding: 32,
+    alignItems: "center",
+    gap: 16,
+  },
+  codeBlock: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginVertical: 8,
+  },
+  codeText: {
+    fontSize: 14,
+    fontFamily: "monospace",
+  },
+  closeBtn: {
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+  },
+  closeBtnText: {
+    fontSize: 14,
+    fontFamily: "Lexend_700Bold",
   },
 });

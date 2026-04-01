@@ -106,11 +106,9 @@ export function ConnectionBanner() {
           style={{
             flexDirection: "row",
             alignItems: "center",
-            gap: 6,
             marginTop: 4,
           }}
         >
-          <View style={[styles.tinyDot, { backgroundColor: color }]} />
           <Text
             style={[
               styles.tapHint,
@@ -153,10 +151,5 @@ const styles = StyleSheet.create({
   tapHint: {
     fontSize: 12,
     fontFamily: "Lexend_600SemiBold",
-  },
-  tinyDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
   },
 });

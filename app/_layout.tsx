@@ -141,10 +141,9 @@ export default function RootLayout() {
               <Stack.Screen
                 name="ble-scan"
                 options={{
-                  title: "Connect to Device",
-                  presentation: "modal",
-                  headerStyle: { backgroundColor: colors.surface },
-                  headerTitleStyle: { fontFamily: "Lexend_700Bold" },
+                  headerShown: false,
+                  presentation: "transparentModal",
+                  animation: "fade",
                 }}
               />
             </Stack>
