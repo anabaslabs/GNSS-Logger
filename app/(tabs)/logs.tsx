@@ -1,12 +1,13 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
+import { IconClock, IconFolderOff, IconMapPin, IconPlayerRecordFilled, IconSquareRoundedFilled, IconDownload, IconTrash, IconFileText, IconTerminal2, IconHistory, IconSearch } from '@tabler/icons-react-native';
+import { PressableScale } from '@/components/pressable-scale';
 import { ConfirmModal } from '@/components/confirm-modal';
 import { WheelPicker } from '@/components/wheel-picker';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useGnssStore } from '@/store/gnss-store';
 import { useLogStore } from '@/store/log-store';
 import type { LogSession } from '@/types/gnss';
-import { IconClock, IconFolderOff, IconMapPin, IconPlayerRecordFilled, IconSquareRoundedFilled } from '@tabler/icons-react-native';
-import React, { useEffect, useRef, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 function formatDuration(start: number, end: number | null): string {
   const ms = (end ?? Date.now()) - start;
@@ -44,47 +45,71 @@ const SessionCard = React.memo(({ session, onExportNmea, onExportCsv, onDelete }
 }) => {
   const { colors } = useAppTheme();
   const active = session.endTime === null;
+  
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }, active && styles.cardActive]}>
-      {/* Title + meta inline */}
-      <View style={styles.cardTop}>
-        <Text style={[styles.sessionDate, { color: colors.text }]} numberOfLines={1}>{formatDate(session.startTime)}</Text>
-        <View style={styles.metaRow}>
-          <View style={styles.metaBadge}>
-            <IconMapPin size={14} color="#10B981" />
-            <Text style={[styles.metaText, { color: '#10B981' }]}>{session.fixCount} Fix</Text>
-          </View>
-          <View style={styles.metaBadge}>
-            <IconClock size={14} color="#3B82F6" />
-            <Text style={[styles.metaText, { color: '#3B82F6' }]}>{formatDuration(session.startTime, session.endTime)}</Text>
-          </View>
-          {active && (
-            <View style={styles.metaBadge}>
-              <IconPlayerRecordFilled size={14} color="#EF4444" />
-              <Text style={[styles.activeText, { color: '#EF4444' }]}>REC</Text>
+    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: active ? colors.statusActive + '44' : colors.border }, active && styles.cardActive]}>
+      <View style={styles.cardHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.sessionDate, { color: colors.text }]} numberOfLines={1}>
+            {formatDate(session.startTime)}
+          </Text>
+          <View style={styles.badgeRow}>
+            <View style={[styles.miniBadge, { backgroundColor: '#10B98115' }]}>
+              <IconMapPin size={12} color="#10B981" />
+              <Text style={[styles.miniBadgeText, { color: '#10B981' }]}>{session.fixCount} Fixes</Text>
             </View>
-          )}
+            <View style={[styles.miniBadge, { backgroundColor: colors.statusActive + '15' }]}>
+              <IconClock size={12} color={colors.statusActive} />
+              <Text style={[styles.miniBadgeText, { color: colors.statusActive }]}>
+                {formatDuration(session.startTime, session.endTime)}
+              </Text>
+            </View>
+          </View>
         </View>
+        
+        {active && (
+          <View style={[styles.statusTag, { backgroundColor: colors.danger + '15' }]}>
+            <View style={[styles.pulseDot, { backgroundColor: colors.danger }]} />
+            <Text style={[styles.statusTagText, { color: colors.danger }]}>RECORDING</Text>
+          </View>
+        )}
       </View>
-      {/* Action row */}
-      <View style={styles.actionRow}>
-        <Pressable hitSlop={12} onPress={onExportNmea} accessibilityLabel="Export NMEA">
-          <Text style={[styles.actionText, { color: colors.textSecondary }]}>.nmea</Text>
-        </Pressable>
-        <Text style={{ color: colors.borderLight, fontSize: 12 }}>|</Text>
-        <Pressable hitSlop={12} onPress={onExportCsv} accessibilityLabel="Export CSV">
-          <Text style={[styles.actionText, { color: colors.textSecondary }]}>.csv</Text>
-        </Pressable>
-        <Text style={{ color: colors.borderLight, fontSize: 12 }}>|</Text>
-        <Pressable hitSlop={12} onPress={onDelete} accessibilityLabel="Delete session">
-          <Text style={[styles.actionText, { color: colors.danger }]}>Delete</Text>
-        </Pressable>
+
+      <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
+
+      <View style={styles.sessionFooter}>
+        <View style={styles.actions}>
+          <PressableScale
+            style={[styles.actionBtn, { backgroundColor: colors.borderLight }]}
+            onPress={onExportNmea}
+          >
+            <IconTerminal2 size={18} color={colors.textSecondary} />
+            <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>NMEA</Text>
+          </PressableScale>
+
+          <PressableScale
+            style={[styles.actionBtn, { backgroundColor: colors.borderLight }]}
+            onPress={onExportCsv}
+          >
+            <IconFileText size={18} color={colors.textSecondary} />
+            <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>CSV</Text>
+          </PressableScale>
+
+          <View style={{ flex: 1 }} />
+
+          <PressableScale
+            style={[styles.actionBtn, { backgroundColor: colors.danger + '15' }]}
+            onPress={onDelete}
+          >
+            <IconTrash size={18} color={colors.danger} />
+            <Text style={[styles.actionBtnText, { color: colors.danger }]}>Delete</Text>
+          </PressableScale>
+        </View>
       </View>
     </View>
   );
 });
 
-/** Isolated timer component to prevent full-screen re-render every second */
 const ActiveRecordingBanner = ({ 
   startTime, 
   onStop 
@@ -103,11 +128,9 @@ const ActiveRecordingBanner = ({
   }, [startTime]);
 
   return (
-    <Pressable
+    <PressableScale
       style={[styles.logButton, { backgroundColor: colors.dangerSurface, borderColor: colors.dangerBorder }]}
       onPress={onStop}
-      accessibilityRole="button"
-      accessibilityLabel="Stop logging"
     >
       <View style={styles.row}>
         <View style={styles.leftSide}>
@@ -121,34 +144,21 @@ const ActiveRecordingBanner = ({
         </View>
         <Text style={[styles.timer, { color: colors.danger }]}>{formatElapsed(elapsed)}</Text>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 };
-
-const DURATION_OPTIONS = [
-  { label: '5 min', seconds: 300 },
-  { label: '10 min', seconds: 600 },
-  { label: '30 min', seconds: 1800 },
-];
 
 export default function LogsScreen() {
   const { colors } = useAppTheme();
   const { isLogging, setLogging, sessionBuffer, clearSession } = useGnssStore();
   const { sessions, exportNmea, exportCsv, deleteSession, clearAll, startSession, endSession, activeSessionId, setExportDirectory } = useLogStore();
 
-  // Live elapsed timer
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const startTimeRef = useRef<number>(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Timed recording
   const [showPicker, setShowPicker] = useState(false);
   const [timerHours, setTimerHours] = useState('00');
   const [timerMinutes, setTimerMinutes] = useState('01');
   const [timerSeconds, setTimerSeconds] = useState('00');
   const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Custom Alert State
   const [confirmConfig, setConfirmConfig] = useState<{
     visible: boolean;
     title: string;
@@ -164,17 +174,11 @@ export default function LogsScreen() {
     onConfirm: () => {},
   });
 
-  // Live elapsed timer removed (now isolated in ActiveRecordingBanner)
-  startTimeRef.current = 0; // Not used as global state
-
   async function stopLogging() {
-    // Clear any auto-stop timers
     if (autoStopRef.current) {
       clearTimeout(autoStopRef.current);
       autoStopRef.current = null;
     }
-
-    // Use fresh state directly to bypass stale closure
     const freshLogState = useLogStore.getState();
     const freshGnssState = useGnssStore.getState();
     const sid = freshLogState.activeSessionId;
@@ -184,7 +188,6 @@ export default function LogsScreen() {
       const fixCount = lines.filter((l) => l.includes('GGA')).length;
       await freshLogState.endSession(sid, lines, fixCount);
     }
-    
     clearSession();
     setLogging(false);
   }
@@ -198,8 +201,6 @@ export default function LogsScreen() {
       }, sec * 1000);
     }
   }
-
-  // No longer needed: alert modal was removed in favor of explicit inline buttons.
 
   function handleStartTimed() {
     const h = parseInt(timerHours, 10);
@@ -259,7 +260,6 @@ export default function LogsScreen() {
         onCancel={confirmConfig.onCancel}
       />
       
-      {/* Timer Settings Modal */}
       <Modal visible={showPicker} transparent animationType="fade" onRequestClose={() => setShowPicker(false)}>
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowPicker(false)}>
           <View style={styles.modalMount}>
@@ -325,13 +325,8 @@ export default function LogsScreen() {
         data={sessions}
         keyExtractor={(s) => s.id}
         contentContainerStyle={styles.container}
-        initialNumToRender={8}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        removeClippedSubviews={true}
         ListHeaderComponent={
           <View style={{ gap: 24 }}>
-            {/* Recording Control */}
             {isLogging && activeSessionId ? (
               <ActiveRecordingBanner 
                 startTime={sessions.find(s => s.id === activeSessionId)?.startTime ?? Date.now()} 
@@ -339,23 +334,21 @@ export default function LogsScreen() {
               />
             ) : (
               <View style={{ flexDirection: 'row', gap: 12 }}>
-                <Pressable
+                <PressableScale
                   style={[styles.logButton, { flex: 1, backgroundColor: colors.surface, borderColor: colors.borderLight }]}
                   onPress={() => startLogging(0)}
-                  accessibilityRole="button"
                 >
                   <View style={styles.leftSide}>
-                    <IconPlayerRecordFilled color={colors.statusActive} size={24} />
+                    <IconPlayerRecordFilled color={colors.danger} size={24} />
                     <View>
-                      <Text style={[styles.logLabel, { color: colors.text }]} numberOfLines={1}>Immediate</Text>
+                      <Text style={[styles.logLabel, { color: colors.text }]} numberOfLines={1}>Instant</Text>
                       <Text style={[styles.logHint, { color: colors.textTertiary }]} numberOfLines={1}>No limit</Text>
                     </View>
                   </View>
-                </Pressable>
-                <Pressable
+                </PressableScale>
+                <PressableScale
                   style={[styles.logButton, { flex: 1, backgroundColor: colors.surface, borderColor: colors.borderLight }]}
                   onPress={() => setShowPicker(true)}
-                  accessibilityRole="button"
                 >
                   <View style={styles.leftSide}>
                     <IconClock color={colors.statusActive} size={24} />
@@ -364,19 +357,18 @@ export default function LogsScreen() {
                       <Text style={[styles.logHint, { color: colors.textTertiary }]} numberOfLines={1}>Set duration</Text>
                     </View>
                   </View>
-                </Pressable>
+                </PressableScale>
               </View>
             )}
 
-            {/* Header row */}
             <View style={styles.headerRow}>
               <Text style={[styles.title, { color: colors.text }]}>
                 {sessions.length} Session{sessions.length !== 1 ? 's' : ''}
               </Text>
               {sessions.length > 0 && (
-                <Pressable onPress={handleClearAll} accessibilityRole="button">
+                <PressableScale onPress={handleClearAll}>
                   <Text style={[styles.clearAll, { color: colors.danger }]}>Clear All</Text>
-                </Pressable>
+                </PressableScale>
               )}
             </View>
           </View>
@@ -431,7 +423,7 @@ export default function LogsScreen() {
           </View>
         }
         ItemSeparatorComponent={null}
-        ListFooterComponent={<View style={{ height: 20 }} />}
+        ListFooterComponent={null}
       />
     </View>
   );
@@ -439,7 +431,7 @@ export default function LogsScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  container: { padding: 16, paddingBottom: 110, gap: 16 },
+  container: { padding: 16, paddingBottom: 40, gap: 16 },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 24 },
   modalMount: { width: '100%', alignItems: 'center' },
@@ -456,16 +448,6 @@ const styles = StyleSheet.create({
   footerBtn: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   footerBtnText: { fontSize: 15, fontFamily: 'Lexend_700Bold' },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
-  chip: { borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 10 },
-  chipText: { fontSize: 14, fontFamily: 'Lexend_700Bold' },
-  
-  customContainer: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  inputBox: { flex: 1, borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, height: 48, justifyContent: 'center' },
-  input: { fontSize: 15, fontFamily: 'Lexend_600SemiBold', height: '100%', padding: 0 },
-  startBtn: { borderRadius: 14, paddingHorizontal: 20, height: 48, justifyContent: 'center', alignItems: 'center' },
-  startBtnText: { color: '#fff', fontSize: 15, fontFamily: 'Lexend_700Bold' },
-
   logButton: { borderRadius: 24, borderCurve: 'continuous', borderWidth: 1, padding: 20 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   leftSide: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
@@ -476,16 +458,27 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 2 },
   title: { fontSize: 18, fontFamily: 'Lexend_800ExtraBold' },
   clearAll: { fontSize: 14, fontFamily: 'Lexend_700Bold' },
-  card: { borderRadius: 20, borderCurve: 'continuous', borderWidth: 1, padding: 14, gap: 14 } as any,
-  cardActive: { borderColor: '#EF444455' },
-  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
-  sessionDate: { fontSize: 14, fontFamily: 'Lexend_700Bold' },
-  metaRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  metaBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 11, fontFamily: 'Lexend_700Bold', fontVariant: ['tabular-nums'] },
-  activeText: { fontSize: 11, fontFamily: 'Lexend_800ExtraBold', fontVariant: ['tabular-nums'] },
-  actionRow: { flexDirection: 'row', gap: 24, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
-  actionText: { fontSize: 13, fontFamily: 'Lexend_700Bold' },
+  
+  card: { borderRadius: 24, borderCurve: 'continuous', borderWidth: 1, padding: 18, gap: 16 } as any,
+  cardActive: { borderWidth: 1.5 },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  sessionDate: { fontSize: 16, fontFamily: 'Lexend_700Bold', marginBottom: 8 },
+  
+  badgeRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  miniBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
+  miniBadgeText: { fontSize: 11, fontFamily: 'Lexend_700Bold', fontVariant: ['tabular-nums'] },
+  
+  statusTag: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
+  pulseDot: { width: 6, height: 6, borderRadius: 3 },
+  statusTagText: { fontSize: 10, fontFamily: 'Lexend_800ExtraBold', letterSpacing: 0.5 },
+  
+  divider: { height: 1, width: '100%', opacity: 0.5 },
+  
+  sessionFooter: { flexDirection: 'row', alignItems: 'center' },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 },
+  actionBtnText: { fontSize: 13, fontFamily: 'Lexend_700Bold' },
+  
   emptyState: { alignItems: 'center', gap: 16, paddingVertical: 64 },
   emptyTitle: { fontSize: 20, fontFamily: 'Lexend_700Bold' },
   emptyDesc: { fontSize: 14, fontFamily: 'Lexend_400Regular', textAlign: 'center', lineHeight: 22, maxWidth: 280 },

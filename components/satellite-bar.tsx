@@ -81,13 +81,15 @@ const styles = StyleSheet.create({
   },
   prn: {
     fontSize: 12,
-    width: 56,
+    width: 60,
+    fontFamily: 'Lexend_600SemiBold',
     fontVariant: ['tabular-nums'],
   },
   elev: {
     fontSize: 11,
-    width: 30,
+    width: 32,
     textAlign: 'right',
+    fontFamily: 'Lexend_400Regular',
     fontVariant: ['tabular-nums'],
   },
   barTrack: {
@@ -102,8 +104,9 @@ const styles = StyleSheet.create({
   },
   snrText: {
     fontSize: 11,
-    width: 44,
+    width: 48,
     textAlign: 'right',
+    fontFamily: 'Lexend_700Bold',
     fontVariant: ['tabular-nums'],
   },
   fixDot: {

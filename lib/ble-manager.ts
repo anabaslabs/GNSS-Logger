@@ -33,7 +33,7 @@ try {
     bleEmitter = new NativeEventEmitter(BleManagerModule);
   }
 } catch (e) {
-  console.warn('[BLE] Native module not available – running in limited mode (Expo Go / web).');
+  /* Native module not available – running in limited mode (Expo Go / web). */
 }
 
 const IS_NATIVE_AVAILABLE = BleManager !== null;
@@ -184,7 +184,6 @@ export function onDeviceFound(cb: DeviceFoundCallback): void {
 /** Request permissions and start BLE scan */
 export async function startScan(): Promise<boolean> {
   if (!IS_NATIVE_AVAILABLE || !BleManager) {
-    console.warn('[BLE] startScan: native module not available');
     return false;
   }
   const granted = await requestAndroidPermissions();

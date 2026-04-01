@@ -9,6 +9,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 
@@ -18,11 +19,13 @@ import { useAppTheme } from '@/hooks/useAppTheme';
 import { connectAndSubscribe, isBleAvailable, startScan, stopScan } from '@/lib/ble-manager';
 import { useBleStore } from '@/store/ble-store';
 import type { BleDevice } from '@/types/gnss';
+import { PressableScale } from '@/components/pressable-scale';
 
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 function RssiBars({ rssi, trackColor }: { rssi: number; trackColor: string }) {
+  const { colors } = useAppTheme();
   const level = rssi >= -60 ? 4 : rssi >= -70 ? 3 : rssi >= -80 ? 2 : 1;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 16 }}>
@@ -30,10 +33,10 @@ function RssiBars({ rssi, trackColor }: { rssi: number; trackColor: string }) {
         <View
           key={bar}
           style={{
-            width: 4,
-            height: 4 + bar * 3,
-            borderRadius: 2,
-            backgroundColor: bar <= level ? '#38BDF8' : trackColor,
+            width: 5,
+            height: 4 + bar * 4,
+            borderRadius: 3,
+            backgroundColor: bar <= level ? colors.statusActive : trackColor,
           }}
         />
       ))}
@@ -52,32 +55,29 @@ function DeviceRow({
 }) {
   const { colors } = useAppTheme();
   return (
-    <Pressable
-      style={({ pressed }) => [
+    <PressableScale
+      style={[
         styles.deviceRow,
         { backgroundColor: colors.surface, borderColor: colors.border },
-        pressed && { backgroundColor: colors.border, opacity: 0.7 }
       ]}
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`Connect to ${device.name ?? device.id}`}
     >
-      <View style={{ flex: 1, gap: 3 }}>
+      <View style={styles.deviceInfo}>
         <Text style={[styles.deviceName, { color: colors.text }]} numberOfLines={1}>
-          {device.name ?? 'Unknown Device'}
+          {device.name || 'Unnamed Device'}
         </Text>
-        <Text style={[styles.deviceId, { color: colors.textTertiary }]} selectable numberOfLines={1}>
-          {device.id}
-        </Text>
+        <Text style={[styles.deviceId, { color: colors.textSecondary }]}>{device.id}</Text>
       </View>
       <RssiBars rssi={device.rssi} trackColor={colors.border} />
       <Text style={[styles.rssiText, { color: colors.textSecondary }]}>{device.rssi} dBm</Text>
-      {connecting ? (
-        <ActivityIndicator size="small" color={colors.statusActive} />
-      ) : (
-        <Text style={[styles.connectLabel, { color: colors.statusActive }]}>Connect</Text>
-      )}
-    </Pressable>
+      <View style={[styles.connectPill, { backgroundColor: colors.tint + '15' }]}>
+        {connecting ? (
+          <ActivityIndicator size="small" color={colors.tint} />
+        ) : (
+          <Text style={[styles.connectLabel, { color: colors.tint }]}>Connect</Text>
+        )}
+      </View>
+    </PressableScale>
   );
 }
 
@@ -142,7 +142,6 @@ export default function BleScanModal() {
   // Pulse dot animation
   const pulse = useRef(new Animated.Value(1)).current;
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (status === 'scanning') {
       const anim = Animated.loop(
@@ -154,7 +153,6 @@ export default function BleScanModal() {
       anim.start();
       return () => anim.stop();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   async function handleStartScan() {
@@ -202,14 +200,12 @@ export default function BleScanModal() {
     }
   }
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     handleStartScan();
     return () => {
       stopScan().catch(() => {});
       if (timerRef.current) clearInterval(timerRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const scanning = status === 'scanning';
@@ -238,11 +234,11 @@ export default function BleScanModal() {
             {scanning ? `Scanning… ${timeLeft}s` : `Found ${scannedDevices.length} device(s)`}
           </Text>
         </View>
-        <Pressable
+        <PressableScale
           style={[
             styles.scanButton,
-            { backgroundColor: colors.surface, borderColor: colors.borderLight },
-            scanning && { backgroundColor: colors.statusActive + '1A', borderColor: colors.statusActive }
+            { backgroundColor: colors.surface },
+            scanning && { backgroundColor: colors.tint + '1A' }
           ]}
           onPress={
             scanning
@@ -252,10 +248,11 @@ export default function BleScanModal() {
                 }
               : handleStartScan
           }
-          accessibilityRole="button"
         >
-          <Text style={[styles.scanButtonText, { color: scanning ? colors.statusActive : colors.text }]}>{scanning ? 'Stop' : 'Re-scan'}</Text>
-        </Pressable>
+          <Text style={[styles.scanButtonText, { color: scanning ? colors.tint : colors.text }]}>
+            {scanning ? 'Stop' : 'Re-scan'}
+          </Text>
+        </PressableScale>
       </View>
 
       {/* ESP32 hint */}
@@ -343,12 +340,19 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   statusText: { fontSize: 14, fontFamily: 'Lexend_600SemiBold' },
   scanButton: {
-    borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
   scanButtonText: { fontSize: 13, fontFamily: 'Lexend_700Bold' },
+  connectPill: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 90,
+  },
   hintBox: {
     margin: 16,
     borderRadius: 24,
@@ -365,6 +369,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  deviceInfo: { flex: 1, gap: 3 },
   deviceName: { fontSize: 16, fontFamily: 'Lexend_700Bold' },
   deviceId: { fontSize: 11, fontFamily: 'monospace' },
   rssiText: {

@@ -38,8 +38,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 24,
     borderCurve: 'continuous',
-    borderWidth: 1,
-    padding: 20,
+    borderWidth: 1.5,
+    paddingHorizontal: 20,
+    paddingVertical: 22,
     gap: 12,
   } as any,
   label: {
@@ -55,10 +56,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   value: {
-    fontSize: 32,
-    fontFamily: 'Lexend_300Light',
+    fontSize: 28,
+    fontFamily: 'Lexend_600SemiBold',
     fontVariant: ['tabular-nums'],
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
   },
   unit: {
     fontSize: 14,

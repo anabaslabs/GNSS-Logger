@@ -5,12 +5,13 @@ import { IconBluetooth, IconBluetoothConnected, IconBluetoothOff, IconAlertTrian
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useBleStore } from '@/store/ble-store';
 import { isBleAvailable } from '@/lib/ble-manager';
+import { PressableScale } from './pressable-scale';
 
 const STATUS_COLOR: Record<string, string> = {
-  scanning: '#0284C7', // blue
-  connecting: '#CA8A04', // yellow/amber
-  connected: '#059669', // emerald
-  error: '#991B1B', // red
+  scanning: '#0EA5E9', // blue
+  connecting: '#F59E0B', // amber
+  connected: '#10B981', // emerald
+  error: '#EF4444', // red
 };
 
 function getStatusIcon(status: string, color: string) {
@@ -41,11 +42,9 @@ export function ConnectionBanner() {
 
   if (!isBleAvailable) {
     return (
-      <Pressable
-        style={[styles.banner, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]} 
+      <PressableScale
+        style={[styles.banner, { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border }]} 
         onPress={() => router.push('/ble-scan')}
-        accessibilityRole="button"
-        accessibilityLabel="BLE not available"
       >
         <View style={[styles.iconBox, { backgroundColor: colors.borderLight }]}>
           <IconBluetoothOff color={colors.textSecondary} size={24} />
@@ -54,20 +53,18 @@ export function ConnectionBanner() {
           <Text style={[styles.text, { color: colors.text }]}>Custom build needed for BLE</Text>
           <Text style={[styles.tapHint, { color: colors.textSecondary }]}>Tap for info</Text>
         </View>
-      </Pressable>
+      </PressableScale>
     );
   }
 
   const isConnected = status === 'connected';
 
   return (
-    <Pressable
-      style={[styles.banner, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]} // dynamic One UI card
+    <PressableScale
+      style={[styles.banner, { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border }]} 
       onPress={() => router.push('/ble-scan')}
-      accessibilityRole="button"
-      accessibilityLabel="BLE Connection Status"
     >
-      <View style={[styles.iconBox, { backgroundColor: color + '33' }]}>
+      <View style={[styles.iconBox, { backgroundColor: color + '22' }]}>
         {getStatusIcon(status, color)}
       </View>
       <View style={styles.textContainer}>
@@ -78,11 +75,14 @@ export function ConnectionBanner() {
             ? `Error: ${lastError}`
             : label}
         </Text>
-        {!isConnected && (
-          <Text style={[styles.tapHint, { color: colors.textSecondary }]}>Tap to scan</Text>
-        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+          <View style={[styles.tinyDot, { backgroundColor: color }]} />
+          <Text style={[styles.tapHint, { color: isConnected ? colors.textSecondary : color }]}>
+            {isConnected ? 'Connected & Live' : 'Tap to scan devices'}
+          </Text>
+        </View>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -96,11 +96,12 @@ const styles = StyleSheet.create({
     gap: 16,
   } as any, // type assertion for iOS borderCurve
   iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    backgroundColor: '#000000',
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   textContainer: {
     flex: 1,
@@ -111,8 +112,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Lexend_700Bold',
   },
   tapHint: {
-    fontSize: 13,
-    fontFamily: 'Lexend_500Medium',
-    marginTop: 2,
+    fontSize: 12,
+    fontFamily: 'Lexend_600SemiBold',
+  },
+  tinyDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
 });

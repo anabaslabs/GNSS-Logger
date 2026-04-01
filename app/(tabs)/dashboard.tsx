@@ -51,7 +51,7 @@ export default function DashboardScreen() {
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       style={[styles.scroll, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[styles.container, { paddingBottom: 40 }]}
     >
       {/* BLE Connection Banner */}
       <ConnectionBanner />
@@ -61,7 +61,19 @@ export default function DashboardScreen() {
         <View style={styles.fixHeader}>
           <StatusBadge quality={fix.quality} satellitesInUse={fix.satellitesInUse} />
           <Animated.View style={{ transform: [{ scale: pulse }] }}>
-            <View style={[styles.liveIndicator, { backgroundColor: hasFix ? '#10B981' : colors.iconSecondary }]} />
+            <View style={[
+              styles.liveIndicator, 
+              { 
+                backgroundColor: hasFix ? '#10B981' : colors.textTertiary,
+                shadowColor: hasFix ? '#10B981' : 'transparent',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.8,
+                shadowRadius: 6,
+                elevation: 4,
+                borderColor: colors.surface,
+                borderWidth: 2,
+              }
+            ]} />
           </Animated.View>
         </View>
 
@@ -148,8 +160,6 @@ export default function DashboardScreen() {
 
 
 
-      {/* Bottom padding */}
-      <View style={{ height: 20 }} />
     </ScrollView>
   );
 }
@@ -170,12 +180,13 @@ function compassPoint(deg: number): string {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 }, 
-  container: { padding: 16, paddingBottom: 110, gap: 16 }, // larger gap
+  container: { padding: 16, paddingBottom: 40, gap: 16 }, // larger gap
   section: {
-    borderRadius: 24, // larger radius
+    borderRadius: 24,
     borderCurve: 'continuous',
     borderWidth: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
     gap: 16,
   } as any,
   fixHeader: {
@@ -203,9 +214,9 @@ const styles = StyleSheet.create({
   },
   coordValue: {
     fontSize: 26,
-    fontFamily: 'Lexend_300Light',
+    fontFamily: 'Lexend_600SemiBold',
     fontVariant: ['tabular-nums'],
-    letterSpacing: -0.5,
+    letterSpacing: -1,
     marginTop: 2,
   },
   timeText: {

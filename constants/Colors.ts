@@ -24,18 +24,18 @@ export const Colors = {
     text: '#FFFFFF',
     textSecondary: '#A1A1A6',
     textTertiary: '#6E6E73',
-    background: '#000000',
-    surface: '#1C1C1E',
-    border: '#2C2C2E',
-    borderLight: '#3A3A3C',
-    tint: tintColorDark,
+    background: '#000000', // True Black
+    surface: '#151517', // Deeper Surface
+    border: '#252528',
+    borderLight: '#2C2C2E',
+    tint: '#0EA5E9', // Electric Blue
     iconDefault: '#8E8E93',
     iconSecondary: '#8E8E93',
     tabIconDefault: '#8E8E93',
-    tabIconSelected: tintColorDark,
-    danger: '#FF453A',
-    dangerSurface: '#321614',
-    dangerBorder: '#641E16',
-    statusActive: '#0A84FF',
+    tabIconSelected: '#0EA5E9',
+    danger: '#F43F5E', // Neon Rose
+    dangerSurface: '#241011',
+    dangerBorder: '#4C1D1F',
+    statusActive: '#10B981', // Emerald Neon
   },
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, View, Text } from 'react-native';
+import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { IconDashboard, IconPlanet, IconFolder, IconSettings } from '@tabler/icons-react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -13,7 +13,6 @@ export default function TabLayout() {
         headerShown: true,
         headerStyle: {
           backgroundColor: colors.background,
-          boxShadow: 'none',
           height: 75, 
         },
         headerTitleAlign: 'left',

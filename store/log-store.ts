@@ -130,7 +130,6 @@ export const useLogStore = create<LogState & LogActions>()(
       await FileSystem.writeAsStringAsync(uri, content, { encoding: FileSystem.EncodingType.UTF8 });
       return { success: true, message: 'Saved NMEA log directly to the selected folder.' };
     } catch (e) {
-      console.error('Export NMEA failed:', e);
       return { success: false, message: 'Could not save the file. You may need to reset the folder permission in Settings.' };
     }
   },
@@ -158,7 +157,6 @@ export const useLogStore = create<LogState & LogActions>()(
       await FileSystem.writeAsStringAsync(uri, content, { encoding: FileSystem.EncodingType.UTF8 });
       return { success: true, message: 'Saved CSV log directly to the selected folder.' };
     } catch (e) {
-      console.error('Export CSV failed:', e);
       return { success: false, message: 'Could not save the file. You may need to reset the folder permission in Settings.' };
     }
   },
@@ -189,7 +187,6 @@ export const useLogStore = create<LogState & LogActions>()(
         }
         return false;
       } catch (e) {
-        console.error('Set export directory failed:', e);
         return false;
       }
     },

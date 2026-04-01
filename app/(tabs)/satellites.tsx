@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
+import { PressableScale } from '@/components/pressable-scale';
 import { useGnssStore } from '@/store/gnss-store';
 import { SatelliteBar } from '@/components/satellite-bar';
 import { CONSTELLATION_COLOR, CONSTELLATION_LABEL, TALKER_ID } from '@/constants/nmea';
-import { IconSatellite } from '@tabler/icons-react-native';
+import { IconSatellite, IconClock, IconFileText, IconMapPin, IconTerminal2, IconTrash, IconHistory } from '@tabler/icons-react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
 type FilterId = 'ALL' | string;
 
@@ -64,7 +65,7 @@ export default function SatellitesScreen() {
           const active = filter === id;
           const color = id === 'ALL' ? '#38BDF8' : (CONSTELLATION_COLOR[id] ?? colors.iconSecondary);
           return (
-            <Pressable
+            <PressableScale
               key={id}
               style={[
                 styles.filterPill,
@@ -72,12 +73,11 @@ export default function SatellitesScreen() {
                 active && { backgroundColor: color + '22', borderColor: color },
               ]}
               onPress={() => setFilter(id)}
-              accessibilityRole="button"
             >
               <Text style={[styles.filterText, { color: colors.textTertiary }, active && { color }]}>
                 {id === 'ALL' ? 'All' : (CONSTELLATION_LABEL[id] ?? id)}
               </Text>
-            </Pressable>
+            </PressableScale>
           );
         })}
       </ScrollView>
@@ -127,14 +127,13 @@ export default function SatellitesScreen() {
         </View>
       )}
 
-      <View style={{ height: 20 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  container: { padding: 16, paddingBottom: 110, gap: 16 },
+  container: { padding: 16, paddingBottom: 40, gap: 16 },
   summaryRow: {
     flexDirection: 'row',
     gap: 12,
@@ -150,9 +149,9 @@ const styles = StyleSheet.create({
   } as any,
   summaryNum: {
     fontSize: 28,
-    fontFamily: 'Lexend_300Light',
+    fontFamily: 'Lexend_600SemiBold',
     fontVariant: ['tabular-nums'],
-    letterSpacing: -0.5,
+    letterSpacing: -1,
   },
   summaryLabel: {
     fontSize: 11,

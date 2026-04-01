@@ -99,12 +99,11 @@ export default function RootLayout() {
     });
 
     // Initialize BLE
-    initializeBle().catch(console.error);
+    initializeBle().catch(() => {});
 
     return () => {
       destroyBle();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!fontsLoaded && !fontError) {
