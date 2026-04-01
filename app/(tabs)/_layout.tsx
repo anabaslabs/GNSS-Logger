@@ -9,7 +9,7 @@ import { Tabs } from "expo-router";
 import React from "react";
 
 export default function TabLayout() {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
 
   return (
     <Tabs

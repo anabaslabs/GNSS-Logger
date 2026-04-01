@@ -187,6 +187,8 @@ const SessionCard = React.memo(
   },
 );
 
+SessionCard.displayName = "SessionCard";
+
 const ActiveRecordingBanner = ({
   startTime,
   onStop,
@@ -237,7 +239,7 @@ const ActiveRecordingBanner = ({
 
 export default function LogsScreen() {
   const { colors } = useAppTheme();
-  const { isLogging, setLogging, sessionBuffer, clearSession } = useGnssStore();
+  const { isLogging, setLogging, clearSession } = useGnssStore();
   const {
     sessions,
     exportNmea,
@@ -245,7 +247,6 @@ export default function LogsScreen() {
     deleteSession,
     clearAll,
     startSession,
-    endSession,
     activeSessionId,
     setExportDirectory,
   } = useLogStore();

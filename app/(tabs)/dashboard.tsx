@@ -35,7 +35,7 @@ export default function DashboardScreen() {
         }),
       ]).start();
     }
-  }, [fix.updatedAt]);
+  }, [fix.updatedAt, pulse]);
 
   const constellationCounts: Record<string, number> = {};
   for (const sat of satellites) {

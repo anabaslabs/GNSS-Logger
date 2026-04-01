@@ -114,6 +114,7 @@ export default function RootLayout() {
     return () => {
       destroyBle();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!fontsLoaded && !fontError) {

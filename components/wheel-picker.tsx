@@ -60,6 +60,8 @@ const PickerItem = React.memo(
   },
 );
 
+PickerItem.displayName = "PickerItem";
+
 export function WheelPicker({
   items,
   value,

@@ -163,10 +163,6 @@ export default function BleScanModal() {
     message: "",
   });
 
-  if (!isBleAvailable) {
-    return <BleUnavailableScreen />;
-  }
-
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -188,7 +184,7 @@ export default function BleScanModal() {
       anim.start();
       return () => anim.stop();
     }
-  }, [status]);
+  }, [status, pulse]);
 
   async function handleStartScan() {
     clearScannedDevices();
@@ -236,14 +232,20 @@ export default function BleScanModal() {
   }
 
   useEffect(() => {
+    if (!isBleAvailable) return;
     handleStartScan();
     return () => {
       stopScan().catch(() => {});
       if (timerRef.current) clearInterval(timerRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const scanning = status === "scanning";
+
+  if (!isBleAvailable) {
+    return <BleUnavailableScreen />;
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

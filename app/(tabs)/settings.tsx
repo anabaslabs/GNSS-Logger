@@ -44,7 +44,7 @@ function SettingRow({
   description?: string;
   right: React.ReactNode;
 }) {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
   return (
     <View style={[styles.row, { borderTopColor: colors.borderLight }]}>
       <View style={{ flex: 1, gap: 2 }}>
@@ -395,7 +395,7 @@ export default function SettingsScreen() {
                         } else if (exportDirectoryUri) {
                           await Linking.openURL(exportDirectoryUri);
                         }
-                      } catch (e) {}
+                      } catch {}
                     }}
                     activeOpacity={0.7}
                   >
