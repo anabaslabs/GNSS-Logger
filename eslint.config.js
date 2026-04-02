@@ -10,6 +10,8 @@ module.exports = defineConfig([
   {
     rules: {
       "import/no-unresolved": "off",
+      "import/namespace": "off",
+      "import/no-duplicates": "off",
     },
   },
 ]);

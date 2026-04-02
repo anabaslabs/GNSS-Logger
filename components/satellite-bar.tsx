@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   badge: {
     borderRadius: 12,
     borderCurve: "continuous",
-    borderWidth: 1,
+    borderWidth: 1.5,
     paddingHorizontal: 6,
     paddingVertical: 3,
     minWidth: 40,

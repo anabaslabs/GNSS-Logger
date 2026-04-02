@@ -223,16 +223,16 @@ export default function SettingsScreen() {
                 style={[
                   styles.actionButton,
                   {
-                    backgroundColor: colors.borderLight,
-                    borderColor: colors.borderLight,
+                    backgroundColor: colors.statusSurface,
+                    borderColor: "transparent",
                   },
                   isConnected && {
                     backgroundColor: colors.dangerSurface,
-                    borderColor: colors.dangerBorder,
+                    borderColor: "transparent",
                   },
                   status === "scanning" && {
-                    backgroundColor: colors.statusActive + "15",
-                    borderColor: colors.statusActive,
+                    backgroundColor: colors.statusSurface,
+                    borderColor: "transparent",
                   },
                 ]}
                 onPress={
@@ -252,9 +252,8 @@ export default function SettingsScreen() {
                 <Text
                   style={[
                     styles.actionButtonText,
-                    { color: colors.textSecondary },
+                    { color: colors.statusActive },
                     isConnected && { color: colors.danger },
-                    status === "scanning" && { color: colors.statusActive },
                   ]}
                 >
                   {isConnected
@@ -303,7 +302,7 @@ export default function SettingsScreen() {
                 style={[
                   styles.actionButton,
                   {
-                    backgroundColor: colors.danger + "10",
+                    backgroundColor: colors.dangerSurface,
                     borderColor: "transparent",
                   },
                 ]}
@@ -354,7 +353,7 @@ export default function SettingsScreen() {
                 style={[
                   styles.actionButton,
                   {
-                    backgroundColor: colors.statusActive + "15",
+                    backgroundColor: colors.statusSurface,
                     borderColor: "transparent",
                   },
                 ]}
@@ -398,7 +397,7 @@ export default function SettingsScreen() {
                     style={[
                       styles.actionButton,
                       {
-                        backgroundColor: colors.statusActive + "15",
+                        backgroundColor: colors.statusSurface,
                         borderColor: "transparent",
                       },
                     ]}
@@ -443,7 +442,7 @@ export default function SettingsScreen() {
                     style={[
                       styles.actionButton,
                       {
-                        backgroundColor: colors.danger + "10",
+                        backgroundColor: colors.dangerSurface,
                         borderColor: "transparent",
                       },
                     ]}
@@ -551,7 +550,7 @@ export default function SettingsScreen() {
                 style={[
                   styles.badge,
                   {
-                    backgroundColor: colors.statusActive + "15",
+                    backgroundColor: colors.statusSurface,
                     borderColor: colors.statusActive + "30",
                   },
                 ]}
@@ -607,9 +606,9 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContainer: { padding: 16, paddingBottom: 40, gap: 16 },
   section: {
-    borderRadius: 24,
+    borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1,
+    borderWidth: 1.5,
     padding: 20,
     gap: 0,
   } as any,
@@ -624,7 +623,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
-    borderTopWidth: 1,
+    borderTopWidth: 1.5,
     gap: 16,
   },
   rowLabel: { fontSize: 16, fontFamily: "Lexend_600SemiBold" },
@@ -637,15 +636,19 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: 16,
+    height: 48,
+    minWidth: 100,
+    paddingHorizontal: 16,
+    borderWidth: 0,
+    borderColor: "transparent",
   },
   actionButtonText: { fontSize: 14, fontFamily: "Lexend_700Bold" },
   uuidBlock: {
     paddingVertical: 12,
-    borderTopWidth: 1,
+    borderTopWidth: 1.5,
     gap: 4,
   },
   uuidLabel: { fontSize: 12, fontFamily: "Lexend_700Bold" },
@@ -667,7 +670,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   badgeText: {
     fontSize: 12,
@@ -676,8 +679,7 @@ const styles = StyleSheet.create({
   themePicker: {
     flexDirection: "row",
     gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#2C2C2E",
+    borderTopWidth: 1.5,
     paddingTop: 16,
   },
   themeOption: {
@@ -686,7 +688,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 14,
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: "transparent",
     gap: 8,
   },
@@ -697,7 +699,7 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 24,
     paddingTop: 16,
-    borderTopWidth: 1,
+    borderTopWidth: 1.5,
     alignItems: "center",
     gap: 8,
   },

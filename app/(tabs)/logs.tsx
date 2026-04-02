@@ -9,7 +9,6 @@ import {
   IconClock,
   IconFileText,
   IconFolderOff,
-  IconMapPin,
   IconPlayerRecordFilled,
   IconSquareRoundedFilled,
   IconTerminal2,
@@ -74,8 +73,8 @@ const SessionCard = React.memo(
         style={[
           styles.card,
           {
-            backgroundColor: colors.surface,
-            borderColor: active ? colors.statusActive + "44" : colors.border,
+            backgroundColor: active ? colors.dangerSurface : colors.surface,
+            borderColor: active ? colors.dangerBorder : colors.border,
           },
           active && styles.cardActive,
         ]}
@@ -88,50 +87,28 @@ const SessionCard = React.memo(
             >
               {formatDate(session.startTime)}
             </Text>
-            <View style={styles.badgeRow}>
-              <View
-                style={[styles.miniBadge, { backgroundColor: "#10B98115" }]}
-              >
-                <IconMapPin size={12} color="#10B981" />
-                <Text style={[styles.miniBadgeText, { color: "#10B981" }]}>
-                  {session.fixCount} Fixes
-                </Text>
-              </View>
-              <View
-                style={[
-                  styles.miniBadge,
-                  { backgroundColor: colors.statusActive + "15" },
-                ]}
-              >
-                <IconClock size={12} color={colors.statusActive} />
-                <Text
-                  style={[styles.miniBadgeText, { color: colors.statusActive }]}
-                >
-                  {formatDuration(session.startTime, session.endTime)}
-                </Text>
-              </View>
-            </View>
           </View>
 
-          {active && (
-            <View
-              style={[
-                styles.statusTag,
-                { backgroundColor: colors.danger + "15" },
-              ]}
+          <View style={styles.badgeRow}>
+            <Text
+              style={[styles.miniBadgeText, { color: colors.textSecondary }]}
             >
-              <View
-                style={[styles.pulseDot, { backgroundColor: colors.danger }]}
-              />
-              <Text style={[styles.statusTagText, { color: colors.danger }]}>
-                RECORDING
-              </Text>
-            </View>
-          )}
+              {session.fixCount} Fixes
+            </Text>
+            <View style={[styles.dot, { backgroundColor: colors.border }]} />
+            <Text
+              style={[styles.miniBadgeText, { color: colors.textSecondary }]}
+            >
+              {formatDuration(session.startTime, session.endTime)}
+            </Text>
+          </View>
         </View>
 
         <View
-          style={[styles.divider, { backgroundColor: colors.borderLight }]}
+          style={[
+            styles.divider,
+            { backgroundColor: colors.borderLight, height: 1.5 },
+          ]}
         />
 
         <View style={styles.sessionFooter}>
@@ -171,7 +148,11 @@ const SessionCard = React.memo(
             <PressableScale
               style={[
                 styles.actionBtn,
-                { backgroundColor: colors.danger + "15" },
+                {
+                  backgroundColor: colors.dangerSurface,
+                  borderColor: colors.dangerBorder,
+                  borderWidth: 0,
+                },
               ]}
               onPress={onDelete}
             >
@@ -213,6 +194,7 @@ const ActiveRecordingBanner = ({
         {
           backgroundColor: colors.dangerSurface,
           borderColor: colors.dangerBorder,
+          borderWidth: 1.5,
         },
       ]}
       onPress={onStop}
@@ -238,7 +220,7 @@ const ActiveRecordingBanner = ({
 };
 
 export default function LogsScreen() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { isLogging, setLogging, clearSession } = useGnssStore();
   const {
     sessions,
@@ -249,9 +231,11 @@ export default function LogsScreen() {
     startSession,
     activeSessionId,
     setExportDirectory,
+    exportBulk,
   } = useLogStore();
 
   const [showPicker, setShowPicker] = useState(false);
+  const [showBulkOptions, setShowBulkOptions] = useState(false);
   const [timerHours, setTimerHours] = useState("00");
   const [timerMinutes, setTimerMinutes] = useState("01");
   const [timerSeconds, setTimerSeconds] = useState("00");
@@ -350,8 +334,36 @@ export default function LogsScreen() {
     });
   }
 
+  async function handleBulkExport(format: "all" | "nmea" | "csv") {
+    setShowBulkOptions(false);
+    const res = await exportBulk(format);
+    setConfirmConfig({
+      visible: true,
+      title: res.success
+        ? "Success"
+        : res.needsPermission
+          ? "Permission Required"
+          : "Export Failed",
+      message: res.message,
+      confirmText: res.needsPermission ? "Select Folder" : "OK",
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, visible: false }));
+        if (res.needsPermission) {
+          await setExportDirectory();
+          handleBulkExport(format);
+        }
+      },
+      onCancel: res.needsPermission
+        ? () => setConfirmConfig((prev) => ({ ...prev, visible: false }))
+        : undefined,
+    });
+  }
+
   return (
-    <View style={[styles.scroll, { backgroundColor: colors.background }]}>
+    <View
+      key={isDark ? "dark" : "light"}
+      style={[styles.scroll, { backgroundColor: colors.background }]}
+    >
       <ConfirmModal
         visible={confirmConfig.visible}
         title={confirmConfig.title}
@@ -477,14 +489,11 @@ export default function LogsScreen() {
                     }}
                     style={[
                       styles.footerBtn,
-                      { backgroundColor: colors.borderLight + "22" },
+                      { backgroundColor: colors.dangerSurface },
                     ]}
                   >
                     <Text
-                      style={[
-                        styles.footerBtnText,
-                        { color: colors.textSecondary },
-                      ]}
+                      style={[styles.footerBtnText, { color: colors.danger }]}
                     >
                       Reset
                     </Text>
@@ -495,16 +504,95 @@ export default function LogsScreen() {
                     style={[
                       styles.footerBtn,
                       {
-                        backgroundColor: colors.statusActive,
-                        paddingHorizontal: 24,
+                        backgroundColor: colors.statusSurface,
                       },
                     ]}
                   >
-                    <Text style={[styles.footerBtnText, { color: "#fff" }]}>
+                    <Text
+                      style={[
+                        styles.footerBtnText,
+                        { color: colors.statusActive },
+                      ]}
+                    >
                       Start
                     </Text>
                   </Pressable>
                 </View>
+              </View>
+            </Pressable>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal
+        visible={showBulkOptions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowBulkOptions(false)}
+      >
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={() => setShowBulkOptions(false)}
+        >
+          <View style={styles.modalMount}>
+            <Pressable
+              style={[
+                styles.modal,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+              onPress={() => {}}
+            >
+              <View style={{ marginBottom: 20 }}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Save All
+                </Text>
+                <Text
+                  style={[
+                    styles.modalSubtitle,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  Choose export format for all sessions
+                </Text>
+              </View>
+
+              <View style={{ gap: 12 }}>
+                {[
+                  { label: "All Formats", value: "all" as const },
+                  { label: "NMEA Only", value: "nmea" as const },
+                  { label: "CSV Only", value: "csv" as const },
+                ].map((opt) => (
+                  <PressableScale
+                    key={opt.value}
+                    style={[
+                      styles.optionBtn,
+                      { backgroundColor: colors.borderLight },
+                    ]}
+                    onPress={() => handleBulkExport(opt.value)}
+                  >
+                    <Text style={[styles.optionText, { color: colors.text }]}>
+                      {opt.label}
+                    </Text>
+                  </PressableScale>
+                ))}
+              </View>
+
+              <View style={[styles.modalFooter, { marginTop: 24 }]}>
+                <Pressable
+                  hitSlop={12}
+                  onPress={() => setShowBulkOptions(false)}
+                  style={[styles.footerBtn, { flex: 1 }]}
+                >
+                  <Text
+                    style={[
+                      styles.footerBtnText,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Cancel
+                  </Text>
+                </Pressable>
               </View>
             </Pressable>
           </View>
@@ -593,11 +681,46 @@ export default function LogsScreen() {
                 {sessions.length} Session{sessions.length !== 1 ? "s" : ""}
               </Text>
               {sessions.length > 0 && (
-                <PressableScale onPress={handleClearAll}>
-                  <Text style={[styles.clearAll, { color: colors.danger }]}>
-                    Clear All
-                  </Text>
-                </PressableScale>
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <PressableScale
+                    onPress={() => setShowBulkOptions(true)}
+                    style={[
+                      styles.footerBtn,
+                      {
+                        backgroundColor: colors.statusSurface,
+                        borderColor: "transparent",
+                        borderWidth: 0,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.footerBtnText,
+                        { color: colors.statusActive },
+                      ]}
+                    >
+                      Save All
+                    </Text>
+                  </PressableScale>
+
+                  <PressableScale
+                    onPress={handleClearAll}
+                    style={[
+                      styles.footerBtn,
+                      {
+                        backgroundColor: colors.dangerSurface,
+                        borderColor: "transparent",
+                        borderWidth: 0,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.footerBtnText, { color: colors.danger }]}
+                    >
+                      Clear All
+                    </Text>
+                  </PressableScale>
+                </View>
               )}
             </View>
           </View>
@@ -644,7 +767,7 @@ export default function LogsScreen() {
                   setConfirmConfig((prev) => ({ ...prev, visible: false }));
                   if (res.needsPermission) {
                     await setExportDirectory();
-                    exportCsv(session.id);
+                    exportNmea(session.id);
                   }
                 },
                 onCancel: res.needsPermission
@@ -688,7 +811,8 @@ const styles = StyleSheet.create({
   modal: {
     width: "100%",
     borderRadius: 32,
-    borderWidth: 1,
+    borderCurve: "continuous",
+    borderWidth: 1.5,
     padding: 24,
     gap: 4,
     shadowColor: "#000",
@@ -696,6 +820,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 10,
+    overflow: "hidden",
   },
   modalTitle: {
     fontSize: 24,
@@ -725,19 +850,22 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   footerBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    height: 48,
+    minWidth: 100,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 16,
   },
   footerBtnText: { fontSize: 15, fontFamily: "Lexend_700Bold" },
 
   logButton: {
-    borderRadius: 24,
+    height: 80,
+    borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1,
-    padding: 20,
+    borderWidth: 1.5,
+    paddingHorizontal: 20,
+    justifyContent: "center",
   },
   row: {
     flexDirection: "row",
@@ -764,61 +892,56 @@ const styles = StyleSheet.create({
   clearAll: { fontSize: 14, fontFamily: "Lexend_700Bold" },
 
   card: {
-    borderRadius: 24,
+    borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1,
+    borderWidth: 1.5,
     padding: 18,
     gap: 16,
   } as any,
   cardActive: { borderWidth: 1.5 },
   cardHeader: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
   },
-  sessionDate: { fontSize: 16, fontFamily: "Lexend_700Bold", marginBottom: 8 },
+  sessionDate: { fontSize: 16, fontFamily: "Lexend_800ExtraBold" },
 
-  badgeRow: { flexDirection: "row", gap: 8, alignItems: "center" },
-  miniBadge: {
+  badgeRow: {
     flexDirection: "row",
+    gap: 6,
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
   },
   miniBadgeText: {
-    fontSize: 11,
-    fontFamily: "Lexend_700Bold",
+    fontSize: 12,
+    fontFamily: "Lexend_500Medium",
     fontVariant: ["tabular-nums"],
+    lineHeight: 16,
   },
+  dot: { width: 3, height: 3, borderRadius: 1.5, marginHorizontal: 2 },
 
-  statusTag: {
-    flexDirection: "row",
+  optionBtn: {
+    padding: 16,
+    borderRadius: 16,
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    justifyContent: "center",
   },
-  pulseDot: { width: 6, height: 6, borderRadius: 3 },
-  statusTagText: {
-    fontSize: 10,
-    fontFamily: "Lexend_800ExtraBold",
-    letterSpacing: 0.5,
-  },
+  optionText: { fontSize: 16, fontFamily: "Lexend_600SemiBold" },
 
-  divider: { height: 1, width: "100%", opacity: 0.5 },
+  divider: { height: 1.5, width: "100%" },
 
   sessionFooter: { flexDirection: "row", alignItems: "center" },
   actions: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
   actionBtn: {
+    height: 48,
+    minWidth: 80,
+    borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
+    borderWidth: 0,
+    borderColor: "rgba(0,0,0,0.1)",
   },
   actionBtnText: { fontSize: 13, fontFamily: "Lexend_700Bold" },
 

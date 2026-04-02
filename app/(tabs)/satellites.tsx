@@ -13,7 +13,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 type FilterId = "ALL" | string;
 
 export default function SatellitesScreen() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { satellites } = useGnssStore();
   const [filter, setFilter] = useState<FilterId>("ALL");
 
@@ -36,6 +36,7 @@ export default function SatellitesScreen() {
 
   return (
     <ScrollView
+      key={isDark ? "dark" : "light"}
       contentInsetAdjustmentBehavior="automatic"
       style={[styles.scroll, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.container}
@@ -228,10 +229,11 @@ const styles = StyleSheet.create({
   },
   summaryChip: {
     flex: 1,
-    borderRadius: 24,
+    height: 80,
+    borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1,
-    padding: 16,
+    borderWidth: 1.5,
+    justifyContent: "center",
     alignItems: "center",
     gap: 4,
   } as any,
@@ -249,16 +251,18 @@ const styles = StyleSheet.create({
   },
   filterRow: { gap: 8, paddingVertical: 4 },
   filterPill: {
-    borderRadius: 24,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    height: 48,
+    borderRadius: 32,
+    borderWidth: 0,
+    paddingHorizontal: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
   filterText: { fontSize: 13, fontFamily: "Lexend_700Bold" },
   listCard: {
-    borderRadius: 24,
+    borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1,
+    borderWidth: 1.5,
     padding: 16,
     gap: 4,
   } as any,
@@ -266,7 +270,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingBottom: 10,
-    borderBottomWidth: 1,
+    borderBottomWidth: 1.5,
     marginBottom: 8,
     gap: 8,
   },
@@ -285,7 +289,7 @@ const styles = StyleSheet.create({
   navicBox: {
     borderRadius: 24,
     borderCurve: "continuous",
-    borderWidth: 1,
+    borderWidth: 1.5,
     padding: 20,
     gap: 12,
   } as any,

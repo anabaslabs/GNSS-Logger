@@ -50,7 +50,7 @@ export function ConfirmModal({
             styles.modalBox,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.borderLight,
+              borderColor: colors.border,
             },
           ]}
           onPress={() => {}}
@@ -70,11 +70,26 @@ export function ConfirmModal({
                     fontFamily: "Lexend_600SemiBold",
                   }}
                 >
-                  {cancelText.toUpperCase()}
+                  {cancelText}
                 </Text>
               </Pressable>
             )}
-            <Pressable hitSlop={12} onPress={onConfirm} style={styles.button}>
+            <Pressable
+              hitSlop={12}
+              onPress={onConfirm}
+              style={[
+                styles.button,
+                {
+                  backgroundColor: isDestructive
+                    ? colors.dangerSurface
+                    : colors.statusSurface,
+                  borderColor: isDestructive
+                    ? colors.dangerBorder
+                    : colors.statusActive + "22",
+                  borderWidth: 0,
+                },
+              ]}
+            >
               <Text
                 style={{
                   color: isDestructive ? colors.danger : colors.statusActive,
@@ -82,7 +97,7 @@ export function ConfirmModal({
                   fontFamily: "Lexend_700Bold",
                 }}
               >
-                {isAlert ? "OK" : confirmText.toUpperCase()}
+                {isAlert ? "OK" : confirmText}
               </Text>
             </Pressable>
           </View>
@@ -105,7 +120,7 @@ const styles = StyleSheet.create({
     maxWidth: 340,
     borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1,
+    borderWidth: 1.5,
     padding: 28,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
@@ -131,7 +146,12 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   button: {
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    height: 48,
+    minWidth: 100,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    backgroundColor: "transparent",
   },
 });

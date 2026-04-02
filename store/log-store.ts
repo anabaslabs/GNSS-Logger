@@ -28,6 +28,12 @@ interface LogActions {
     needsPermission?: boolean;
   }>;
   deleteSession: (sessionId: string) => Promise<void>;
+  exportBulk: (format: "all" | "nmea" | "csv") => Promise<{
+    success: boolean;
+    message: string;
+    needsPermission?: boolean;
+    count: number;
+  }>;
   clearAll: () => Promise<void>;
   setExportDirectory: () => Promise<boolean>;
   resetExportDirectory: () => void;
@@ -220,6 +226,64 @@ export const useLogStore = create<LogState & LogActions>()(
         set((s) => ({
           sessions: s.sessions.filter((sess) => sess.id !== sessionId),
         }));
+      },
+
+      exportBulk: async (format) => {
+        const { sessions, exportDirectoryUri } = get();
+        if (sessions.length === 0)
+          return { success: false, message: "No sessions to export.", count: 0 };
+        if (!exportDirectoryUri) {
+          return {
+            success: false,
+            needsPermission: true,
+            message:
+              'Please select a folder (like "Download") once. After this, your logs will save there instantly with one tap.',
+            count: 0,
+          };
+        }
+
+        let successCount = 0;
+        try {
+          for (const session of sessions) {
+            if (format === "all" || format === "nmea") {
+              const nmeaContent = await FileSystem.readAsStringAsync(
+                session.filePath,
+              );
+              const nmeaUri =
+                await FileSystem.StorageAccessFramework.createFileAsync(
+                  exportDirectoryUri,
+                  `gnss_log_${session.id}.nmea`,
+                  "text/plain",
+                );
+              await FileSystem.writeAsStringAsync(nmeaUri, nmeaContent);
+            }
+
+            if (format === "all" || format === "csv") {
+              const csvContent = await FileSystem.readAsStringAsync(
+                session.filePathCsv,
+              );
+              const csvUri =
+                await FileSystem.StorageAccessFramework.createFileAsync(
+                  exportDirectoryUri,
+                  `gnss_log_${session.id}.csv`,
+                  "text/csv",
+                );
+              await FileSystem.writeAsStringAsync(csvUri, csvContent);
+            }
+            successCount++;
+          }
+          return {
+            success: true,
+            message: `Successfully exported ${successCount} sessions.`,
+            count: successCount,
+          };
+        } catch (e) {
+          return {
+            success: false,
+            message: "Bulk export failed. Folder permission may have expired.",
+            count: successCount,
+          };
+        }
       },
 
       clearAll: async () => {

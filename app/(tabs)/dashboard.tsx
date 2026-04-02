@@ -13,7 +13,7 @@ import React, { useEffect, useRef } from "react";
 import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 
 export default function DashboardScreen() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { fix, velocity, satellites } = useGnssStore();
 
   const pulse = useRef(new Animated.Value(1)).current;
@@ -51,6 +51,7 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView
+      key={isDark ? "dark" : "light"}
       contentInsetAdjustmentBehavior="automatic"
       style={[styles.scroll, { backgroundColor: colors.background }]}
       contentContainerStyle={[styles.container, { paddingBottom: 40 }]}
@@ -214,9 +215,9 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   container: { padding: 16, paddingBottom: 40, gap: 16 },
   section: {
-    borderRadius: 24,
+    borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1,
+    borderWidth: 1.5,
     paddingHorizontal: 20,
     paddingVertical: 24,
     gap: 16,

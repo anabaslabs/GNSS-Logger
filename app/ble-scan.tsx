@@ -62,10 +62,7 @@ function DeviceRow({
   const { colors } = useAppTheme();
   return (
     <PressableScale
-      style={[
-        styles.deviceRow,
-        { backgroundColor: colors.surface, borderColor: colors.border },
-      ]}
+      style={[styles.deviceRow, { backgroundColor: colors.surface }]}
       onPress={onPress}
     >
       <View style={styles.deviceInfo}>
@@ -86,12 +83,12 @@ function DeviceRow({
         </Text>
       </View>
       <View
-        style={[styles.connectPill, { backgroundColor: colors.tint + "12" }]}
+        style={[styles.connectPill, { backgroundColor: colors.statusSurface }]}
       >
         {connecting ? (
-          <ActivityIndicator size="small" color={colors.tint} />
+          <ActivityIndicator size="small" color={colors.statusActive} />
         ) : (
-          <Text style={[styles.connectLabel, { color: colors.tint }]}>
+          <Text style={[styles.connectLabel, { color: colors.statusActive }]}>
             Connect
           </Text>
         )}
@@ -183,6 +180,7 @@ export default function BleScanModal() {
   const pulse = useRef(new Animated.Value(1)).current;
   const [bluetoothState, setBluetoothState] = useState<string>("unknown");
   const [locationEnabled, setLocationEnabled] = useState<boolean>(true);
+  const [initialScanAttempted, setInitialScanAttempted] = useState(false);
 
   useEffect(() => {
     if (process.env.EXPO_OS !== "android") return;
@@ -272,11 +270,12 @@ export default function BleScanModal() {
   }
 
   useEffect(() => {
-    if (!isBleAvailable || bluetoothState !== "on" || !locationEnabled) return;
-    if (status !== "scanning") {
+    if (!isBleAvailable || bluetoothState !== "on" || !locationEnabled || initialScanAttempted) return;
+    if (status === "idle") {
+      setInitialScanAttempted(true);
       handleStartScan();
     }
-  }, [bluetoothState, locationEnabled, handleStartScan]);
+  }, [bluetoothState, locationEnabled, status, handleStartScan, initialScanAttempted]);
 
   const scanning = status === "scanning";
 
@@ -376,7 +375,7 @@ export default function BleScanModal() {
                 <PressableScale
                   style={[
                     styles.closeBtn,
-                    { backgroundColor: colors.statusActive },
+                    { backgroundColor: colors.statusSurface },
                   ]}
                   onPress={async () => {
                     if (!locationEnabled) {
@@ -392,7 +391,12 @@ export default function BleScanModal() {
                     }
                   }}
                 >
-                  <Text style={[styles.closeBtnText, { color: "#fff" }]}>
+                  <Text
+                    style={[
+                      styles.closeBtnText,
+                      { color: colors.statusActive },
+                    ]}
+                  >
                     {!locationEnabled
                       ? "Turn On Location"
                       : "Turn On Bluetooth"}
@@ -438,24 +442,26 @@ export default function BleScanModal() {
                   ListEmptyComponent={
                     <View style={styles.empty}>
                       {scanning ? (
-                        <ActivityIndicator
-                          size="large"
-                          color={colors.statusActive}
-                        />
+                        <View style={{ height: 180, justifyContent: "center" }}>
+                          <ActivityIndicator
+                            size="large"
+                            color={colors.statusActive}
+                          />
+                        </View>
                       ) : (
-                        <>
+                        <View style={{ height: 180, justifyContent: "center", alignItems: "center", gap: 16 }}>
                           <IconSearch color={colors.textTertiary} size={48} />
                           <Text
                             style={[styles.emptyText, { color: colors.text }]}
                           >
                             No Devices Found
                           </Text>
-                        </>
+                        </View>
                       )}
                     </View>
                   }
                   contentContainerStyle={styles.listContainer}
-                  style={{ maxHeight: 400 }}
+                  style={{ maxHeight: 350 }}
                 />
               </View>
 
@@ -480,24 +486,26 @@ export default function BleScanModal() {
                   onPress={
                     scanning
                       ? async () => {
+                          setInitialScanAttempted(true); // Don't auto-restart after stopping
                           await stopScanAndReset();
                         }
-                      : handleStartScan
+                      : () => {
+                          handleStartScan();
+                        }
                   }
                   style={[
                     styles.footerBtn,
                     {
                       backgroundColor: scanning
-                        ? colors.danger + "15"
-                        : colors.statusActive,
-                      paddingHorizontal: 24,
+                        ? colors.dangerSurface
+                        : colors.statusSurface,
                     },
                   ]}
                 >
                   <Text
                     style={[
                       styles.footerBtnText,
-                      { color: scanning ? colors.danger : "#fff" },
+                      { color: scanning ? colors.danger : colors.statusActive },
                     ]}
                   >
                     {scanning ? "Stop" : "Scan"}
@@ -526,7 +534,7 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     borderRadius: 32,
-    borderWidth: 1,
+    borderWidth: 1.5,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.2,
@@ -560,6 +568,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 0,
+    minHeight: 350,
   },
   listContainer: {
     padding: 24,
@@ -569,7 +578,7 @@ const styles = StyleSheet.create({
   hintBox: {
     borderRadius: 16,
     padding: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderStyle: "dashed",
     marginBottom: 8,
   },
@@ -582,7 +591,7 @@ const styles = StyleSheet.create({
   },
   deviceRow: {
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 0,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -618,11 +627,12 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   connectPill: {
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minWidth: 80,
+    borderRadius: 16,
+    height: 48,
+    minWidth: 100,
     alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
   },
   connectLabel: {
     fontSize: 13,
@@ -637,11 +647,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   footerBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    height: 48,
+    minWidth: 100,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 16,
   },
   footerBtnText: { fontSize: 15, fontFamily: "Lexend_700Bold" },
 
@@ -662,7 +673,7 @@ const styles = StyleSheet.create({
   },
   codeBlock: {
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 1.5,
     paddingHorizontal: 20,
     paddingVertical: 12,
     marginVertical: 8,
@@ -672,10 +683,12 @@ const styles = StyleSheet.create({
     fontFamily: "monospace",
   },
   closeBtn: {
-    marginTop: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    height: 48,
+    minWidth: 100,
     borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 16,
   },
   closeBtnText: {
     fontSize: 14,

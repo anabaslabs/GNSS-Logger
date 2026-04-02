@@ -19,6 +19,7 @@ export const Colors = {
     dangerSurface: "#FFEBEE",
     dangerBorder: "#FFCDD2",
     statusActive: "#007AFF",
+    statusSurface: "#E5F1FF",
   },
   dark: {
     text: "#FFFFFF",
@@ -37,5 +38,6 @@ export const Colors = {
     dangerSurface: "#241011",
     dangerBorder: "#4C1D1F",
     statusActive: "#10B981",
+    statusSurface: "#142E27",
   },
 };

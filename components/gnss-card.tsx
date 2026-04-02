@@ -66,7 +66,7 @@ export function GnssCard({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    borderRadius: 24,
+    borderRadius: 32,
     borderCurve: "continuous",
     borderWidth: 1.5,
     paddingHorizontal: 20,

@@ -128,20 +128,21 @@ export function ConnectionBanner() {
 
 const styles = StyleSheet.create({
   banner: {
+    height: 80,
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
-    borderRadius: 24,
+    paddingHorizontal: 20,
+    borderRadius: 32,
     borderCurve: "continuous",
     gap: 16,
   } as any,
   iconBox: {
-    backgroundColor: "#000000",
+    width: 48,
+    height: 48,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#333333",
+    borderWidth: 0,
   },
   textContainer: {
     flex: 1,
