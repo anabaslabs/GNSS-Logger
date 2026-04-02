@@ -7,9 +7,9 @@ import {
   FixQuality,
 } from "@/constants/nmea";
 import { useAppTheme } from "@/hooks/useAppTheme";
-import { formatCoord, formatNmeaTime } from "@/lib/nmea-parser";
+import { formatCoord, getIstValue, getUtcValue } from "@/lib/nmea-parser";
 import { useGnssStore } from "@/store/gnss-store";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 
 export default function DashboardScreen() {
@@ -37,13 +37,25 @@ export default function DashboardScreen() {
     }
   }, [fix.updatedAt, pulse]);
 
-  const constellationCounts: Record<string, number> = {};
-  for (const sat of satellites) {
-    if (sat.usedInFix) {
-      constellationCounts[sat.talkerId] =
-        (constellationCounts[sat.talkerId] ?? 0) + 1;
+  const constellationData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const visibleIds = new Set<string>();
+
+    for (const sat of satellites) {
+      visibleIds.add(sat.talkerId);
+      if (sat.usedInFix) {
+        counts[sat.talkerId] = (counts[sat.talkerId] ?? 0) + 1;
+      }
     }
-  }
+
+    return Array.from(visibleIds)
+      .map((id) => ({
+        id,
+        label: CONSTELLATION_LABEL[id] ?? id,
+        count: counts[id] ?? 0,
+      }))
+      .sort((a, b) => b.label.localeCompare(a.label));
+  }, [satellites]);
 
   const hasFix = fix.quality !== FixQuality.NoFix && fix.latitude !== null;
   const speedKmh = velocity.speedKmh ?? 0;
@@ -65,10 +77,7 @@ export default function DashboardScreen() {
         ]}
       >
         <View style={styles.fixHeader}>
-          <StatusBadge
-            quality={fix.quality}
-            satellitesInUse={fix.satellitesInUse}
-          />
+          <StatusBadge quality={fix.quality} talkerId={fix.talkerId} />
           <Animated.View style={{ transform: [{ scale: pulse }] }}>
             <View
               style={[
@@ -112,9 +121,14 @@ export default function DashboardScreen() {
             </Text>
           </View>
         </View>
-        <Text style={[styles.timeText, { color: colors.textSecondary }]}>
-          {formatNmeaTime(fix.utcTime)}
-        </Text>
+        <View style={styles.timeRow}>
+          <Text style={[styles.timeText, { color: colors.textSecondary }]}>
+            IST: {getIstValue(fix.utcTime)}
+          </Text>
+          <Text style={[styles.timeText, { color: colors.textSecondary }]}>
+            UTC: {getUtcValue(fix.utcTime)}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.cardRow}>
@@ -157,12 +171,26 @@ export default function DashboardScreen() {
           Constellations In Fix
         </Text>
         <View style={styles.constellationRow}>
-          {Object.entries(constellationCounts).length === 0 ? (
-            <Text style={[styles.noData, { color: colors.textTertiary }]}>
-              No fix - waiting for satellites…
-            </Text>
+          {constellationData.length === 0 ? (
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                width: "100%",
+                paddingHorizontal: 4,
+              }}
+            >
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Text
+                  key={i}
+                  style={[styles.coordValue, { color: colors.textTertiary }]}
+                >
+                  -
+                </Text>
+              ))}
+            </View>
           ) : (
-            Object.entries(constellationCounts).map(([id, count]) => (
+            constellationData.map(({ id, label, count }) => (
               <View
                 key={id}
                 style={[
@@ -170,6 +198,7 @@ export default function DashboardScreen() {
                   {
                     backgroundColor:
                       (CONSTELLATION_COLOR[id] ?? "#6B7280") + "22",
+                    opacity: count > 0 ? 1 : 0.5,
                   },
                 ]}
               >
@@ -185,9 +214,11 @@ export default function DashboardScreen() {
                     { color: CONSTELLATION_COLOR[id] ?? "#6B7280" },
                   ]}
                 >
-                  {CONSTELLATION_LABEL[id] ?? id}
+                  {label}
                 </Text>
-                <Text style={styles.constCount}>{count}</Text>
+                <Text style={[styles.constCount, { color: colors.text }]}>
+                  {count}
+                </Text>
               </View>
             ))
           )}
@@ -228,9 +259,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   liveIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
   },
   coordRow: {
     gap: 12,
@@ -252,9 +283,13 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     marginTop: 2,
   },
-  timeText: {
-    fontSize: 12,
+  timeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 12,
+  },
+  timeText: {
+    fontSize: 14,
     fontFamily: "Lexend_500Medium",
     fontVariant: ["tabular-nums"],
   },

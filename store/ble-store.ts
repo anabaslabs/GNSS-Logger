@@ -5,7 +5,6 @@ import { create } from "zustand";
 
 export type BleStatus =
   | "idle"
-  | "scanning"
   | "connecting"
   | "connected"
   | "disconnecting"
@@ -13,6 +12,7 @@ export type BleStatus =
 
 interface BleState {
   status: BleStatus;
+  isScanning: boolean;
   connectedDeviceId: string | null;
   connectedDeviceName: string | null;
   scannedDevices: BleDevice[];
@@ -34,12 +34,14 @@ interface BleActions {
   setScanTimer: (v: number) => void;
   startScanWithTimer: () => Promise<void>;
   stopScanAndReset: () => Promise<void>;
+  setIsScanning: (v: boolean) => void;
 }
 
 let scanInterval: ReturnType<typeof setInterval> | null = null;
 
 export const useBleStore = create<BleState & BleActions>((set) => ({
   status: "idle",
+  isScanning: false,
   connectedDeviceId: null,
   connectedDeviceName: null,
   scannedDevices: [],
@@ -49,6 +51,8 @@ export const useBleStore = create<BleState & BleActions>((set) => ({
   scanTimer: 0,
 
   setStatus: (status) => set({ status }),
+
+  setIsScanning: (isScanning) => set({ isScanning }),
 
   setConnected: (id, name) =>
     set({
@@ -87,18 +91,23 @@ export const useBleStore = create<BleState & BleActions>((set) => ({
   setScanTimer: (scanTimer) => set({ scanTimer }),
 
   startScanWithTimer: async () => {
-    const { status, setScanTimer, setStatus, clearScannedDevices, setError } =
-      useBleStore.getState();
-    if (status === "scanning") return;
+    const {
+      isScanning,
+      setScanTimer,
+      setIsScanning,
+      clearScannedDevices,
+      setError,
+    } = useBleStore.getState();
+    if (isScanning) return;
 
     clearScannedDevices();
-    setStatus("scanning");
+    setIsScanning(true);
     setScanTimer(BLE_SCAN_DURATION);
 
     const ok = await startScan();
     if (!ok) {
       setError("Bluetooth unavailable or permission denied");
-      setStatus("idle");
+      setIsScanning(false);
       return;
     }
 
@@ -109,7 +118,7 @@ export const useBleStore = create<BleState & BleActions>((set) => ({
         if (scanInterval) clearInterval(scanInterval);
         scanInterval = null;
         stopScan().catch(() => {});
-        setStatus("idle");
+        setIsScanning(false);
         setScanTimer(0);
       } else {
         setScanTimer(current - 1);
@@ -123,7 +132,7 @@ export const useBleStore = create<BleState & BleActions>((set) => ({
       scanInterval = null;
     }
     await stopScan();
-    useBleStore.getState().setStatus("idle");
+    useBleStore.getState().setIsScanning(false);
     useBleStore.getState().setScanTimer(0);
   },
 }));

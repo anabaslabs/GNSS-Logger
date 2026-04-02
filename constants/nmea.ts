@@ -19,7 +19,7 @@ export const CONSTELLATION_LABEL: Record<string, string> = {
   GB: "BeiDou",
   GI: "NavIC",
   GQ: "QZSS",
-  GN: "Multi",
+  GN: "GNSS",
 };
 
 /** Constellation colours for UI */

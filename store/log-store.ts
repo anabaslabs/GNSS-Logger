@@ -231,7 +231,11 @@ export const useLogStore = create<LogState & LogActions>()(
       exportBulk: async (format) => {
         const { sessions, exportDirectoryUri } = get();
         if (sessions.length === 0)
-          return { success: false, message: "No sessions to export.", count: 0 };
+          return {
+            success: false,
+            message: "No sessions to export.",
+            count: 0,
+          };
         if (!exportDirectoryUri) {
           return {
             success: false,

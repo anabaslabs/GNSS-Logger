@@ -2,9 +2,9 @@ import { ConfirmModal } from "@/components/confirm-modal";
 import { PressableScale } from "@/components/pressable-scale";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import {
-  bleEmitter,
   checkBluetoothState,
   connectAndSubscribe,
+  disconnectDevice,
   enableBluetoothAndroid,
   isBleAvailable,
 } from "@/lib/ble-manager";
@@ -30,19 +30,29 @@ import {
   View,
 } from "react-native";
 
-function RssiBars({ rssi, trackColor }: { rssi: number; trackColor: string }) {
+function RssiBars({
+  rssi,
+  trackColor,
+  activeColor,
+}: {
+  rssi: number;
+  trackColor: string;
+  activeColor?: string;
+}) {
   const { colors } = useAppTheme();
   const level = rssi >= -60 ? 4 : rssi >= -70 ? 3 : rssi >= -80 ? 2 : 1;
+  const barColor = activeColor || colors.statusActive;
+
   return (
     <View style={styles.rssiContainer}>
       {[1, 2, 3, 4].map((bar) => (
         <View
           key={bar}
           style={{
-            width: 4,
-            height: 4 + bar * 3.5,
-            borderRadius: 2,
-            backgroundColor: bar <= level ? colors.statusActive : trackColor,
+            width: 5,
+            height: 3 + bar * 3,
+            borderRadius: 2.5,
+            backgroundColor: bar <= level ? barColor : trackColor,
           }}
         />
       ))}
@@ -54,45 +64,89 @@ function DeviceRow({
   device,
   onPress,
   connecting,
+  connected,
 }: {
   device: BleDevice;
   onPress: () => void;
   connecting: boolean;
+  connected: boolean;
 }) {
   const { colors } = useAppTheme();
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (connecting) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, {
+            toValue: 0.3,
+            duration: 800,
+            useNativeDriver: false,
+          }),
+          Animated.timing(pulse, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: false,
+          }),
+        ]),
+      ).start();
+    } else {
+      pulse.setValue(1);
+    }
+  }, [connecting, pulse]);
+
+  const borderColor = pulse.interpolate({
+    inputRange: [0.3, 1],
+    outputRange: [
+      (connecting || connected ? colors.statusActive : colors.border) + "22",
+      (connecting || connected ? colors.statusActive : colors.border) + "66",
+    ],
+  });
+
+  const backgroundColor = connected
+    ? colors.statusSurface
+    : connecting
+      ? colors.border + "11"
+      : colors.surface;
+
   return (
-    <PressableScale
-      style={[styles.deviceRow, { backgroundColor: colors.surface }]}
-      onPress={onPress}
-    >
-      <View style={styles.deviceInfo}>
-        <Text
-          style={[styles.deviceName, { color: colors.text }]}
-          numberOfLines={1}
-        >
-          {device.name || "Unknown"}
-        </Text>
-        <Text style={[styles.deviceId, { color: colors.textSecondary }]}>
-          {device.id}
-        </Text>
-      </View>
-      <View style={styles.rssiWrapper}>
-        <RssiBars rssi={device.rssi} trackColor={colors.border} />
-        <Text style={[styles.rssiText, { color: colors.textTertiary }]}>
-          {device.rssi} dBm
-        </Text>
-      </View>
-      <View
-        style={[styles.connectPill, { backgroundColor: colors.statusSurface }]}
+    <PressableScale onPress={onPress} style={{ width: "100%" }}>
+      <Animated.View
+        style={[
+          styles.deviceRow,
+          {
+            backgroundColor,
+            borderColor,
+            borderWidth: 1.5,
+            borderStyle: connecting ? "dashed" : "solid",
+          },
+        ]}
       >
-        {connecting ? (
-          <ActivityIndicator size="small" color={colors.statusActive} />
-        ) : (
-          <Text style={[styles.connectLabel, { color: colors.statusActive }]}>
-            Connect
+        <View style={styles.deviceInfo}>
+          <Text
+            style={[styles.deviceName, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {device.name || "Unknown"}
           </Text>
-        )}
-      </View>
+          <Text
+            style={[styles.deviceId, { color: colors.textSecondary }]}
+            numberOfLines={1}
+          >
+            {device.id}
+          </Text>
+        </View>
+        <View style={styles.rssiWrapper}>
+          <RssiBars
+            rssi={device.rssi}
+            trackColor={colors.border}
+            activeColor={connected ? colors.statusActive : undefined}
+          />
+          <Text style={[styles.rssiText, { color: colors.textTertiary }]}>
+            {device.rssi} dBm
+          </Text>
+        </View>
+      </Animated.View>
     </PressableScale>
   );
 }
@@ -157,12 +211,17 @@ export default function BleScanModal() {
   const { colors } = useAppTheme();
   const {
     status,
+    isScanning,
     scannedDevices,
     setStatus,
     setConnected,
     scanTimer,
     startScanWithTimer,
     stopScanAndReset,
+    connectedDeviceId,
+    connectedDeviceName,
+    rssi,
+    setDisconnected,
   } = useBleStore();
 
   const [connectingId, setConnectingId] = useState<string | null>(null);
@@ -203,12 +262,6 @@ export default function BleScanModal() {
 
   useEffect(() => {
     checkBluetoothState().then(setBluetoothState);
-    if (bleEmitter) {
-      const sub = bleEmitter.addListener("BleManagerDidUpdateState", (args) => {
-        setBluetoothState(args.state);
-      });
-      return () => sub.remove();
-    }
   }, []);
 
   useEffect(() => {
@@ -223,7 +276,7 @@ export default function BleScanModal() {
   }, [bluetoothState]);
 
   useEffect(() => {
-    if (status === "scanning") {
+    if (isScanning) {
       const anim = Animated.loop(
         Animated.sequence([
           Animated.timing(pulse, {
@@ -241,15 +294,26 @@ export default function BleScanModal() {
       anim.start();
       return () => anim.stop();
     }
-  }, [status, pulse]);
+  }, [isScanning, pulse]);
 
   const handleStartScan = React.useCallback(async () => {
     if (bluetoothState === "off" || !locationEnabled) return;
     await startScanWithTimer();
   }, [bluetoothState, locationEnabled, startScanWithTimer]);
 
-  async function handleConnect(device: BleDevice) {
+  async function handleToggleConnect(device: BleDevice) {
     if (connectingId) return;
+
+    if (connectedDeviceId === device.id) {
+      try {
+        await disconnectDevice(device.id);
+        setDisconnected();
+      } catch (err) {
+        console.error("Disconnect error:", err);
+      }
+      return;
+    }
+
     await stopScanAndReset();
     setStatus("connecting");
     setConnectingId(device.id);
@@ -270,14 +334,42 @@ export default function BleScanModal() {
   }
 
   useEffect(() => {
-    if (!isBleAvailable || bluetoothState !== "on" || !locationEnabled || initialScanAttempted) return;
+    if (
+      !isBleAvailable ||
+      bluetoothState !== "on" ||
+      !locationEnabled ||
+      initialScanAttempted
+    )
+      return;
     if (status === "idle") {
       setInitialScanAttempted(true);
       handleStartScan();
     }
-  }, [bluetoothState, locationEnabled, status, handleStartScan, initialScanAttempted]);
+  }, [
+    bluetoothState,
+    locationEnabled,
+    status,
+    handleStartScan,
+    initialScanAttempted,
+  ]);
 
-  const scanning = status === "scanning";
+  const displayDevices = React.useMemo(() => {
+    const list = [...scannedDevices];
+    if (connectedDeviceId && !list.find((d) => d.id === connectedDeviceId)) {
+      list.push({
+        id: connectedDeviceId,
+        name: connectedDeviceName,
+        rssi: rssi ?? -100,
+      });
+    }
+    return list.sort((a, b) => {
+      if (a.id === connectedDeviceId) return -1;
+      if (b.id === connectedDeviceId) return 1;
+      return b.rssi - a.rssi;
+    });
+  }, [scannedDevices, connectedDeviceId, connectedDeviceName, rssi]);
+
+  const scanning = isScanning;
 
   if (!isBleAvailable) {
     return <BleUnavailableScreen />;
@@ -408,48 +500,30 @@ export default function BleScanModal() {
             <>
               <View style={styles.content}>
                 <FlatList
-                  data={[...scannedDevices].sort((a, b) => b.rssi - a.rssi)}
+                  data={displayDevices}
                   keyExtractor={(d) => d.id}
                   showsVerticalScrollIndicator={false}
                   renderItem={({ item }) => (
                     <DeviceRow
                       device={item}
-                      onPress={() => handleConnect(item)}
+                      onPress={() => handleToggleConnect(item)}
                       connecting={connectingId === item.id}
+                      connected={connectedDeviceId === item.id}
                     />
                   )}
-                  ListHeaderComponent={
-                    <View
-                      style={[
-                        styles.hintBox,
-                        {
-                          backgroundColor: colors.border + "08",
-                          borderColor: colors.border,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.hintText,
-                          { color: colors.textSecondary },
-                        ]}
-                      >
-                        Ensure your ESP32 is powered and the BLE service is
-                        active.
-                      </Text>
-                    </View>
-                  }
                   ListEmptyComponent={
                     <View style={styles.empty}>
                       {scanning ? (
-                        <View style={{ height: 180, justifyContent: "center" }}>
-                          <ActivityIndicator
-                            size="large"
-                            color={colors.statusActive}
-                          />
-                        </View>
+                        <View style={{ height: 120 }} />
                       ) : (
-                        <View style={{ height: 180, justifyContent: "center", alignItems: "center", gap: 16 }}>
+                        <View
+                          style={{
+                            height: 120,
+                            justifyContent: "center",
+                            alignItems: "center",
+                            gap: 16,
+                          }}
+                        >
                           <IconSearch color={colors.textTertiary} size={48} />
                           <Text
                             style={[styles.emptyText, { color: colors.text }]}
@@ -461,8 +535,16 @@ export default function BleScanModal() {
                     </View>
                   }
                   contentContainerStyle={styles.listContainer}
-                  style={{ maxHeight: 350 }}
+                  style={{ flex: 1 }}
                 />
+                {scanning && !connectingId && (
+                  <View style={styles.spinnerOverlay} pointerEvents="none">
+                    <ActivityIndicator
+                      size="large"
+                      color={colors.statusActive}
+                    />
+                  </View>
+                )}
               </View>
 
               <View style={styles.modalFooter}>
@@ -486,7 +568,7 @@ export default function BleScanModal() {
                   onPress={
                     scanning
                       ? async () => {
-                          setInitialScanAttempted(true); // Don't auto-restart after stopping
+                          setInitialScanAttempted(true);
                           await stopScanAndReset();
                         }
                       : () => {
@@ -541,6 +623,7 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 12,
     overflow: "hidden",
+    height: 420,
   },
   header: {
     padding: 24,
@@ -567,21 +650,26 @@ const styles = StyleSheet.create({
     fontFamily: "Lexend_400Regular",
   },
   content: {
+    flex: 1,
     paddingHorizontal: 0,
-    minHeight: 350,
   },
   listContainer: {
     padding: 24,
     paddingTop: 12,
     gap: 12,
   },
-  hintBox: {
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1.5,
-    borderStyle: "dashed",
-    marginBottom: 8,
+  listFooter: {
+    paddingVertical: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
+  spinnerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+
   hintText: {
     fontSize: 12,
     lineHeight: 18,
@@ -590,53 +678,50 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   deviceRow: {
-    borderRadius: 20,
-    borderWidth: 0,
+    borderRadius: 24,
+    borderWidth: 1.5,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 16,
+    height: 72,
   },
   deviceInfo: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   deviceName: {
-    fontSize: 15,
-    fontFamily: "Lexend_700Bold",
+    fontSize: 16,
+    fontFamily: "Lexend_800ExtraBold",
+    letterSpacing: -0.2,
   },
   deviceId: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: "monospace",
-    opacity: 0.6,
+    lineHeight: 14,
+    opacity: 0.7,
   },
   rssiWrapper: {
-    alignItems: "center",
+    alignItems: "flex-end",
+    justifyContent: "center",
     gap: 4,
-    marginRight: 4,
+    minWidth: 60,
   },
   rssiContainer: {
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 2,
-    height: 16,
+    gap: 3,
+    height: 20,
+    marginBottom: 2,
   },
   rssiText: {
-    fontSize: 9,
+    fontSize: 10,
     fontFamily: "Lexend_600SemiBold",
     fontVariant: ["tabular-nums"],
+    opacity: 0.8,
   },
-  connectPill: {
-    borderRadius: 16,
-    height: 48,
-    minWidth: 100,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-  },
-  connectLabel: {
-    fontSize: 13,
-    fontFamily: "Lexend_700Bold",
+  rowSpinner: {
+    marginLeft: 8,
   },
   modalFooter: {
     flexDirection: "row",

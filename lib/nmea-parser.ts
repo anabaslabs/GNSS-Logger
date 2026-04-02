@@ -46,7 +46,6 @@ function dmToDeg(
 }
 
 function parseGGA(fields: string[], talkerId: string): Partial<NmeaFix> | null {
-  // fields[0] = sentence id, fields[1..] = data
   if (fields.length < 15) return null;
   return {
     utcTime: fields[1] ?? "",
@@ -58,11 +57,14 @@ function parseGGA(fields: string[], talkerId: string): Partial<NmeaFix> | null {
     altitudeMsl: parseFloat_(fields[9]),
     geoidSeparation: parseFloat_(fields[11]),
     dgpsAge: parseFloat_(fields[13]),
+    talkerId,
     updatedAt: Date.now(),
   };
 }
-
-function parseRMC(fields: string[]): Partial<NmeaFix & NmeaVelocity> | null {
+function parseRMC(
+  fields: string[],
+  talkerId: string,
+): Partial<NmeaFix & NmeaVelocity> | null {
   if (fields.length < 10) return null;
   const status = fields[2];
   if (status !== "A") {
@@ -70,6 +72,7 @@ function parseRMC(fields: string[]): Partial<NmeaFix & NmeaVelocity> | null {
       updatedAt: Date.now(),
       speedKnots: parseFloat_(fields[7]),
       courseTrue: parseFloat_(fields[8]),
+      talkerId,
     };
   }
   return {
@@ -79,6 +82,7 @@ function parseRMC(fields: string[]): Partial<NmeaFix & NmeaVelocity> | null {
     longitude: dmToDeg(fields[5], fields[6]),
     speedKnots: parseFloat_(fields[7]),
     courseTrue: parseFloat_(fields[8]),
+    talkerId,
     updatedAt: Date.now(),
   };
 }
@@ -134,7 +138,7 @@ function parseGSV(
   return { talkerId, satellites };
 }
 
-function parseGLL(fields: string[]): Partial<NmeaFix> | null {
+function parseGLL(fields: string[], talkerId: string): Partial<NmeaFix> | null {
   if (fields.length < 6) return null;
   const status = fields[6];
   if (status && status !== "A") return null;
@@ -142,6 +146,7 @@ function parseGLL(fields: string[]): Partial<NmeaFix> | null {
     latitude: dmToDeg(fields[1], fields[2]),
     longitude: dmToDeg(fields[3], fields[4]),
     utcTime: fields[5] ?? "",
+    talkerId,
     updatedAt: Date.now(),
   };
 }
@@ -168,7 +173,7 @@ export function parseNmea(raw: string): NmeaParsedSentence | null {
       return data ? { type: "GGA", data } : null;
     }
     case "RMC": {
-      const data = parseRMC(fields);
+      const data = parseRMC(fields, talkerId);
       return data ? { type: "RMC", data } : null;
     }
     case "VTG": {
@@ -184,7 +189,7 @@ export function parseNmea(raw: string): NmeaParsedSentence | null {
       return data ? { type: "GSV", data } : null;
     }
     case "GLL": {
-      const data = parseGLL(fields);
+      const data = parseGLL(fields, talkerId);
       return data ? { type: "GLL", data } : null;
     }
     default:
@@ -213,7 +218,30 @@ export function formatCoord(value: number | null, axis: "lat" | "lon"): string {
   return `${degrees}° ${String(minutes).padStart(2, "0")}' ${seconds.toFixed(2)}" ${dir}`;
 }
 
-export function formatNmeaTime(utcTime: string | undefined): string {
+export function getUtcValue(utcTime: string | undefined): string {
   if (!utcTime || utcTime.length < 6) return "-";
-  return `${utcTime.slice(0, 2)}:${utcTime.slice(2, 4)}:${utcTime.slice(4, 6)} UTC`;
+  return `${utcTime.slice(0, 2)}:${utcTime.slice(2, 4)}:${utcTime.slice(4, 6)}`;
+}
+
+export function getIstValue(utcTime: string | undefined): string {
+  if (!utcTime || utcTime.length < 6) return "-";
+
+  const hh = parseInt(utcTime.slice(0, 2), 10);
+  const mm = parseInt(utcTime.slice(2, 4), 10);
+  const ss = parseInt(utcTime.slice(4, 6), 10);
+
+  let istH = hh + 5;
+  let istM = mm + 30;
+  const istS = ss;
+
+  if (istM >= 60) {
+    istM -= 60;
+    istH += 1;
+  }
+  if (istH >= 24) {
+    istH -= 24;
+  }
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(istH)}:${pad(istM)}:${pad(istS)}`;
 }

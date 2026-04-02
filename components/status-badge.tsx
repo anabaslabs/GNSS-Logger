@@ -1,4 +1,5 @@
 import {
+  CONSTELLATION_LABEL,
   FIX_QUALITY_COLOR,
   FIX_QUALITY_LABEL,
   FixQuality,
@@ -9,13 +10,18 @@ import { StyleSheet, Text, View } from "react-native";
 
 interface StatusBadgeProps {
   quality: FixQuality;
-  satellitesInUse?: number;
+  talkerId?: string | null;
 }
 
-export function StatusBadge({ quality, satellitesInUse }: StatusBadgeProps) {
+export function StatusBadge({ quality, talkerId }: StatusBadgeProps) {
   const { colors } = useAppTheme();
 
-  const label = FIX_QUALITY_LABEL[quality] ?? "Unknown";
+  let label = FIX_QUALITY_LABEL[quality] ?? "Unknown";
+
+  if (quality === FixQuality.GpsFix && talkerId) {
+    label = CONSTELLATION_LABEL[talkerId] ?? label;
+  }
+
   const color = FIX_QUALITY_COLOR[quality] ?? colors.iconSecondary;
 
   return (
@@ -27,10 +33,7 @@ export function StatusBadge({ quality, satellitesInUse }: StatusBadgeProps) {
     >
       <View style={[styles.dot, { backgroundColor: color }]} />
       <Text style={[styles.label, { color }]}>
-        {label}
-        {satellitesInUse !== undefined && satellitesInUse > 0
-          ? `  ·  ${satellitesInUse} sat${satellitesInUse === 1 ? "" : "s"}`
-          : ""}
+        {quality === FixQuality.NoFix ? label : `Fix: ${label}`}
       </Text>
     </View>
   );

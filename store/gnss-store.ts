@@ -28,6 +28,7 @@ interface GnssActions {
   appendRaw: (line: string) => void;
   setLogging: (active: boolean) => void;
   clearSession: () => void;
+  clearLiveData: () => void;
   reset: () => void;
 }
 
@@ -42,6 +43,7 @@ const defaultFix: NmeaFix = {
   altitudeMsl: null,
   geoidSeparation: null,
   dgpsAge: null,
+  talkerId: null,
   updatedAt: 0,
 };
 
@@ -127,6 +129,15 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
 
   clearSession: () => {
     set({ sessionBuffer: [] });
+  },
+
+  clearLiveData: () => {
+    set({
+      fix: { ...defaultFix },
+      satellites: [],
+      velocity: { ...defaultVelocity },
+      dop: null,
+    });
   },
 
   reset: () => {

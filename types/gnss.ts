@@ -22,6 +22,8 @@ export interface NmeaFix {
   geoidSeparation: number | null;
   /** Age of differential corrections (s) */
   dgpsAge: number | null;
+  /** Talker ID of the sentence that provided the fix */
+  talkerId: string | null;
   /** Timestamp of last update */
   updatedAt: number;
 }
@@ -38,7 +40,7 @@ export interface NmeaSatellite {
   snr: number | null;
   /** Talker/constellation ID */
   talkerId: string;
-  /** Whether this satellite is used in fix (from GSA) */
+  /** Whether this satellite is in fix (from GSA) */
   usedInFix: boolean;
 }
 

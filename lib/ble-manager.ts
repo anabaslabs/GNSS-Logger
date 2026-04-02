@@ -7,7 +7,13 @@ import {
   NUS_TX_CHAR_UUID,
 } from "@/constants/ble";
 import { PermissionsAndroid, Platform } from "react-native";
-import { BleManager, Device, State, Subscription } from "react-native-ble-plx";
+import {
+  BleErrorCode,
+  BleManager,
+  Device,
+  State,
+  Subscription,
+} from "react-native-ble-plx";
 
 function base64Decode(base64: string): string {
   try {
@@ -311,6 +317,15 @@ export async function connectAndSubscribe(deviceId: string): Promise<void> {
     NUS_TX_CHAR_UUID,
     (error, characteristic) => {
       if (error) {
+        if (
+          error.errorCode === BleErrorCode.OperationCancelled ||
+          error.errorCode === BleErrorCode.DeviceDisconnected
+        ) {
+          console.log(
+            `[BLE] Notification monitoring stopped (${error.errorCode === BleErrorCode.OperationCancelled ? "cancelled" : "disconnected"})`,
+          );
+          return;
+        }
         console.error("[BLE] Notification error:", error.message);
         return;
       }

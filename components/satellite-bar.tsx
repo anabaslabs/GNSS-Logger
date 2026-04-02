@@ -30,16 +30,20 @@ export function SatelliteBar({ satellite }: SatelliteBarProps) {
         <Text style={[styles.badgeText, { color }]}>{label.slice(0, 3)}</Text>
       </View>
 
-      <Text
-        style={[styles.prn, { color: colors.textTertiary }]}
-        numberOfLines={1}
-      >
-        PRN {prn}
-      </Text>
+      <View style={{ width: 26, alignItems: "center" }}>
+        <Text
+          style={[styles.prn, { color: colors.textTertiary }]}
+          numberOfLines={1}
+        >
+          {prn}
+        </Text>
+      </View>
 
-      <Text style={[styles.elev, { color: colors.textSecondary }]}>
-        {elevation}°
-      </Text>
+      <View style={{ width: 36, alignItems: "center" }}>
+        <Text style={[styles.elev, { color: colors.textSecondary }]}>
+          {elevation}°
+        </Text>
+      </View>
 
       <View style={[styles.barTrack, { backgroundColor: colors.borderLight }]}>
         <View
@@ -53,18 +57,21 @@ export function SatelliteBar({ satellite }: SatelliteBarProps) {
         />
       </View>
 
-      <Text
-        style={[
-          styles.snrText,
-          { color: snr === null ? colors.textTertiary : colors.text },
-        ]}
-      >
-        {snr !== null ? `${snr} dB` : "-"}
-      </Text>
-
-      {usedInFix && (
-        <View style={[styles.fixDot, { backgroundColor: color }]} />
-      )}
+      <View style={styles.statusBox}>
+        <Text
+          style={[
+            styles.snrText,
+            { color: snr === null ? colors.textTertiary : colors.text },
+          ]}
+        >
+          {snr !== null ? `${snr} dB` : "-"}
+        </Text>
+        <View style={styles.dotContainer}>
+          {usedInFix && (
+            <View style={[styles.fixDot, { backgroundColor: color }]} />
+          )}
+        </View>
+      </View>
     </View>
   );
 }
@@ -73,7 +80,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    justifyContent: "space-between",
     paddingVertical: 5,
   },
   badge: {
@@ -82,7 +89,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     paddingHorizontal: 6,
     paddingVertical: 3,
-    minWidth: 40,
+    width: 40,
     alignItems: "center",
   },
   badgeText: {
@@ -92,19 +99,20 @@ const styles = StyleSheet.create({
   },
   prn: {
     fontSize: 12,
-    width: 60,
     fontFamily: "Lexend_600SemiBold",
     fontVariant: ["tabular-nums"],
   },
+  elevContainer: {
+    width: 36,
+    alignItems: "center",
+  },
   elev: {
     fontSize: 11,
-    width: 32,
-    textAlign: "right",
     fontFamily: "Lexend_400Regular",
     fontVariant: ["tabular-nums"],
   },
   barTrack: {
-    flex: 1,
+    width: 90,
     height: 10,
     borderRadius: 5,
     overflow: "hidden",
@@ -113,10 +121,20 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 5,
   },
+  statusBox: {
+    width: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  dotContainer: {
+    width: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   snrText: {
     fontSize: 11,
-    width: 48,
-    textAlign: "right",
     fontFamily: "Lexend_700Bold",
     fontVariant: ["tabular-nums"],
   },

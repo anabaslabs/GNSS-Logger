@@ -56,8 +56,15 @@ export default function RootLayout() {
     Lexend_800ExtraBold,
   });
 
-  const { applyGga, applyRmc, applyVtg, applyGsa, applyGsv, appendRaw } =
-    useGnssStore();
+  const {
+    applyGga,
+    applyRmc,
+    applyVtg,
+    applyGsa,
+    applyGsv,
+    appendRaw,
+    clearLiveData,
+  } = useGnssStore();
   const { setConnected, setDisconnected, addScannedDevice } = useBleStore();
 
   useEffect(() => {
@@ -97,6 +104,7 @@ export default function RootLayout() {
         setConnected(deviceId, null);
       } else {
         setDisconnected();
+        clearLiveData();
       }
     });
 

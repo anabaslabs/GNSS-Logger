@@ -67,6 +67,7 @@ export default function SettingsScreen() {
   const { colors, isDark } = useAppTheme();
   const {
     status,
+    isScanning,
     connectedDeviceId,
     connectedDeviceName,
     autoReconnect,
@@ -74,7 +75,7 @@ export default function SettingsScreen() {
     lastError,
     scanTimer,
   } = useBleStore();
-  const { reset } = useGnssStore();
+  const { clearLiveData } = useGnssStore();
   const { exportDirectoryUri, setExportDirectory, resetExportDirectory } =
     useLogStore();
   const { themeMode, setThemeMode } = useThemeStore();
@@ -107,7 +108,6 @@ export default function SettingsScreen() {
       onConfirm: async () => {
         setConfirmConfig((prev) => ({ ...prev, visible: false }));
         await disconnectDevice(connectedDeviceId);
-        reset();
       },
     });
   }
@@ -230,10 +230,11 @@ export default function SettingsScreen() {
                     backgroundColor: colors.dangerSurface,
                     borderColor: "transparent",
                   },
-                  status === "scanning" && {
-                    backgroundColor: colors.statusSurface,
-                    borderColor: "transparent",
-                  },
+                  isScanning &&
+                    !isConnected && {
+                      backgroundColor: colors.statusSurface,
+                      borderColor: "transparent",
+                    },
                 ]}
                 onPress={
                   isConnected
@@ -258,7 +259,7 @@ export default function SettingsScreen() {
                 >
                   {isConnected
                     ? "Disconnect"
-                    : status === "scanning"
+                    : isScanning
                       ? `Scanning (${scanTimer}s)`
                       : status === "connecting"
                         ? "Connecting…"
@@ -315,7 +316,7 @@ export default function SettingsScreen() {
                     isDestructive: true,
                     onConfirm: () => {
                       setConfirmConfig((prev) => ({ ...prev, visible: false }));
-                      reset();
+                      clearLiveData();
                     },
                   });
                 }}

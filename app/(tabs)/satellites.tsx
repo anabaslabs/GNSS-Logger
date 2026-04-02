@@ -20,7 +20,11 @@ export default function SatellitesScreen() {
   const talkerIds = useMemo(() => {
     const seen = new Set<string>();
     for (const s of satellites) seen.add(s.talkerId);
-    return Array.from(seen).sort();
+    return Array.from(seen).sort((a, b) => {
+      const labelA = CONSTELLATION_LABEL[a] ?? a;
+      const labelB = CONSTELLATION_LABEL[b] ?? b;
+      return labelB.localeCompare(labelA);
+    });
   }, [satellites]);
 
   const visible = useMemo(() => {
@@ -65,25 +69,7 @@ export default function SatellitesScreen() {
             {totalUsed}
           </Text>
           <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>
-            Used in Fix
-          </Text>
-        </View>
-        <View
-          style={[
-            styles.summaryChip,
-            {
-              backgroundColor: CONSTELLATION_COLOR.GI + "1A",
-              borderColor: CONSTELLATION_COLOR.GI + "40",
-            },
-          ]}
-        >
-          <Text style={[styles.summaryNum, { color: CONSTELLATION_COLOR.GI }]}>
-            {satellites.filter((s) => s.talkerId === TALKER_ID.NAVIC).length}
-          </Text>
-          <Text
-            style={[styles.summaryLabel, { color: CONSTELLATION_COLOR.GI }]}
-          >
-            NavIC
+            In Fix
           </Text>
         </View>
       </View>
@@ -132,48 +118,70 @@ export default function SatellitesScreen() {
         <View
           style={[styles.listHeader, { borderBottomColor: colors.borderLight }]}
         >
-          <Text
-            style={[
-              styles.headerCell,
-              { color: colors.textTertiary, width: 42 },
-            ]}
-          >
-            SYS
-          </Text>
-          <Text
-            style={[
-              styles.headerCell,
-              { color: colors.textTertiary, width: 60 },
-            ]}
-          >
-            PRN
-          </Text>
-          <Text
-            style={[
-              styles.headerCell,
-              { color: colors.textTertiary, width: 36 },
-            ]}
-          >
-            EL
-          </Text>
-          <Text
-            style={[styles.headerCell, { color: colors.textTertiary, flex: 1 }]}
-          >
-            SNR
-          </Text>
-          <Text
-            style={[
-              styles.headerCell,
-              { color: colors.textTertiary, width: 44, textAlign: "right" },
-            ]}
-          >
-            dB-Hz
-          </Text>
+          <View style={{ width: 40, alignItems: "center" }}>
+            <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
+              SYS
+            </Text>
+          </View>
+
+          <View style={{ width: 26, alignItems: "center" }}>
+            <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
+              PRN
+            </Text>
+          </View>
+
+          <View style={{ width: 36, alignItems: "center" }}>
+            <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
+              EL
+            </Text>
+          </View>
+
+          <View style={{ width: 90, alignItems: "center" }}>
+            <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
+              SNR
+            </Text>
+          </View>
+
+          <View style={{ width: 50, alignItems: "center" }}>
+            <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
+              dB-Hz
+            </Text>
+          </View>
         </View>
         {visible.length === 0 ? (
-          <Text style={[styles.noSats, { color: colors.textTertiary }]}>
-            No satellites tracked - connect to ESP32 and go outdoors
-          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              paddingVertical: 8,
+            }}
+          >
+            <View style={{ width: 40, alignItems: "center" }}>
+              <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
+                -
+              </Text>
+            </View>
+            <View style={{ width: 26, alignItems: "center" }}>
+              <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
+                -
+              </Text>
+            </View>
+            <View style={{ width: 36, alignItems: "center" }}>
+              <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
+                -
+              </Text>
+            </View>
+            <View style={{ width: 90, alignItems: "center" }}>
+              <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
+                -
+              </Text>
+            </View>
+            <View style={{ width: 50, alignItems: "center" }}>
+              <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
+                -
+              </Text>
+            </View>
+          </View>
         ) : (
           visible.map((sat) => (
             <SatelliteBar key={`${sat.talkerId}-${sat.prn}`} satellite={sat} />
@@ -193,13 +201,9 @@ export default function SatellitesScreen() {
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <IconSatellite color={CONSTELLATION_COLOR.GI} size={20} />
-            <Text style={styles.navicTitle}>NavIC / IRNSS (L5)</Text>
+            <Text style={styles.navicTitle}>IRNSS / NavIC (L5)</Text>
           </View>
-          <Text style={[styles.navicDesc, { color: colors.textSecondary }]}>
-            NavIC satellites (GI talker) are being received on the L5 band via
-            the Quectel L89HA receiver. These are Indian Regional Navigation
-            Satellite System signals operated by ISRO.
-          </Text>
+
           {satellites
             .filter((s) => s.talkerId === TALKER_ID.NAVIC)
             .sort((a, b) => (b.snr ?? 0) - (a.snr ?? 0))
@@ -208,10 +212,21 @@ export default function SatellitesScreen() {
                 <Text style={[styles.navicPrn, { color: colors.text }]}>
                   PRN {sat.prn}
                 </Text>
-                <Text style={styles.navicSnr}>
-                  {sat.snr !== null ? `${sat.snr} dB-Hz` : "No signal"}
-                  {sat.usedInFix ? " ✓" : ""}
-                </Text>
+                <View style={styles.navicValueGroup}>
+                  <Text style={styles.navicSnr}>
+                    {sat.snr !== null ? `${sat.snr} dB-Hz` : "No signal"}
+                  </Text>
+                  <View style={styles.navicCheckContainer}>
+                    {sat.usedInFix && (
+                      <View
+                        style={[
+                          styles.navicDot,
+                          { backgroundColor: CONSTELLATION_COLOR.GI },
+                        ]}
+                      />
+                    )}
+                  </View>
+                </View>
               </View>
             ))}
         </View>
@@ -222,10 +237,11 @@ export default function SatellitesScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  container: { padding: 16, paddingBottom: 40, gap: 16 },
+  container: { padding: 16, paddingBottom: 40, gap: 8 },
   summaryRow: {
     flexDirection: "row",
     gap: 12,
+    marginBottom: 16,
   },
   summaryChip: {
     flex: 1,
@@ -249,12 +265,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
-  filterRow: { gap: 8, paddingVertical: 4 },
+  filterRow: { gap: 4, paddingVertical: 4 },
   filterPill: {
-    height: 48,
-    borderRadius: 32,
+    height: 32,
+    borderRadius: 16,
     borderWidth: 0,
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -264,15 +280,16 @@ const styles = StyleSheet.create({
     borderCurve: "continuous",
     borderWidth: 1.5,
     padding: 16,
+    paddingHorizontal: 10,
     gap: 4,
   } as any,
   listHeader: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingBottom: 10,
     borderBottomWidth: 1.5,
     marginBottom: 8,
-    gap: 8,
   },
   headerCell: {
     fontSize: 10,
@@ -286,12 +303,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingVertical: 24,
   },
+  bigDash: {
+    fontSize: 26,
+    fontFamily: "Lexend_600SemiBold",
+    fontVariant: ["tabular-nums"],
+    letterSpacing: -1,
+  },
   navicBox: {
-    borderRadius: 24,
+    borderRadius: 32,
     borderCurve: "continuous",
     borderWidth: 1.5,
     padding: 20,
     gap: 12,
+    marginTop: 12,
   } as any,
   navicTitle: {
     color: CONSTELLATION_COLOR.GI,
@@ -299,7 +323,6 @@ const styles = StyleSheet.create({
     fontFamily: "Lexend_800ExtraBold",
     letterSpacing: 0.5,
   },
-  navicDesc: { fontSize: 13, lineHeight: 20, fontFamily: "Lexend_500Medium" },
   navicSatRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -309,6 +332,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Lexend_600SemiBold",
     fontVariant: ["tabular-nums"],
+  },
+  navicValueGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  navicCheckContainer: {
+    width: 24,
+    alignItems: "flex-end",
+  },
+  navicDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   navicSnr: {
     color: CONSTELLATION_COLOR.GI,

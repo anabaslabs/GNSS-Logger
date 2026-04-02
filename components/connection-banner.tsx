@@ -42,15 +42,26 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export function ConnectionBanner() {
-  const { status, connectedDeviceName, lastError, scanTimer } = useBleStore();
+  const { status, isScanning, connectedDeviceName, lastError, scanTimer } =
+    useBleStore();
   const router = useRouter();
   const { colors } = useAppTheme();
 
   const color = STATUS_COLOR[status] ?? colors.iconSecondary;
+  const isConnected = status === "connected";
+
   const label =
-    status === "scanning"
-      ? `Scanning… (${scanTimer}s)`
-      : (STATUS_LABEL[status] ?? status);
+    isConnected && connectedDeviceName
+      ? connectedDeviceName
+      : lastError && status === "error"
+        ? `Error: ${lastError}`
+        : (STATUS_LABEL[status] ?? status);
+
+  const hint = isScanning
+    ? `Scanning… (${scanTimer}s)`
+    : isConnected
+      ? "Connected & Live"
+      : "Tap to scan devices";
 
   if (!isBleAvailable) {
     return (
@@ -80,8 +91,6 @@ export function ConnectionBanner() {
     );
   }
 
-  const isConnected = status === "connected";
-
   return (
     <PressableScale
       style={[
@@ -99,11 +108,7 @@ export function ConnectionBanner() {
       </View>
       <View style={styles.textContainer}>
         <Text style={[styles.text, { color: colors.text }]} numberOfLines={1}>
-          {isConnected && connectedDeviceName
-            ? `${connectedDeviceName}`
-            : lastError && status === "error"
-              ? `Error: ${lastError}`
-              : label}
+          {label}
         </Text>
         <View
           style={{
@@ -118,7 +123,7 @@ export function ConnectionBanner() {
               { color: isConnected ? colors.textSecondary : color },
             ]}
           >
-            {isConnected ? "Connected & Live" : "Tap to scan devices"}
+            {hint}
           </Text>
         </View>
       </View>
