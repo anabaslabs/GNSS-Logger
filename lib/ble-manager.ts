@@ -6,29 +6,75 @@ import {
   NUS_SERVICE_UUID,
   NUS_TX_CHAR_UUID,
 } from "@/constants/ble";
-import {
-  NativeEventEmitter,
-  NativeModules,
-  PermissionsAndroid,
-  Platform,
-} from "react-native";
-import type { Peripheral } from "react-native-ble-manager";
+import { PermissionsAndroid, Platform } from "react-native";
+import { BleManager, Device, State, Subscription } from "react-native-ble-plx";
 
-let BleManager: typeof import("react-native-ble-manager").default | null = null;
-let bleEmitter: NativeEventEmitter | null = null;
+function base64Decode(base64: string): string {
+  try {
+    if (typeof atob === "function") {
+      return atob(base64);
+    }
+
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let result = "";
+    let i = 0;
+    base64 = base64.replace(/[^A-Za-z0-9+/]/g, "");
+    while (i < base64.length) {
+      const a = chars.indexOf(base64.charAt(i++));
+      const b = chars.indexOf(base64.charAt(i++));
+      const c = chars.indexOf(base64.charAt(i++));
+      const d = chars.indexOf(base64.charAt(i++));
+      result += String.fromCharCode((a << 2) | (b >> 4));
+      if (c !== 64) result += String.fromCharCode(((b & 15) << 4) | (c >> 2));
+      if (d !== 64) result += String.fromCharCode(((c & 3) << 6) | d);
+    }
+    return result;
+  } catch {
+    return "";
+  }
+}
+
+function base64Encode(str: string): string {
+  try {
+    if (typeof btoa === "function") {
+      return btoa(str);
+    }
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let result = "";
+    let i = 0;
+    while (i < str.length) {
+      const a = str.charCodeAt(i++);
+      const b = str.charCodeAt(i++);
+      const c = str.charCodeAt(i++);
+      result += chars.charAt(a >> 2);
+      result += chars.charAt(((a & 3) << 4) | (b >> 4));
+      result += isNaN(b) ? "=" : chars.charAt(((b & 15) << 2) | (c >> 6));
+      result += isNaN(c) ? "=" : chars.charAt(c & 63);
+    }
+    return result;
+  } catch {
+    return "";
+  }
+}
+
+let bleManager: BleManager | null = null;
 
 try {
-  const mod = require("react-native-ble-manager");
-  BleManager = mod.default ?? mod;
-  const BleManagerModule = NativeModules.BleManager;
-  if (BleManagerModule) {
-    bleEmitter = new NativeEventEmitter(BleManagerModule);
-  }
-} catch (e) {}
+  bleManager = new BleManager();
+  console.log("[BLE] BleManager (ble-plx) created successfully");
+} catch (e) {
+  console.error("[BLE] Failed to create BleManager:", e);
+}
 
-export { bleEmitter };
+const IS_NATIVE_AVAILABLE = bleManager !== null;
 
-const IS_NATIVE_AVAILABLE = BleManager !== null;
+export interface Peripheral {
+  id: string;
+  name: string | null;
+  rssi: number | null;
+}
 
 export type NmeaLineCallback = (line: string) => void;
 export type DeviceFoundCallback = (peripheral: Peripheral) => void;
@@ -40,8 +86,9 @@ let connectionCallback: ConnectionCallback | null = null;
 let deviceFoundCallback: DeviceFoundCallback | null = null;
 
 const reassemblyBuffers: Record<string, string> = {};
-
-const subscriptions: ReturnType<NativeEventEmitter["addListener"]>[] = [];
+const subscriptions: Subscription[] = [];
+let connectedDevice: Device | null = null;
+let monitorSubscription: Subscription | null = null;
 
 async function requestAndroidPermissions(): Promise<boolean> {
   if (process.env.EXPO_OS !== "android") return true;
@@ -114,46 +161,37 @@ function processNmeaChunk(deviceId: string, chunk: string): void {
 }
 
 export async function initializeBle(): Promise<void> {
-  if (!IS_NATIVE_AVAILABLE || !BleManager || initialized) return;
-  await BleManager.start({ showAlert: false });
+  if (!IS_NATIVE_AVAILABLE || !bleManager || initialized) {
+    console.log(
+      "[BLE] Init skipped - available:",
+      IS_NATIVE_AVAILABLE,
+      "initialized:",
+      initialized,
+    );
+    return;
+  }
+
+  console.log("[BLE] Initializing BLE manager (ble-plx)...");
+
+  const stateSubscription = bleManager.onStateChange((state) => {
+    console.log("[BLE] State changed:", state);
+  }, true);
+  subscriptions.push(stateSubscription);
+
   initialized = true;
-
-  if (!bleEmitter) return;
-
-  subscriptions.push(
-    bleEmitter.addListener(
-      "BleManagerDiscoverPeripheral",
-      (peripheral: Peripheral) => {
-        deviceFoundCallback?.(peripheral);
-      },
-    ),
-  );
-
-  subscriptions.push(
-    bleEmitter.addListener(
-      "BleManagerDidUpdateValueForCharacteristic",
-      (event: { peripheral: string; value: number[] }) => {
-        const text = String.fromCharCode(...event.value);
-        processNmeaChunk(event.peripheral, text);
-      },
-    ),
-  );
-
-  subscriptions.push(
-    bleEmitter.addListener(
-      "BleManagerDisconnectPeripheral",
-      (event: { peripheral: string }) => {
-        connectionCallback?.(event.peripheral, false);
-        delete reassemblyBuffers[event.peripheral];
-      },
-    ),
-  );
+  console.log("[BLE] BLE manager initialized");
 }
 
 export function destroyBle(): void {
   subscriptions.forEach((s) => s.remove());
   subscriptions.length = 0;
+  if (monitorSubscription) {
+    monitorSubscription.remove();
+    monitorSubscription = null;
+  }
   initialized = false;
+  connectedDevice = null;
+  console.log("[BLE] BLE manager destroyed");
 }
 
 export function onNmeaLine(cb: NmeaLineCallback): void {
@@ -169,59 +207,123 @@ export function onDeviceFound(cb: DeviceFoundCallback): void {
 }
 
 export async function startScan(): Promise<boolean> {
-  if (!IS_NATIVE_AVAILABLE || !BleManager) {
+  if (!IS_NATIVE_AVAILABLE || !bleManager) {
+    console.log("[BLE] BLE not available");
     return false;
   }
-  const granted = await requestAndroidPermissions();
-  if (!granted) return false;
 
-  try {
-    await BleManager.scan({
-      serviceUUIDs: [NUS_SERVICE_UUID],
-      seconds: BLE_SCAN_DURATION,
-      allowDuplicates: true,
-    });
-    return true;
-  } catch {
-    try {
-      await BleManager.scan({
-        serviceUUIDs: [],
-        seconds: BLE_SCAN_DURATION,
-        allowDuplicates: true,
-      });
-      return true;
-    } catch {
-      return false;
-    }
+  const granted = await requestAndroidPermissions();
+  if (!granted) {
+    console.log("[BLE] Permissions denied");
+    return false;
   }
+
+  const state = await bleManager.state();
+  if (state !== State.PoweredOn) {
+    console.log("[BLE] Bluetooth is not powered on, state:", state);
+    return false;
+  }
+
+  console.log("[BLE] Starting scan...");
+
+  const seenDevices = new Set<string>();
+
+  bleManager.startDeviceScan(
+    null,
+    { allowDuplicates: false },
+    (error, device) => {
+      if (error) {
+        console.error("[BLE] Scan error:", error.message);
+        return;
+      }
+
+      if (device && !seenDevices.has(device.id)) {
+        seenDevices.add(device.id);
+        console.log(
+          "[BLE] Device discovered:",
+          device.name || device.id,
+          "RSSI:",
+          device.rssi,
+        );
+
+        const peripheral: Peripheral = {
+          id: device.id,
+          name: device.name,
+          rssi: device.rssi,
+        };
+        deviceFoundCallback?.(peripheral);
+      }
+    },
+  );
+
+  setTimeout(() => {
+    stopScan();
+  }, BLE_SCAN_DURATION * 1000);
+
+  return true;
 }
 
 export async function stopScan(): Promise<void> {
-  if (!IS_NATIVE_AVAILABLE || !BleManager) return;
+  if (!IS_NATIVE_AVAILABLE || !bleManager) return;
   try {
-    await BleManager.stopScan();
-  } catch {}
+    bleManager.stopDeviceScan();
+    console.log("[BLE] Scan stopped");
+  } catch (e) {
+    console.log("[BLE] Error stopping scan:", e);
+  }
 }
 
 export async function connectAndSubscribe(deviceId: string): Promise<void> {
-  if (!IS_NATIVE_AVAILABLE || !BleManager)
+  if (!IS_NATIVE_AVAILABLE || !bleManager)
     throw new Error(
       "BLE native module not available. Use a custom dev build (expo run:android).",
     );
 
-  await BleManager.connect(deviceId);
+  console.log("[BLE] Connecting to device:", deviceId);
 
-  try {
-    await BleManager.requestMTU(deviceId, BLE_MTU_SIZE);
-  } catch {}
+  const device = await bleManager.connectToDevice(deviceId, {
+    requestMTU: BLE_MTU_SIZE,
+  });
+  console.log("[BLE] Connected successfully");
 
-  await BleManager.retrieveServices(deviceId);
-  await BleManager.startNotification(
-    deviceId,
+  console.log("[BLE] Discovering services...");
+  await device.discoverAllServicesAndCharacteristics();
+  console.log("[BLE] Services discovered");
+
+  connectedDevice = device;
+
+  device.onDisconnected((error, disconnectedDevice) => {
+    console.log("[BLE] Device disconnected:", disconnectedDevice?.id);
+    if (disconnectedDevice) {
+      connectionCallback?.(disconnectedDevice.id, false);
+      delete reassemblyBuffers[disconnectedDevice.id];
+    }
+    connectedDevice = null;
+    if (monitorSubscription) {
+      monitorSubscription.remove();
+      monitorSubscription = null;
+    }
+  });
+
+  console.log("[BLE] Starting notification monitoring...");
+  monitorSubscription = device.monitorCharacteristicForService(
     NUS_SERVICE_UUID,
     NUS_TX_CHAR_UUID,
+    (error, characteristic) => {
+      if (error) {
+        console.error("[BLE] Notification error:", error.message);
+        return;
+      }
+
+      if (characteristic?.value) {
+        const decoded = base64Decode(characteristic.value);
+        console.log("[BLE] ✅ Data received:", decoded.length, "bytes");
+        processNmeaChunk(deviceId, decoded);
+      }
+    },
   );
 
+  console.log("[BLE] Notifications enabled - listening for NMEA data");
   connectionCallback?.(deviceId, true);
 }
 
@@ -229,52 +331,69 @@ export async function sendCommand(
   deviceId: string,
   command: string,
 ): Promise<void> {
-  if (!IS_NATIVE_AVAILABLE || !BleManager) return;
-  const bytes = Array.from(command).map((c) => c.charCodeAt(0));
-  await BleManager.write(
-    deviceId,
+  if (!IS_NATIVE_AVAILABLE || !connectedDevice) return;
+
+  const encoded = base64Encode(command);
+  await connectedDevice.writeCharacteristicWithResponseForService(
     NUS_SERVICE_UUID,
     NUS_RX_CHAR_UUID,
-    bytes,
-    bytes.length,
+    encoded,
   );
 }
 
 export async function disconnectDevice(deviceId: string): Promise<void> {
-  if (!IS_NATIVE_AVAILABLE || !BleManager) return;
+  if (!IS_NATIVE_AVAILABLE || !bleManager) return;
+
+  if (monitorSubscription) {
+    monitorSubscription.remove();
+    monitorSubscription = null;
+  }
+
   try {
-    await BleManager.stopNotification(
-      deviceId,
-      NUS_SERVICE_UUID,
-      NUS_TX_CHAR_UUID,
-    );
-  } catch {}
-  try {
-    await BleManager.disconnect(deviceId);
-  } catch {}
+    await bleManager.cancelDeviceConnection(deviceId);
+  } catch (e) {
+    console.log("[BLE] Error disconnecting:", e);
+  }
+
   delete reassemblyBuffers[deviceId];
+  connectedDevice = null;
   connectionCallback?.(deviceId, false);
+  console.log("[BLE] Disconnected from device:", deviceId);
 }
 
 export async function getConnectedDevices(): Promise<Peripheral[]> {
-  if (!IS_NATIVE_AVAILABLE || !BleManager) return [];
-  return BleManager.getConnectedPeripherals([]);
+  if (!IS_NATIVE_AVAILABLE || !bleManager) return [];
+  try {
+    const devices = await bleManager.connectedDevices([NUS_SERVICE_UUID]);
+    return devices.map((d) => ({
+      id: d.id,
+      name: d.name,
+      rssi: d.rssi,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export async function checkBluetoothState(): Promise<string> {
-  if (!IS_NATIVE_AVAILABLE || !BleManager) return "off";
+  if (!IS_NATIVE_AVAILABLE || !bleManager) return "off";
   try {
-    return await BleManager.checkState();
+    const state = await bleManager.state();
+    return state === State.PoweredOn ? "on" : "off";
   } catch {
     return "off";
   }
 }
 
 export async function enableBluetoothAndroid(): Promise<void> {
-  if (Platform.OS !== "android" || !IS_NATIVE_AVAILABLE || !BleManager) return;
+  if (Platform.OS !== "android" || !IS_NATIVE_AVAILABLE || !bleManager) return;
   try {
-    await BleManager.enableBluetooth();
-  } catch {}
+    await bleManager.enable();
+  } catch (e) {
+    console.log("[BLE] Could not enable Bluetooth:", e);
+  }
 }
+
+export const bleEmitter = null;
 
 export { IS_NATIVE_AVAILABLE as isBleAvailable };

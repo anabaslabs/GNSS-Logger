@@ -39,14 +39,13 @@
         }
       ],
       [
-        "react-native-ble-manager",
+        "react-native-ble-plx",
         {
           "isBackgroundEnabled": false,
           "modes": [
             "central"
           ],
-          "bluetoothAlwaysPermission": "Allow GNSS Logger to use Bluetooth to connect to the ESP32 receiver",
-          "bluetoothPeripheralPermission": "Allow GNSS Logger to use Bluetooth peripherals"
+          "bluetoothAlwaysPermission": "Allow GNSS Logger to use Bluetooth to connect to the ESP32 receiver"
         }
       ],
       "expo-font"
