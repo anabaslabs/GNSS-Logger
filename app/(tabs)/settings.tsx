@@ -20,6 +20,7 @@ import {
   IconSun,
   IconTrashX,
 } from "@tabler/icons-react-native";
+import Constants from "expo-constants";
 import * as IntentLauncher from "expo-intent-launcher";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -542,9 +543,26 @@ export default function SettingsScreen() {
             About
           </Text>
           <View style={styles.aboutBlock}>
-            <Text style={[styles.aboutTitle, { color: colors.text }]}>
-              GNSS Logger
-            </Text>
+            <View style={styles.aboutHeader}>
+              <Text style={[styles.aboutTitle, { color: colors.text }]}>
+                GNSS Logger
+              </Text>
+              <View
+                style={[
+                  styles.badge,
+                  {
+                    backgroundColor: colors.statusActive + "15",
+                    borderColor: colors.statusActive + "30",
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.badgeText, { color: colors.statusActive }]}
+                >
+                  v{Constants.expoConfig?.version ?? "1.0.0"}
+                </Text>
+              </View>
+            </View>
             <Text style={[styles.aboutDesc, { color: colors.textSecondary }]}>
               A professional-grade GNSS data logger and visualizer. Connects to
               external high-precision receivers via Bluetooth LE to capture,
@@ -637,8 +655,24 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   aboutBlock: { paddingTop: 10, gap: 8 },
+  aboutHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
   aboutTitle: { fontSize: 18, fontFamily: "Lexend_800ExtraBold" },
   aboutDesc: { fontSize: 14, lineHeight: 22, fontFamily: "Lexend_400Regular" },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontFamily: "Lexend_700Bold",
+  },
   themePicker: {
     flexDirection: "row",
     gap: 12,

@@ -17,14 +17,15 @@ export default function TabLayout() {
         headerShown: true,
         headerStyle: {
           backgroundColor: colors.background,
-          height: 75,
+          height: 80,
         },
         headerTitleAlign: "left",
         headerTitleStyle: {
           fontFamily: "Lexend_700Bold",
-          fontSize: 22,
+          fontSize: 20,
           color: colors.text,
           marginLeft: 8,
+          marginBottom: 8,
         },
         tabBarStyle: {
           backgroundColor: colors.surface,
