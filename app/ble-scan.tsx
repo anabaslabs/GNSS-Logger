@@ -1,4 +1,22 @@
-import { IconBluetoothOff, IconSearch } from "@tabler/icons-react-native";
+import { ConfirmModal } from "@/components/confirm-modal";
+import { PressableScale } from "@/components/pressable-scale";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import {
+  bleEmitter,
+  checkBluetoothState,
+  connectAndSubscribe,
+  enableBluetoothAndroid,
+  isBleAvailable,
+} from "@/lib/ble-manager";
+import { useBleStore } from "@/store/ble-store";
+import type { BleDevice } from "@/types/gnss";
+import {
+  IconBluetoothOff,
+  IconMapPinOff,
+  IconSearch,
+} from "@tabler/icons-react-native";
+import * as IntentLauncher from "expo-intent-launcher";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -11,19 +29,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-import { ConfirmModal } from "@/components/confirm-modal";
-import { PressableScale } from "@/components/pressable-scale";
-import { BLE_SCAN_DURATION } from "@/constants/ble";
-import { useAppTheme } from "@/hooks/useAppTheme";
-import {
-  connectAndSubscribe,
-  isBleAvailable,
-  startScan,
-  stopScan,
-} from "@/lib/ble-manager";
-import { useBleStore } from "@/store/ble-store";
-import type { BleDevice } from "@/types/gnss";
 
 function RssiBars({ rssi, trackColor }: { rssi: number; trackColor: string }) {
   const { colors } = useAppTheme();
@@ -156,15 +161,14 @@ export default function BleScanModal() {
   const {
     status,
     scannedDevices,
-    clearScannedDevices,
     setStatus,
     setConnected,
-    setError,
+    scanTimer,
+    startScanWithTimer,
+    stopScanAndReset,
   } = useBleStore();
 
   const [connectingId, setConnectingId] = useState<string | null>(null);
-  const [timeLeft, setTimeLeft] = useState(BLE_SCAN_DURATION);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [modalConfig, setModalConfig] = useState<{
     visible: boolean;
@@ -177,6 +181,48 @@ export default function BleScanModal() {
   });
 
   const pulse = useRef(new Animated.Value(1)).current;
+  const [bluetoothState, setBluetoothState] = useState<string>("unknown");
+  const [locationEnabled, setLocationEnabled] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (process.env.EXPO_OS !== "android") return;
+
+    const checkLocation = async () => {
+      try {
+        const enabled = await Location.hasServicesEnabledAsync();
+        if (enabled !== locationEnabled) {
+          setLocationEnabled(enabled);
+        }
+      } catch (e) {
+        console.error("Failed to check location services:", e);
+      }
+    };
+
+    checkLocation();
+    const interval = setInterval(checkLocation, 2000);
+    return () => clearInterval(interval);
+  }, [locationEnabled]);
+
+  useEffect(() => {
+    checkBluetoothState().then(setBluetoothState);
+    if (bleEmitter) {
+      const sub = bleEmitter.addListener("BleManagerDidUpdateState", (args) => {
+        setBluetoothState(args.state);
+      });
+      return () => sub.remove();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (bluetoothState !== "off") return;
+    const interval = setInterval(async () => {
+      const state = await checkBluetoothState();
+      if (state !== bluetoothState) {
+        setBluetoothState(state);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [bluetoothState]);
 
   useEffect(() => {
     if (status === "scanning") {
@@ -199,41 +245,14 @@ export default function BleScanModal() {
     }
   }, [status, pulse]);
 
-  async function handleStartScan() {
-    clearScannedDevices();
-    setStatus("scanning");
-    setTimeLeft(BLE_SCAN_DURATION);
-
-    const ok = await startScan();
-    if (!ok) {
-      setError("Bluetooth unavailable or permission denied");
-      setModalConfig({
-        visible: true,
-        title: "Permission Required",
-        message:
-          "Please enable Bluetooth and Location permissions for this app in settings.",
-      });
-      setStatus("idle");
-      return;
-    }
-
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          setStatus("idle");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }
+  const handleStartScan = React.useCallback(async () => {
+    if (bluetoothState === "off" || !locationEnabled) return;
+    await startScanWithTimer();
+  }, [bluetoothState, locationEnabled, startScanWithTimer]);
 
   async function handleConnect(device: BleDevice) {
     if (connectingId) return;
-    await stopScan();
-    if (timerRef.current) clearInterval(timerRef.current);
+    await stopScanAndReset();
     setStatus("connecting");
     setConnectingId(device.id);
 
@@ -253,14 +272,11 @@ export default function BleScanModal() {
   }
 
   useEffect(() => {
-    if (!isBleAvailable) return;
-    handleStartScan();
-    return () => {
-      stopScan().catch(() => {});
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!isBleAvailable || bluetoothState !== "on" || !locationEnabled) return;
+    if (status !== "scanning") {
+      handleStartScan();
+    }
+  }, [bluetoothState, locationEnabled, handleStartScan]);
 
   const scanning = status === "scanning";
 
@@ -293,7 +309,6 @@ export default function BleScanModal() {
             { backgroundColor: colors.surface, borderColor: colors.border },
           ]}
         >
-          {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
               <View style={styles.statusBox}>
@@ -308,109 +323,189 @@ export default function BleScanModal() {
             <Text
               style={[styles.modalSubtitle, { color: colors.textSecondary }]}
             >
-              {scanning
-                ? `Searching... (${timeLeft}s remaining)`
-                : `Scanning stopped · ${scannedDevices.length} found`}
+              {bluetoothState === "off"
+                ? "Bluetooth is turned off"
+                : !locationEnabled
+                  ? "Location Services are disabled"
+                  : bluetoothState === "turning_on"
+                    ? "Bluetooth is turning on..."
+                    : scanning
+                      ? `Searching... (${scanTimer}s remaining)`
+                      : `Scanning stopped · ${scannedDevices.length} found`}
             </Text>
           </View>
 
-          {/* Device List Area */}
-          <View style={styles.content}>
-            <FlatList
-              data={[...scannedDevices].sort((a, b) => b.rssi - a.rssi)}
-              keyExtractor={(d) => d.id}
-              showsVerticalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <DeviceRow
-                  device={item}
-                  onPress={() => handleConnect(item)}
-                  connecting={connectingId === item.id}
+          {bluetoothState === "off" ||
+          bluetoothState === "turning_on" ||
+          !locationEnabled ? (
+            <View style={styles.empty}>
+              {bluetoothState === "turning_on" ? (
+                <ActivityIndicator
+                  size="large"
+                  color={colors.statusActive}
+                  style={{ marginBottom: 16 }}
                 />
+              ) : !locationEnabled ? (
+                <IconMapPinOff color={colors.textTertiary} size={48} />
+              ) : (
+                <IconBluetoothOff color={colors.textTertiary} size={48} />
               )}
-              ListHeaderComponent={
-                <View
+
+              <Text style={[styles.emptyText, { color: colors.text }]}>
+                {bluetoothState === "turning_on"
+                  ? "Enabling Bluetooth..."
+                  : !locationEnabled
+                    ? "Location Disabled"
+                    : "Bluetooth is Disabled"}
+              </Text>
+
+              <Text
+                style={[
+                  styles.hintText,
+                  { color: colors.textSecondary, marginBottom: 16 },
+                ]}
+              >
+                {bluetoothState === "turning_on"
+                  ? "Please wait while Bluetooth is being enabled."
+                  : !locationEnabled
+                    ? "Location Services are required to scan for BLE devices on Android."
+                    : "Please enable Bluetooth to scan for nearby GNSS devices."}
+              </Text>
+
+              {process.env.EXPO_OS === "android" && (
+                <PressableScale
                   style={[
-                    styles.hintBox,
+                    styles.closeBtn,
+                    { backgroundColor: colors.statusActive },
+                  ]}
+                  onPress={async () => {
+                    if (!locationEnabled) {
+                      await IntentLauncher.startActivityAsync(
+                        IntentLauncher.ActivityAction.LOCATION_SOURCE_SETTINGS,
+                      );
+                    } else if (bluetoothState === "off") {
+                      await enableBluetoothAndroid();
+                      setTimeout(async () => {
+                        const s = await checkBluetoothState();
+                        setBluetoothState(s);
+                      }, 1000);
+                    }
+                  }}
+                >
+                  <Text style={[styles.closeBtnText, { color: "#fff" }]}>
+                    {!locationEnabled
+                      ? "Turn On Location"
+                      : "Turn On Bluetooth"}
+                  </Text>
+                </PressableScale>
+              )}
+            </View>
+          ) : (
+            <>
+              <View style={styles.content}>
+                <FlatList
+                  data={[...scannedDevices].sort((a, b) => b.rssi - a.rssi)}
+                  keyExtractor={(d) => d.id}
+                  showsVerticalScrollIndicator={false}
+                  renderItem={({ item }) => (
+                    <DeviceRow
+                      device={item}
+                      onPress={() => handleConnect(item)}
+                      connecting={connectingId === item.id}
+                    />
+                  )}
+                  ListHeaderComponent={
+                    <View
+                      style={[
+                        styles.hintBox,
+                        {
+                          backgroundColor: colors.border + "08",
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.hintText,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        Ensure your ESP32 is powered and the BLE service is
+                        active.
+                      </Text>
+                    </View>
+                  }
+                  ListEmptyComponent={
+                    <View style={styles.empty}>
+                      {scanning ? (
+                        <ActivityIndicator
+                          size="large"
+                          color={colors.statusActive}
+                        />
+                      ) : (
+                        <>
+                          <IconSearch color={colors.textTertiary} size={48} />
+                          <Text
+                            style={[styles.emptyText, { color: colors.text }]}
+                          >
+                            No Devices Found
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                  }
+                  contentContainerStyle={styles.listContainer}
+                  style={{ maxHeight: 400 }}
+                />
+              </View>
+
+              <View style={styles.modalFooter}>
+                <Pressable
+                  hitSlop={12}
+                  onPress={() => router.back()}
+                  style={styles.footerBtn}
+                >
+                  <Text
+                    style={[
+                      styles.footerBtnText,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Cancel
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  hitSlop={12}
+                  onPress={
+                    scanning
+                      ? async () => {
+                          await stopScanAndReset();
+                        }
+                      : handleStartScan
+                  }
+                  style={[
+                    styles.footerBtn,
                     {
-                      backgroundColor: colors.border + "08",
-                      borderColor: colors.border,
+                      backgroundColor: scanning
+                        ? colors.danger + "15"
+                        : colors.statusActive,
+                      paddingHorizontal: 24,
                     },
                   ]}
                 >
                   <Text
-                    style={[styles.hintText, { color: colors.textSecondary }]}
+                    style={[
+                      styles.footerBtnText,
+                      { color: scanning ? colors.danger : "#fff" },
+                    ]}
                   >
-                    Ensure your ESP32 is powered and the BLE service is active.
+                    {scanning ? "Stop" : "Scan"}
                   </Text>
-                </View>
-              }
-              ListEmptyComponent={
-                <View style={styles.empty}>
-                  {scanning ? (
-                    <ActivityIndicator
-                      size="large"
-                      color={colors.statusActive}
-                    />
-                  ) : (
-                    <>
-                      <IconSearch color={colors.textTertiary} size={48} />
-                      <Text style={[styles.emptyText, { color: colors.text }]}>
-                        No Devices Found
-                      </Text>
-                    </>
-                  )}
-                </View>
-              }
-              contentContainerStyle={styles.listContainer}
-              style={{ maxHeight: 400 }}
-            />
-          </View>
-
-          {/* Footer Actions */}
-          <View style={styles.modalFooter}>
-            <Pressable
-              hitSlop={12}
-              onPress={() => router.back()}
-              style={styles.footerBtn}
-            >
-              <Text
-                style={[styles.footerBtnText, { color: colors.textSecondary }]}
-              >
-                Cancel
-              </Text>
-            </Pressable>
-
-            <Pressable
-              hitSlop={12}
-              onPress={
-                scanning
-                  ? async () => {
-                      await stopScan();
-                      setStatus("idle");
-                      if (timerRef.current) clearInterval(timerRef.current);
-                    }
-                  : handleStartScan
-              }
-              style={[
-                styles.footerBtn,
-                {
-                  backgroundColor: scanning
-                    ? colors.danger + "15"
-                    : colors.statusActive,
-                  paddingHorizontal: 24,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.footerBtnText,
-                  { color: scanning ? colors.danger : "#fff" },
-                ]}
-              >
-                {scanning ? "Stop" : "Scan"}
-              </Text>
-            </Pressable>
-          </View>
+                </Pressable>
+              </View>
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -483,6 +578,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontFamily: "Lexend_400Regular",
     textAlign: "center",
+    paddingHorizontal: 32,
   },
   deviceRow: {
     borderRadius: 20,

@@ -26,6 +26,8 @@ try {
   }
 } catch (e) {}
 
+export { bleEmitter };
+
 const IS_NATIVE_AVAILABLE = BleManager !== null;
 
 export type NmeaLineCallback = (line: string) => void;
@@ -257,6 +259,22 @@ export async function disconnectDevice(deviceId: string): Promise<void> {
 export async function getConnectedDevices(): Promise<Peripheral[]> {
   if (!IS_NATIVE_AVAILABLE || !BleManager) return [];
   return BleManager.getConnectedPeripherals([]);
+}
+
+export async function checkBluetoothState(): Promise<string> {
+  if (!IS_NATIVE_AVAILABLE || !BleManager) return "off";
+  try {
+    return await BleManager.checkState();
+  } catch {
+    return "off";
+  }
+}
+
+export async function enableBluetoothAndroid(): Promise<void> {
+  if (Platform.OS !== "android" || !IS_NATIVE_AVAILABLE || !BleManager) return;
+  try {
+    await BleManager.enableBluetooth();
+  } catch {}
 }
 
 export { IS_NATIVE_AVAILABLE as isBleAvailable };

@@ -42,12 +42,15 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export function ConnectionBanner() {
-  const { status, connectedDeviceName, lastError } = useBleStore();
+  const { status, connectedDeviceName, lastError, scanTimer } = useBleStore();
   const router = useRouter();
   const { colors } = useAppTheme();
 
   const color = STATUS_COLOR[status] ?? colors.iconSecondary;
-  const label = STATUS_LABEL[status] ?? status;
+  const label =
+    status === "scanning"
+      ? `Scanning… (${scanTimer}s)`
+      : (STATUS_LABEL[status] ?? status);
 
   if (!isBleAvailable) {
     return (

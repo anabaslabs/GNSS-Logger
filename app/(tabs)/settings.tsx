@@ -24,6 +24,7 @@ import * as IntentLauncher from "expo-intent-launcher";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Linking,
   Platform,
   Pressable,
@@ -70,6 +71,7 @@ export default function SettingsScreen() {
     autoReconnect,
     setAutoReconnect,
     lastError,
+    scanTimer,
   } = useBleStore();
   const { reset } = useGnssStore();
   const { exportDirectoryUri, setExportDirectory, resetExportDirectory } =
@@ -227,6 +229,10 @@ export default function SettingsScreen() {
                     backgroundColor: colors.dangerSurface,
                     borderColor: colors.dangerBorder,
                   },
+                  status === "scanning" && {
+                    backgroundColor: colors.statusActive + "15",
+                    borderColor: colors.statusActive,
+                  },
                 ]}
                 onPress={
                   isConnected
@@ -235,14 +241,28 @@ export default function SettingsScreen() {
                 }
                 accessibilityRole="button"
               >
+                {status === "connecting" && (
+                  <ActivityIndicator
+                    size="small"
+                    color={colors.tint}
+                    style={{ marginRight: 4 }}
+                  />
+                )}
                 <Text
                   style={[
                     styles.actionButtonText,
                     { color: colors.textSecondary },
                     isConnected && { color: colors.danger },
+                    status === "scanning" && { color: colors.statusActive },
                   ]}
                 >
-                  {isConnected ? "Disconnect" : "Scan & Connect"}
+                  {isConnected
+                    ? "Disconnect"
+                    : status === "scanning"
+                      ? `Scanning (${scanTimer}s)`
+                      : status === "connecting"
+                        ? "Connecting…"
+                        : "Scan & Connect"}
                 </Text>
               </Pressable>
             }
