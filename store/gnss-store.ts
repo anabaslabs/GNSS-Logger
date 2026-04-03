@@ -2,6 +2,7 @@ import { FixQuality } from "@/constants/nmea";
 import type {
   NmeaDop,
   NmeaFix,
+  NmeaParsedSentence,
   NmeaSatellite,
   NmeaVelocity,
 } from "@/types/gnss";
@@ -26,6 +27,7 @@ interface GnssActions {
   applyGsa: (data: NmeaDop) => void;
   applyGsv: (talkerId: string, satellites: NmeaSatellite[]) => void;
   appendRaw: (line: string) => void;
+  applyBatch: (sentences: NmeaParsedSentence[], rawLines: string[]) => void;
   setLogging: (active: boolean) => void;
   clearSession: () => void;
   clearLiveData: () => void;
@@ -120,6 +122,83 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
         ? [...s.sessionBuffer, line]
         : s.sessionBuffer;
       return { rawBuffer: raw, sessionBuffer: session };
+    });
+  },
+
+  applyBatch: (sentences, rawLines) => {
+    set((s) => {
+      let nextFix = { ...s.fix };
+      let nextVelocity = { ...s.velocity };
+      let nextSats = [...s.satellites];
+      let nextDop = s.dop;
+
+      for (const parsed of sentences) {
+        switch (parsed.type) {
+          case "GGA":
+            nextFix = { ...nextFix, ...parsed.data };
+            break;
+          case "RMC": {
+            const {
+              speedKmh,
+              speedKnots,
+              courseTrue,
+              courseMagnetic,
+              mode,
+              ...fixData
+            } = parsed.data;
+            nextFix = { ...nextFix, ...fixData };
+            nextVelocity = {
+              ...nextVelocity,
+              ...(speedKnots !== undefined && { speedKnots }),
+              ...(speedKmh !== undefined && { speedKmh }),
+              ...(courseTrue !== undefined && { courseTrue }),
+              ...(courseMagnetic !== undefined && { courseMagnetic }),
+              ...(mode !== undefined && { mode }),
+            };
+            break;
+          }
+          case "VTG":
+            nextVelocity = { ...nextVelocity, ...parsed.data };
+            break;
+          case "GSA": {
+            const usedSet = new Set(parsed.data.satellitesUsed);
+            nextSats = nextSats.map((sat) =>
+              sat.talkerId === parsed.data.talkerId ||
+              parsed.data.talkerId === "GN"
+                ? { ...sat, usedInFix: usedSet.has(sat.prn) }
+                : sat,
+            );
+            nextDop = parsed.data;
+            break;
+          }
+          case "GSV": {
+            const talkerId = parsed.data.talkerId;
+            const newSats = parsed.data.satellites;
+            const otherSats = nextSats.filter(
+              (sat) => sat.talkerId !== talkerId,
+            );
+            nextSats = [...otherSats, ...newSats];
+            break;
+          }
+          case "GLL":
+            nextFix = { ...nextFix, ...parsed.data };
+            break;
+        }
+      }
+
+      const raw = [...rawLines, ...s.rawBuffer].slice(0, RAW_BUFFER_MAX);
+      const session = s.isLogging
+        ? [...s.sessionBuffer, ...rawLines]
+        : s.sessionBuffer;
+
+      return {
+        fix: nextFix,
+        velocity: nextVelocity,
+        satellites: nextSats,
+        dop: nextDop,
+        rawBuffer: raw,
+        sessionBuffer: session,
+      };
     });
   },
 

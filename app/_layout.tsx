@@ -9,7 +9,7 @@ import {
 import { parseNmea } from "@/lib/nmea-parser";
 import { useBleStore } from "@/store/ble-store";
 import { useGnssStore } from "@/store/gnss-store";
-import type { BleDevice } from "@/types/gnss";
+import type { BleDevice, NmeaParsedSentence } from "@/types/gnss";
 import {
   Lexend_300Light,
   Lexend_400Regular,
@@ -56,16 +56,12 @@ export default function RootLayout() {
     Lexend_800ExtraBold,
   });
 
-  const {
-    applyGga,
-    applyRmc,
-    applyVtg,
-    applyGsa,
-    applyGsv,
-    appendRaw,
-    clearLiveData,
-  } = useGnssStore();
-  const { setConnected, setDisconnected, addScannedDevice } = useBleStore();
+  const applyBatch = useGnssStore((s) => s.applyBatch);
+  const clearLiveData = useGnssStore((s) => s.clearLiveData);
+
+  const setConnected = useBleStore((s) => s.setConnected);
+  const setDisconnected = useBleStore((s) => s.setDisconnected);
+  const addScannedDevice = useBleStore((s) => s.addScannedDevice);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -74,30 +70,24 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   useEffect(() => {
+    const nmeaBuffer: string[] = [];
+
     onNmeaLine((line) => {
-      appendRaw(line);
-      const parsed = parseNmea(line);
-      if (!parsed) return;
-      switch (parsed.type) {
-        case "GGA":
-          applyGga(parsed.data);
-          break;
-        case "RMC":
-          applyRmc(parsed.data);
-          break;
-        case "VTG":
-          applyVtg(parsed.data);
-          break;
-        case "GSA":
-          applyGsa(parsed.data);
-          break;
-        case "GSV":
-          applyGsv(parsed.data.talkerId, parsed.data.satellites);
-          break;
-        default:
-          break;
-      }
+      nmeaBuffer.push(line);
     });
+
+    const interval = setInterval(() => {
+      if (nmeaBuffer.length === 0) return;
+
+      const lines = [...nmeaBuffer];
+      nmeaBuffer.length = 0;
+
+      const parsedSentences = lines
+        .map((l) => parseNmea(l))
+        .filter((p): p is NmeaParsedSentence => p !== null);
+
+      applyBatch(parsedSentences, lines);
+    }, 100);
 
     onConnectionChange((deviceId, connected) => {
       if (connected) {
@@ -120,6 +110,7 @@ export default function RootLayout() {
     initializeBle().catch(() => {});
 
     return () => {
+      clearInterval(interval);
       destroyBle();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
