@@ -194,7 +194,7 @@ const ActiveRecordingBanner = ({
         {
           backgroundColor: colors.dangerSurface,
           borderColor: colors.dangerBorder,
-          borderWidth: 1.5,
+          borderWidth: 1,
         },
       ]}
       onPress={onStop}
@@ -603,6 +603,16 @@ export default function LogsScreen() {
         data={sessions}
         keyExtractor={(s) => s.id}
         contentContainerStyle={styles.container}
+        getItemLayout={(_, index) => ({
+          length: 160 + 16, // approximate card height + gap
+          offset: (160 + 16) * index,
+          index,
+        })}
+        removeClippedSubviews={true}
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        windowSize={5}
+        scrollEventThrottle={16}
         ListHeaderComponent={
           <View style={{ gap: 24 }}>
             {isLogging && activeSessionId ? (
@@ -812,7 +822,7 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1.5,
+    borderWidth: 1,
     padding: 24,
     gap: 4,
     shadowColor: "#000",
@@ -863,7 +873,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1.5,
+    borderWidth: 1,
     paddingHorizontal: 20,
     justifyContent: "center",
   },
@@ -894,11 +904,11 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1.5,
+    borderWidth: 1,
     padding: 18,
     gap: 16,
   } as any,
-  cardActive: { borderWidth: 1.5 },
+  cardActive: { borderWidth: 1 },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",

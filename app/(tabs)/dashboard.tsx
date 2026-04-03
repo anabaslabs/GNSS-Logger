@@ -10,32 +10,35 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import { formatCoord, getIstValue, getUtcValue } from "@/lib/nmea-parser";
 import { useGnssStore } from "@/store/gnss-store";
 import React, { useEffect, useMemo, useRef } from "react";
-import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
 export default function DashboardScreen() {
   const { colors, isDark } = useAppTheme();
   const { fix, velocity, satellites } = useGnssStore();
 
-  const pulse = useRef(new Animated.Value(1)).current;
+  const pulse = useSharedValue(1);
   const prevUpdatedAt = useRef(0);
 
   useEffect(() => {
     if (fix.updatedAt !== prevUpdatedAt.current && fix.updatedAt > 0) {
       prevUpdatedAt.current = fix.updatedAt;
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1.15,
-          duration: 120,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      pulse.value = withSequence(
+        withTiming(1.3, { duration: 60 }),
+        withTiming(1, { duration: 140 }),
+      );
     }
   }, [fix.updatedAt, pulse]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+    opacity: withTiming(pulse.value > 1.1 ? 1 : 0.8, { duration: 100 }),
+  }));
 
   const constellationData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -65,6 +68,7 @@ export default function DashboardScreen() {
     <ScrollView
       key={isDark ? "dark" : "light"}
       contentInsetAdjustmentBehavior="automatic"
+      scrollEventThrottle={16}
       style={[styles.scroll, { backgroundColor: colors.background }]}
       contentContainerStyle={[styles.container, { paddingBottom: 40 }]}
     >
@@ -78,7 +82,7 @@ export default function DashboardScreen() {
       >
         <View style={styles.fixHeader}>
           <StatusBadge quality={fix.quality} talkerId={fix.talkerId} />
-          <Animated.View style={{ transform: [{ scale: pulse }] }}>
+          <Animated.View style={animatedStyle}>
             <View
               style={[
                 styles.liveIndicator,
@@ -90,7 +94,7 @@ export default function DashboardScreen() {
                   shadowRadius: 6,
                   elevation: 4,
                   borderColor: colors.surface,
-                  borderWidth: 2,
+                  borderWidth: 1,
                 },
               ]}
             />
@@ -248,7 +252,7 @@ const styles = StyleSheet.create({
   section: {
     borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1.5,
+    borderWidth: 1,
     paddingHorizontal: 20,
     paddingVertical: 24,
     gap: 16,

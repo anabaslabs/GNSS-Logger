@@ -10,7 +10,7 @@ interface SatelliteBarProps {
 
 const SNR_MAX = 50;
 
-export function SatelliteBar({ satellite }: SatelliteBarProps) {
+export const SatelliteBar = React.memo(({ satellite }: SatelliteBarProps) => {
   const { colors } = useAppTheme();
 
   const { prn, snr, talkerId, usedInFix, elevation } = satellite;
@@ -74,7 +74,9 @@ export function SatelliteBar({ satellite }: SatelliteBarProps) {
       </View>
     </View>
   );
-}
+});
+
+SatelliteBar.displayName = "SatelliteBar";
 
 const styles = StyleSheet.create({
   row: {
@@ -86,7 +88,7 @@ const styles = StyleSheet.create({
   badge: {
     borderRadius: 12,
     borderCurve: "continuous",
-    borderWidth: 1.5,
+    borderWidth: 1,
     paddingHorizontal: 6,
     paddingVertical: 3,
     width: 40,
