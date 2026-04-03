@@ -9,7 +9,7 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import { useGnssStore } from "@/store/gnss-store";
 import { IconSatellite } from "@tabler/icons-react-native";
 import React, { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
 type FilterId = "ALL" | string;
 
 export default function SatellitesScreen() {
@@ -38,13 +38,8 @@ export default function SatellitesScreen() {
   const totalVisible = satellites.length;
   const totalUsed = satellites.filter((s) => s.usedInFix).length;
 
-  return (
-    <ScrollView
-      key={isDark ? "dark" : "light"}
-      contentInsetAdjustmentBehavior="automatic"
-      style={[styles.scroll, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.container}
-    >
+  const renderHeader = () => (
+    <View style={{ gap: 8 }}>
       <View style={styles.summaryRow}>
         <View
           style={[
@@ -112,7 +107,11 @@ export default function SatellitesScreen() {
       <View
         style={[
           styles.listCard,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            marginBottom: 4,
+          },
         ]}
       >
         <View
@@ -123,32 +122,28 @@ export default function SatellitesScreen() {
               SYS
             </Text>
           </View>
-
           <View style={{ width: 26, alignItems: "center" }}>
             <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
               PRN
             </Text>
           </View>
-
           <View style={{ width: 36, alignItems: "center" }}>
             <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
               EL
             </Text>
           </View>
-
           <View style={{ width: 90, alignItems: "center" }}>
             <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
               SNR
             </Text>
           </View>
-
           <View style={{ width: 50, alignItems: "center" }}>
             <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
               dB-Hz
             </Text>
           </View>
         </View>
-        {visible.length === 0 ? (
+        {visible.length === 0 && (
           <View
             style={{
               flexDirection: "row",
@@ -156,82 +151,108 @@ export default function SatellitesScreen() {
               paddingVertical: 8,
             }}
           >
-            <View style={{ width: 40, alignItems: "center" }}>
-              <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
-                -
-              </Text>
-            </View>
-            <View style={{ width: 26, alignItems: "center" }}>
-              <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
-                -
-              </Text>
-            </View>
-            <View style={{ width: 36, alignItems: "center" }}>
-              <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
-                -
-              </Text>
-            </View>
-            <View style={{ width: 90, alignItems: "center" }}>
-              <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
-                -
-              </Text>
-            </View>
-            <View style={{ width: 50, alignItems: "center" }}>
-              <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
-                -
-              </Text>
-            </View>
-          </View>
-        ) : (
-          visible.map((sat) => (
-            <SatelliteBar key={`${sat.talkerId}-${sat.prn}`} satellite={sat} />
-          ))
-        )}
-      </View>
-
-      {satellites.some((s) => s.talkerId === TALKER_ID.NAVIC) && (
-        <View
-          style={[
-            styles.navicBox,
-            {
-              backgroundColor: CONSTELLATION_COLOR.GI + "1A",
-              borderColor: CONSTELLATION_COLOR.GI + "40",
-            },
-          ]}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <IconSatellite color={CONSTELLATION_COLOR.GI} size={20} />
-            <Text style={styles.navicTitle}>IRNSS / NavIC (L5)</Text>
-          </View>
-
-          {satellites
-            .filter((s) => s.talkerId === TALKER_ID.NAVIC)
-            .sort((a, b) => (b.snr ?? 0) - (a.snr ?? 0))
-            .map((sat) => (
-              <View key={sat.prn} style={styles.navicSatRow}>
-                <Text style={[styles.navicPrn, { color: colors.text }]}>
-                  PRN {sat.prn}
+            {[40, 26, 36, 90, 50].map((w, i) => (
+              <View key={i} style={{ width: w, alignItems: "center" }}>
+                <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
+                  -
                 </Text>
-                <View style={styles.navicValueGroup}>
-                  <Text style={styles.navicSnr}>
-                    {sat.snr !== null ? `${sat.snr} dB-Hz` : "No signal"}
-                  </Text>
-                  <View style={styles.navicCheckContainer}>
-                    {sat.usedInFix && (
-                      <View
-                        style={[
-                          styles.navicDot,
-                          { backgroundColor: CONSTELLATION_COLOR.GI },
-                        ]}
-                      />
-                    )}
-                  </View>
-                </View>
               </View>
             ))}
+          </View>
+        )}
+      </View>
+    </View>
+  );
+
+  const renderFooter = () => {
+    if (!satellites.some((s) => s.talkerId === TALKER_ID.NAVIC)) return null;
+    return (
+      <View
+        style={[
+          styles.navicBox,
+          {
+            backgroundColor: CONSTELLATION_COLOR.GI + "1A",
+            borderColor: CONSTELLATION_COLOR.GI + "40",
+            marginHorizontal: 16,
+            marginBottom: 40,
+          },
+        ]}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <IconSatellite color={CONSTELLATION_COLOR.GI} size={20} />
+          <Text style={styles.navicTitle}>IRNSS / NavIC (L5)</Text>
         </View>
-      )}
-    </ScrollView>
+
+        {satellites
+          .filter((s) => s.talkerId === TALKER_ID.NAVIC)
+          .sort((a, b) => (b.snr ?? 0) - (a.snr ?? 0))
+          .map((sat) => (
+            <View key={sat.prn} style={styles.navicSatRow}>
+              <Text style={[styles.navicPrn, { color: colors.text }]}>
+                PRN {sat.prn}
+              </Text>
+              <View style={styles.navicValueGroup}>
+                <Text style={styles.navicSnr}>
+                  {sat.snr !== null ? `${sat.snr} dB-Hz` : "No signal"}
+                </Text>
+                <View style={styles.navicCheckContainer}>
+                  {sat.usedInFix && (
+                    <View
+                      style={[
+                        styles.navicDot,
+                        { backgroundColor: CONSTELLATION_COLOR.GI },
+                      ]}
+                    />
+                  )}
+                </View>
+              </View>
+            </View>
+          ))}
+      </View>
+    );
+  };
+
+  return (
+    <View
+      key={isDark ? "dark" : "light"}
+      style={[styles.scroll, { backgroundColor: colors.background }]}
+    >
+      <FlatList
+        data={visible}
+        keyExtractor={(sat) => `${sat.talkerId}-${sat.prn}`}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderLeftWidth: 1.5,
+                borderRightWidth: 1.5,
+                paddingHorizontal: 10,
+                marginHorizontal: 16,
+              },
+            ]}
+          >
+            <SatelliteBar satellite={item} />
+          </View>
+        )}
+        ListHeaderComponent={renderHeader}
+        ListHeaderComponentStyle={{ padding: 16, paddingBottom: 0 }}
+        ListFooterComponent={renderFooter}
+        ListFooterComponentStyle={{ marginTop: 8 }}
+        getItemLayout={(_, index) => ({
+          length: 32, // SatelliteBar paddingVertical 5 + roughly row content height
+          offset: 32 * index,
+          index,
+        })}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={15}
+        initialNumToRender={20}
+        windowSize={5}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      />
+    </View>
   );
 }
 
@@ -248,7 +269,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1.5,
+    borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
     gap: 4,
@@ -278,7 +299,7 @@ const styles = StyleSheet.create({
   listCard: {
     borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1.5,
+    borderWidth: 1,
     padding: 16,
     paddingHorizontal: 10,
     gap: 4,
@@ -312,7 +333,7 @@ const styles = StyleSheet.create({
   navicBox: {
     borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1.5,
+    borderWidth: 1,
     padding: 20,
     gap: 12,
     marginTop: 12,

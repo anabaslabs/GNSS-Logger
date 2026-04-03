@@ -359,8 +359,22 @@ export async function checkBluetoothState(): Promise<string> {
   if (!IS_NATIVE_AVAILABLE || !bleManager) return "off";
   try {
     const state = await bleManager.state();
-    return state === State.PoweredOn ? "on" : "off";
-  } catch {
+    switch (state) {
+      case State.PoweredOn:
+        return "on";
+      case State.PoweredOff:
+        return "off";
+      case State.Unauthorized:
+        return "unauthorized";
+      case State.Unsupported:
+        return "unsupported";
+      case State.Resetting:
+        return "resetting";
+      default:
+        return "off";
+    }
+  } catch (e) {
+    console.error("[BLE] Error checking state:", e);
     return "off";
   }
 }

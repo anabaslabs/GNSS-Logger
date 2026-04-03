@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1.5,
+    borderWidth: 1,
     paddingHorizontal: 20,
     paddingVertical: 22,
     gap: 12,

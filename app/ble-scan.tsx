@@ -5,7 +5,6 @@ import {
   checkBluetoothState,
   connectAndSubscribe,
   disconnectDevice,
-  enableBluetoothAndroid,
   isBleAvailable,
 } from "@/lib/ble-manager";
 import { useBleStore } from "@/store/ble-store";
@@ -18,10 +17,9 @@ import {
 import * as IntentLauncher from "expo-intent-launcher";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
   FlatList,
   Pressable,
   StyleSheet,
@@ -29,6 +27,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Reanimated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
 function RssiBars({
   rssi,
@@ -72,36 +78,35 @@ function DeviceRow({
   connected: boolean;
 }) {
   const { colors } = useAppTheme();
-  const pulse = useRef(new Animated.Value(1)).current;
+  const pulse = useSharedValue(1);
 
   useEffect(() => {
     if (connecting) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulse, {
-            toValue: 0.3,
-            duration: 800,
-            useNativeDriver: false,
-          }),
-          Animated.timing(pulse, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: false,
-          }),
-        ]),
-      ).start();
+      pulse.value = withRepeat(
+        withSequence(
+          withTiming(0.3, { duration: 800 }),
+          withTiming(1, { duration: 800 }),
+        ),
+        -1,
+        true,
+      );
     } else {
-      pulse.setValue(1);
+      pulse.value = withTiming(1);
     }
   }, [connecting, pulse]);
 
-  const borderColor = pulse.interpolate({
-    inputRange: [0.3, 1],
-    outputRange: [
-      (connecting || connected ? colors.statusActive : colors.border) + "22",
-      (connecting || connected ? colors.statusActive : colors.border) + "66",
-    ],
-  });
+  const animatedStyle = useAnimatedStyle(() => {
+    const color = connecting || connected ? colors.statusActive : colors.border;
+    const borderColor = interpolateColor(
+      pulse.value,
+      [0.3, 1],
+      [color + "22", color + "66"],
+    );
+
+    return {
+      borderColor,
+    };
+  }, [connecting, connected, colors]);
 
   const backgroundColor = connected
     ? colors.statusSurface
@@ -111,13 +116,13 @@ function DeviceRow({
 
   return (
     <PressableScale onPress={onPress} style={{ width: "100%" }}>
-      <Animated.View
+      <Reanimated.View
         style={[
           styles.deviceRow,
+          animatedStyle,
           {
             backgroundColor,
-            borderColor,
-            borderWidth: 1.5,
+            borderWidth: 1,
             borderStyle: connecting ? "dashed" : "solid",
           },
         ]}
@@ -146,7 +151,7 @@ function DeviceRow({
             {device.rssi} dBm
           </Text>
         </View>
-      </Animated.View>
+      </Reanimated.View>
     </PressableScale>
   );
 }
@@ -236,7 +241,6 @@ export default function BleScanModal() {
     message: "",
   });
 
-  const pulse = useRef(new Animated.Value(1)).current;
   const [bluetoothState, setBluetoothState] = useState<string>("unknown");
   const [locationEnabled, setLocationEnabled] = useState<boolean>(true);
   const [initialScanAttempted, setInitialScanAttempted] = useState(false);
@@ -265,36 +269,18 @@ export default function BleScanModal() {
   }, []);
 
   useEffect(() => {
-    if (bluetoothState !== "off") return;
+    if (bluetoothState !== "off" && bluetoothState !== "turning_on") return;
     const interval = setInterval(async () => {
       const state = await checkBluetoothState();
-      if (state !== bluetoothState) {
+      if (
+        state !== bluetoothState &&
+        (bluetoothState !== "turning_on" || state === "on")
+      ) {
         setBluetoothState(state);
       }
     }, 2000);
     return () => clearInterval(interval);
   }, [bluetoothState]);
-
-  useEffect(() => {
-    if (isScanning) {
-      const anim = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulse, {
-            toValue: 1.5,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulse, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ]),
-      );
-      anim.start();
-      return () => anim.stop();
-    }
-  }, [isScanning, pulse]);
 
   const handleStartScan = React.useCallback(async () => {
     if (bluetoothState === "off" || !locationEnabled) return;
@@ -475,11 +461,9 @@ export default function BleScanModal() {
                         IntentLauncher.ActivityAction.LOCATION_SOURCE_SETTINGS,
                       );
                     } else if (bluetoothState === "off") {
-                      await enableBluetoothAndroid();
-                      setTimeout(async () => {
-                        const s = await checkBluetoothState();
-                        setBluetoothState(s);
-                      }, 1000);
+                      await IntentLauncher.startActivityAsync(
+                        "android.settings.BLUETOOTH_SETTINGS",
+                      );
                     }
                   }}
                 >
@@ -511,6 +495,16 @@ export default function BleScanModal() {
                       connected={connectedDeviceId === item.id}
                     />
                   )}
+                  getItemLayout={(_, index) => ({
+                    length: 72 + 12, // item height + gap
+                    offset: (72 + 12) * index,
+                    index,
+                  })}
+                  removeClippedSubviews={true}
+                  initialNumToRender={10}
+                  maxToRenderPerBatch={10}
+                  windowSize={5}
+                  scrollEventThrottle={16}
                   ListEmptyComponent={
                     <View style={styles.empty}>
                       {scanning ? (
@@ -626,7 +620,7 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     borderRadius: 32,
-    borderWidth: 1.5,
+    borderWidth: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.2,
@@ -689,7 +683,7 @@ const styles = StyleSheet.create({
   },
   deviceRow: {
     borderRadius: 24,
-    borderWidth: 1.5,
+    borderWidth: 1,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -768,7 +762,7 @@ const styles = StyleSheet.create({
   },
   codeBlock: {
     borderRadius: 16,
-    borderWidth: 1.5,
+    borderWidth: 1,
     paddingHorizontal: 20,
     paddingVertical: 12,
     marginVertical: 8,

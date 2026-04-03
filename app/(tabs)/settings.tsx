@@ -132,6 +132,7 @@ export default function SettingsScreen() {
       />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
+        scrollEventThrottle={16}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContainer}
       >
@@ -609,7 +610,7 @@ const styles = StyleSheet.create({
   section: {
     borderRadius: 32,
     borderCurve: "continuous",
-    borderWidth: 1.5,
+    borderWidth: 1,
     padding: 20,
     gap: 0,
   } as any,
@@ -671,7 +672,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
   badgeText: {
     fontSize: 12,
@@ -689,7 +690,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 14,
     borderRadius: 16,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "transparent",
     gap: 8,
   },
