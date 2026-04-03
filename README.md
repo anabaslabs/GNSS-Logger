@@ -17,5 +17,5 @@ Supported Constellations:
 
 <br>
 <p align="center">
-  <a href="https://youtu.be/EA4DipdhpV8">📡</a>
+  <a href="https://youtu.be/EA4DipdhpV8">📱</a>
 </p>

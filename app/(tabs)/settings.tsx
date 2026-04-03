@@ -588,7 +588,7 @@ export default function SettingsScreen() {
                     { color: colors.textSecondary },
                   ]}
                 >
-                  2026-2027{" "}
+                  2025-2026{" "}
                   <Text
                     style={{ color: colors.tint, fontFamily: "Lexend_700Bold" }}
                     onPress={() => Linking.openURL("https://anabaslabs.com")}
