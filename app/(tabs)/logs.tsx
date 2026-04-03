@@ -489,7 +489,11 @@ export default function LogsScreen() {
                     }}
                     style={[
                       styles.footerBtn,
-                      { backgroundColor: colors.dangerSurface },
+                      {
+                        backgroundColor: "transparent",
+                        minWidth: 0,
+                        paddingHorizontal: 8,
+                      },
                     ]}
                   >
                     <Text
@@ -604,7 +608,7 @@ export default function LogsScreen() {
         keyExtractor={(s) => s.id}
         contentContainerStyle={styles.container}
         getItemLayout={(_, index) => ({
-          length: 160 + 16, // approximate card height + gap
+          length: 160 + 16,
           offset: (160 + 16) * index,
           index,
         })}

@@ -46,6 +46,7 @@ export enum FixQuality {
   Simulation = 8,
 }
 
+/** NMEA Fix Quality Labels */
 export const FIX_QUALITY_LABEL: Record<FixQuality, string> = {
   [FixQuality.NoFix]: "No Fix",
   [FixQuality.GpsFix]: "GPS",
@@ -58,6 +59,7 @@ export const FIX_QUALITY_LABEL: Record<FixQuality, string> = {
   [FixQuality.Simulation]: "Simulation",
 };
 
+/** NMEA Fix Quality Colors */
 export const FIX_QUALITY_COLOR: Record<FixQuality, string> = {
   [FixQuality.NoFix]: "#EF4444",
   [FixQuality.GpsFix]: "#22C55E",

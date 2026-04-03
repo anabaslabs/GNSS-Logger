@@ -41,7 +41,6 @@ export default function SatellitesScreen() {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      {/* Summary Row */}
       <View style={styles.summaryRow}>
         <View
           style={[
@@ -71,7 +70,6 @@ export default function SatellitesScreen() {
         </View>
       </View>
 
-      {/* Filter Row */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -107,7 +105,6 @@ export default function SatellitesScreen() {
         })}
       </ScrollView>
 
-      {/* Unified List Card */}
       <View
         style={[
           styles.listCard,
@@ -117,7 +114,6 @@ export default function SatellitesScreen() {
           },
         ]}
       >
-        {/* Table Header */}
         <View style={styles.listHeader}>
           <View style={{ width: 64, alignItems: "center" }}>
             <Text style={[styles.headerCell, { color: colors.textSecondary }]}>
@@ -146,7 +142,6 @@ export default function SatellitesScreen() {
           </View>
         </View>
 
-        {/* Header Separator */}
         <View
           style={{
             height: 1.5,
@@ -155,7 +150,6 @@ export default function SatellitesScreen() {
           }}
         />
 
-        {/* List Content */}
         {visible.length > 0 ? (
           visible.map((item) => (
             <View key={`${item.talkerId}-${item.prn}`}>
@@ -180,7 +174,6 @@ export default function SatellitesScreen() {
           </View>
         )}
 
-        {/* Bottom Space */}
         <View style={{ height: 16 }} />
       </View>
     </ScrollView>

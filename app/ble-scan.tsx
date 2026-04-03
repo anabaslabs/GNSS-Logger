@@ -496,7 +496,7 @@ export default function BleScanModal() {
                     />
                   )}
                   getItemLayout={(_, index) => ({
-                    length: 72 + 12, // item height + gap
+                    length: 72 + 12,
                     offset: (72 + 12) * index,
                     index,
                   })}

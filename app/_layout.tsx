@@ -113,8 +113,13 @@ export default function RootLayout() {
       clearInterval(interval);
       destroyBle();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    addScannedDevice,
+    applyBatch,
+    clearLiveData,
+    setConnected,
+    setDisconnected,
+  ]);
 
   if (!fontsLoaded && !fontError) {
     return null;

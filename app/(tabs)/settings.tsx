@@ -566,12 +566,15 @@ export default function SettingsScreen() {
             </View>
             <Text style={[styles.aboutDesc, { color: colors.textSecondary }]}>
               A professional-grade GNSS data logger and visualizer. Connects to
-              external high-precision receivers via Bluetooth LE to capture,
-              parse, and export multi-constellation NMEA data.{"\n\n"}
+              external high-precision receivers via BLE (Bluetooth Low Energy)
+              to capture, parse, and export multi-constellation NMEA and CSV
+              data.
+              {"\n\n"}
               Features include real-time satellite tracking, live dashboard
               metrics, and session logging for CSV/NMEA export.{"\n\n"}
               Supported Constellations:{"\n"}
-              GPS (L1), NavIC/IRNSS (L5), GLONASS, Galileo, BeiDou, QZSS
+              QZSS (Japan), IRNSS/NavIC (India), GPS (USA), GLONASS (Russia),
+              Galileo (EU), BeiDou (China)
             </Text>
 
             <View

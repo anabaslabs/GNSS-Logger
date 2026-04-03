@@ -12,10 +12,10 @@ const SNR_MAX = 50;
 
 const getSnrColor = (snr: number | null, isDark: boolean) => {
   if (snr === null) return "#8E8E93";
-  if (snr < 25) return isDark ? "#EF4444" : "#DC2626"; // Red
-  if (snr < 35) return isDark ? "#F59E0B" : "#D97706"; // Yellow
-  if (snr < 50) return isDark ? "#10B981" : "#059669"; // Green
-  return isDark ? "#3B82F6" : "#2563EB"; // Blue
+  if (snr < 25) return isDark ? "#EF4444" : "#DC2626";
+  if (snr < 35) return isDark ? "#F59E0B" : "#D97706";
+  if (snr < 50) return isDark ? "#10B981" : "#059669";
+  return isDark ? "#3B82F6" : "#2563EB";
 };
 
 export const SatelliteBar = React.memo(({ satellite }: SatelliteBarProps) => {
