@@ -534,10 +534,20 @@ export default function BleScanModal() {
                       )}
                     </View>
                   }
+                  ListFooterComponent={
+                    scanning && displayDevices.length > 0 ? (
+                      <View style={styles.listFooter}>
+                        <ActivityIndicator
+                          size="small"
+                          color={colors.statusActive}
+                        />
+                      </View>
+                    ) : null
+                  }
                   contentContainerStyle={styles.listContainer}
                   style={{ flex: 1 }}
                 />
-                {scanning && !connectingId && (
+                {scanning && !connectingId && displayDevices.length === 0 && (
                   <View style={styles.spinnerOverlay} pointerEvents="none">
                     <ActivityIndicator
                       size="large"

@@ -69,7 +69,6 @@ let bleManager: BleManager | null = null;
 
 try {
   bleManager = new BleManager();
-  console.log("[BLE] BleManager (ble-plx) created successfully");
 } catch (e) {
   console.error("[BLE] Failed to create BleManager:", e);
 }
@@ -168,24 +167,13 @@ function processNmeaChunk(deviceId: string, chunk: string): void {
 
 export async function initializeBle(): Promise<void> {
   if (!IS_NATIVE_AVAILABLE || !bleManager || initialized) {
-    console.log(
-      "[BLE] Init skipped - available:",
-      IS_NATIVE_AVAILABLE,
-      "initialized:",
-      initialized,
-    );
     return;
   }
 
-  console.log("[BLE] Initializing BLE manager (ble-plx)...");
-
-  const stateSubscription = bleManager.onStateChange((state) => {
-    console.log("[BLE] State changed:", state);
-  }, true);
+  const stateSubscription = bleManager.onStateChange((state) => {}, true);
   subscriptions.push(stateSubscription);
 
   initialized = true;
-  console.log("[BLE] BLE manager initialized");
 }
 
 export function destroyBle(): void {
@@ -197,7 +185,6 @@ export function destroyBle(): void {
   }
   initialized = false;
   connectedDevice = null;
-  console.log("[BLE] BLE manager destroyed");
 }
 
 export function onNmeaLine(cb: NmeaLineCallback): void {
@@ -214,23 +201,21 @@ export function onDeviceFound(cb: DeviceFoundCallback): void {
 
 export async function startScan(): Promise<boolean> {
   if (!IS_NATIVE_AVAILABLE || !bleManager) {
-    console.log("[BLE] BLE not available");
+    console.error("[BLE] BLE not available");
     return false;
   }
 
   const granted = await requestAndroidPermissions();
   if (!granted) {
-    console.log("[BLE] Permissions denied");
+    console.error("[BLE] Permissions denied");
     return false;
   }
 
   const state = await bleManager.state();
   if (state !== State.PoweredOn) {
-    console.log("[BLE] Bluetooth is not powered on, state:", state);
+    console.error("[BLE] Bluetooth is not powered on, state:", state);
     return false;
   }
-
-  console.log("[BLE] Starting scan...");
 
   const seenDevices = new Set<string>();
 
@@ -245,12 +230,6 @@ export async function startScan(): Promise<boolean> {
 
       if (device && !seenDevices.has(device.id)) {
         seenDevices.add(device.id);
-        console.log(
-          "[BLE] Device discovered:",
-          device.name || device.id,
-          "RSSI:",
-          device.rssi,
-        );
 
         const peripheral: Peripheral = {
           id: device.id,
@@ -273,9 +252,8 @@ export async function stopScan(): Promise<void> {
   if (!IS_NATIVE_AVAILABLE || !bleManager) return;
   try {
     bleManager.stopDeviceScan();
-    console.log("[BLE] Scan stopped");
   } catch (e) {
-    console.log("[BLE] Error stopping scan:", e);
+    console.error("[BLE] Error stopping scan:", e);
   }
 }
 
@@ -285,21 +263,15 @@ export async function connectAndSubscribe(deviceId: string): Promise<void> {
       "BLE native module not available. Use a custom dev build (expo run:android).",
     );
 
-  console.log("[BLE] Connecting to device:", deviceId);
-
   const device = await bleManager.connectToDevice(deviceId, {
     requestMTU: BLE_MTU_SIZE,
   });
-  console.log("[BLE] Connected successfully");
 
-  console.log("[BLE] Discovering services...");
   await device.discoverAllServicesAndCharacteristics();
-  console.log("[BLE] Services discovered");
 
   connectedDevice = device;
 
   device.onDisconnected((error, disconnectedDevice) => {
-    console.log("[BLE] Device disconnected:", disconnectedDevice?.id);
     if (disconnectedDevice) {
       connectionCallback?.(disconnectedDevice.id, false);
       delete reassemblyBuffers[disconnectedDevice.id];
@@ -311,7 +283,6 @@ export async function connectAndSubscribe(deviceId: string): Promise<void> {
     }
   });
 
-  console.log("[BLE] Starting notification monitoring...");
   monitorSubscription = device.monitorCharacteristicForService(
     NUS_SERVICE_UUID,
     NUS_TX_CHAR_UUID,
@@ -321,9 +292,6 @@ export async function connectAndSubscribe(deviceId: string): Promise<void> {
           error.errorCode === BleErrorCode.OperationCancelled ||
           error.errorCode === BleErrorCode.DeviceDisconnected
         ) {
-          console.log(
-            `[BLE] Notification monitoring stopped (${error.errorCode === BleErrorCode.OperationCancelled ? "cancelled" : "disconnected"})`,
-          );
           return;
         }
         console.error("[BLE] Notification error:", error.message);
@@ -332,13 +300,11 @@ export async function connectAndSubscribe(deviceId: string): Promise<void> {
 
       if (characteristic?.value) {
         const decoded = base64Decode(characteristic.value);
-        console.log("[BLE] ✅ Data received:", decoded.length, "bytes");
         processNmeaChunk(deviceId, decoded);
       }
     },
   );
 
-  console.log("[BLE] Notifications enabled - listening for NMEA data");
   connectionCallback?.(deviceId, true);
 }
 
@@ -367,13 +333,12 @@ export async function disconnectDevice(deviceId: string): Promise<void> {
   try {
     await bleManager.cancelDeviceConnection(deviceId);
   } catch (e) {
-    console.log("[BLE] Error disconnecting:", e);
+    console.error("[BLE] Error disconnecting:", e);
   }
 
   delete reassemblyBuffers[deviceId];
   connectedDevice = null;
   connectionCallback?.(deviceId, false);
-  console.log("[BLE] Disconnected from device:", deviceId);
 }
 
 export async function getConnectedDevices(): Promise<Peripheral[]> {
@@ -405,7 +370,7 @@ export async function enableBluetoothAndroid(): Promise<void> {
   try {
     await bleManager.enable();
   } catch (e) {
-    console.log("[BLE] Could not enable Bluetooth:", e);
+    console.error("[BLE] Could not enable Bluetooth:", e);
   }
 }
 
