@@ -1,15 +1,11 @@
 import { PressableScale } from "@/components/pressable-scale";
 import { SatelliteBar } from "@/components/satellite-bar";
-import {
-  CONSTELLATION_COLOR,
-  CONSTELLATION_LABEL,
-  TALKER_ID,
-} from "@/constants/nmea";
+import { CONSTELLATION_COLOR, CONSTELLATION_LABEL } from "@/constants/nmea";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useGnssStore } from "@/store/gnss-store";
-import { IconSatellite } from "@tabler/icons-react-native";
 import React, { useMemo, useState } from "react";
-import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+
 type FilterId = "ALL" | string;
 
 export default function SatellitesScreen() {
@@ -38,8 +34,14 @@ export default function SatellitesScreen() {
   const totalVisible = satellites.length;
   const totalUsed = satellites.filter((s) => s.usedInFix).length;
 
-  const renderHeader = () => (
-    <View style={{ gap: 8 }}>
+  return (
+    <ScrollView
+      key={isDark ? "dark" : "light"}
+      style={[styles.scroll, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Summary Row */}
       <View style={styles.summaryRow}>
         <View
           style={[
@@ -69,10 +71,12 @@ export default function SatellitesScreen() {
         </View>
       </View>
 
+      {/* Filter Row */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filterRow}
+        style={{ marginTop: 6, marginBottom: 10 }}
       >
         {["ALL", ...talkerIds].map((id) => {
           const active = filter === id;
@@ -85,7 +89,6 @@ export default function SatellitesScreen() {
               key={id}
               style={[
                 styles.filterPill,
-                { borderColor: colors.borderLight },
                 active && { backgroundColor: color + "22", borderColor: color },
               ]}
               onPress={() => setFilter(id)}
@@ -104,54 +107,70 @@ export default function SatellitesScreen() {
         })}
       </ScrollView>
 
+      {/* Unified List Card */}
       <View
         style={[
           styles.listCard,
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
-            marginBottom: 4,
           },
         ]}
       >
-        <View
-          style={[styles.listHeader, { borderBottomColor: colors.borderLight }]}
-        >
-          <View style={{ width: 40, alignItems: "center" }}>
-            <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
+        {/* Table Header */}
+        <View style={styles.listHeader}>
+          <View style={{ width: 64, alignItems: "center" }}>
+            <Text style={[styles.headerCell, { color: colors.textSecondary }]}>
               SYS
             </Text>
           </View>
-          <View style={{ width: 26, alignItems: "center" }}>
-            <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
+          <View style={{ width: 32, alignItems: "center" }}>
+            <Text style={[styles.headerCell, { color: colors.textSecondary }]}>
               PRN
             </Text>
           </View>
-          <View style={{ width: 36, alignItems: "center" }}>
-            <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
+          <View style={{ width: 40, alignItems: "center" }}>
+            <Text style={[styles.headerCell, { color: colors.textSecondary }]}>
               EL
             </Text>
           </View>
-          <View style={{ width: 90, alignItems: "center" }}>
-            <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
+          <View style={{ width: 75, alignItems: "center" }}>
+            <Text style={[styles.headerCell, { color: colors.textSecondary }]}>
               SNR
             </Text>
           </View>
-          <View style={{ width: 50, alignItems: "center" }}>
-            <Text style={[styles.headerCell, { color: colors.textTertiary }]}>
-              dB-Hz
+          <View style={{ width: 60, alignItems: "center" }}>
+            <Text style={[styles.headerCell, { color: colors.textSecondary }]}>
+              C/N₀
             </Text>
           </View>
         </View>
-        {visible.length === 0 && (
+
+        {/* Header Separator */}
+        <View
+          style={{
+            height: 1.5,
+            backgroundColor: colors.borderLight,
+            marginBottom: 8,
+          }}
+        />
+
+        {/* List Content */}
+        {visible.length > 0 ? (
+          visible.map((item) => (
+            <View key={`${item.talkerId}-${item.prn}`}>
+              <SatelliteBar satellite={item} />
+            </View>
+          ))
+        ) : (
           <View
             style={{
               flexDirection: "row",
               justifyContent: "space-between",
-              paddingVertical: 8,
+              paddingVertical: 24,
             }}
           >
-            {[40, 26, 36, 90, 50].map((w, i) => (
+            {[64, 32, 40, 75, 60].map((w, i) => (
               <View key={i} style={{ width: w, alignItems: "center" }}>
                 <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
                   -
@@ -160,105 +179,17 @@ export default function SatellitesScreen() {
             ))}
           </View>
         )}
+
+        {/* Bottom Space */}
+        <View style={{ height: 16 }} />
       </View>
-    </View>
-  );
-
-  const renderFooter = () => {
-    if (!satellites.some((s) => s.talkerId === TALKER_ID.NAVIC)) return null;
-    return (
-      <View
-        style={[
-          styles.navicBox,
-          {
-            backgroundColor: CONSTELLATION_COLOR.GI + "1A",
-            borderColor: CONSTELLATION_COLOR.GI + "40",
-            marginHorizontal: 16,
-            marginBottom: 40,
-          },
-        ]}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <IconSatellite color={CONSTELLATION_COLOR.GI} size={20} />
-          <Text style={styles.navicTitle}>IRNSS / NavIC (L5)</Text>
-        </View>
-
-        {satellites
-          .filter((s) => s.talkerId === TALKER_ID.NAVIC)
-          .sort((a, b) => (b.snr ?? 0) - (a.snr ?? 0))
-          .map((sat) => (
-            <View key={sat.prn} style={styles.navicSatRow}>
-              <Text style={[styles.navicPrn, { color: colors.text }]}>
-                PRN {sat.prn}
-              </Text>
-              <View style={styles.navicValueGroup}>
-                <Text style={styles.navicSnr}>
-                  {sat.snr !== null ? `${sat.snr} dB-Hz` : "No signal"}
-                </Text>
-                <View style={styles.navicCheckContainer}>
-                  {sat.usedInFix && (
-                    <View
-                      style={[
-                        styles.navicDot,
-                        { backgroundColor: CONSTELLATION_COLOR.GI },
-                      ]}
-                    />
-                  )}
-                </View>
-              </View>
-            </View>
-          ))}
-      </View>
-    );
-  };
-
-  return (
-    <View
-      key={isDark ? "dark" : "light"}
-      style={[styles.scroll, { backgroundColor: colors.background }]}
-    >
-      <FlatList
-        data={visible}
-        keyExtractor={(sat) => `${sat.talkerId}-${sat.prn}`}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                borderLeftWidth: 1.5,
-                borderRightWidth: 1.5,
-                paddingHorizontal: 10,
-                marginHorizontal: 16,
-              },
-            ]}
-          >
-            <SatelliteBar satellite={item} />
-          </View>
-        )}
-        ListHeaderComponent={renderHeader}
-        ListHeaderComponentStyle={{ padding: 16, paddingBottom: 0 }}
-        ListFooterComponent={renderFooter}
-        ListFooterComponentStyle={{ marginTop: 8 }}
-        getItemLayout={(_, index) => ({
-          length: 32, // SatelliteBar paddingVertical 5 + roughly row content height
-          offset: 32 * index,
-          index,
-        })}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={15}
-        initialNumToRender={20}
-        windowSize={5}
-        scrollEventThrottle={16}
-        contentContainerStyle={{ paddingBottom: 20 }}
-      />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  container: { padding: 16, paddingBottom: 40, gap: 8 },
+  container: { padding: 16, paddingBottom: 40 },
   summaryRow: {
     flexDirection: "row",
     gap: 12,
@@ -300,77 +231,25 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     borderCurve: "continuous",
     borderWidth: 1,
-    padding: 16,
-    paddingHorizontal: 10,
-    gap: 4,
+    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 0,
   } as any,
   listHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingBottom: 10,
-    borderBottomWidth: 1.5,
-    marginBottom: 8,
   },
   headerCell: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: "Lexend_800ExtraBold",
     letterSpacing: 1,
-    textTransform: "uppercase",
-  },
-  noSats: {
-    fontSize: 14,
-    fontFamily: "Lexend_400Regular",
-    textAlign: "center",
-    paddingVertical: 24,
   },
   bigDash: {
     fontSize: 26,
     fontFamily: "Lexend_600SemiBold",
     fontVariant: ["tabular-nums"],
     letterSpacing: -1,
-  },
-  navicBox: {
-    borderRadius: 32,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    padding: 20,
-    gap: 12,
-    marginTop: 12,
-  } as any,
-  navicTitle: {
-    color: CONSTELLATION_COLOR.GI,
-    fontSize: 16,
-    fontFamily: "Lexend_800ExtraBold",
-    letterSpacing: 0.5,
-  },
-  navicSatRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 4,
-  },
-  navicPrn: {
-    fontSize: 14,
-    fontFamily: "Lexend_600SemiBold",
-    fontVariant: ["tabular-nums"],
-  },
-  navicValueGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  navicCheckContainer: {
-    width: 24,
-    alignItems: "flex-end",
-  },
-  navicDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  navicSnr: {
-    color: CONSTELLATION_COLOR.GI,
-    fontSize: 13,
-    fontFamily: "Lexend_700Bold",
-    fontVariant: ["tabular-nums"],
   },
 });

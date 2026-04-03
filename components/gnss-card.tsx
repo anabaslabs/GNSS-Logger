@@ -101,6 +101,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     borderCurve: "continuous",
+    marginTop: -4,
   },
   secondaryText: {
     fontSize: 10,

@@ -36,7 +36,7 @@ export interface NmeaSatellite {
   elevation: number;
   /** Azimuth in degrees (0–359) */
   azimuth: number;
-  /** Signal/Noise Ratio in dB-Hz (0–99), null if not tracking */
+  /** Signal/Noise Ratio in C/N₀ (dB-Hz), null if not tracking */
   snr: number | null;
   /** Talker/constellation ID */
   talkerId: string;

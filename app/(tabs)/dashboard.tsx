@@ -1,6 +1,5 @@
 import { ConnectionBanner } from "@/components/connection-banner";
 import { GnssCard } from "@/components/gnss-card";
-import { StatusBadge } from "@/components/status-badge";
 import {
   CONSTELLATION_COLOR,
   CONSTELLATION_LABEL,
@@ -9,36 +8,13 @@ import {
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { formatCoord, getIstValue, getUtcValue } from "@/lib/nmea-parser";
 import { useGnssStore } from "@/store/gnss-store";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
 
 export default function DashboardScreen() {
   const { colors, isDark } = useAppTheme();
   const { fix, velocity, satellites } = useGnssStore();
-
-  const pulse = useSharedValue(1);
-  const prevUpdatedAt = useRef(0);
-
-  useEffect(() => {
-    if (fix.updatedAt !== prevUpdatedAt.current && fix.updatedAt > 0) {
-      prevUpdatedAt.current = fix.updatedAt;
-      pulse.value = withSequence(
-        withTiming(1.3, { duration: 60 }),
-        withTiming(1, { duration: 140 }),
-      );
-    }
-  }, [fix.updatedAt, pulse]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulse.value }],
-    opacity: withTiming(pulse.value > 1.1 ? 1 : 0.8, { duration: 100 }),
-  }));
+  const hasFix = fix.quality !== FixQuality.NoFix && fix.latitude !== null;
 
   const constellationData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -60,7 +36,6 @@ export default function DashboardScreen() {
       .sort((a, b) => b.label.localeCompare(a.label));
   }, [satellites]);
 
-  const hasFix = fix.quality !== FixQuality.NoFix && fix.latitude !== null;
   const speedKmh = velocity.speedKmh ?? 0;
   const heading = velocity.courseTrue;
 
@@ -80,27 +55,6 @@ export default function DashboardScreen() {
           { backgroundColor: colors.surface, borderColor: colors.border },
         ]}
       >
-        <View style={styles.fixHeader}>
-          <StatusBadge quality={fix.quality} talkerId={fix.talkerId} />
-          <Animated.View style={animatedStyle}>
-            <View
-              style={[
-                styles.liveIndicator,
-                {
-                  backgroundColor: hasFix ? "#10B981" : colors.textTertiary,
-                  shadowColor: hasFix ? "#10B981" : "transparent",
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.8,
-                  shadowRadius: 6,
-                  elevation: 4,
-                  borderColor: colors.surface,
-                  borderWidth: 1,
-                },
-              ]}
-            />
-          </Animated.View>
-        </View>
-
         <View style={styles.coordRow}>
           <View style={styles.coordItem}>
             <Text style={[styles.coordLabel, { color: colors.textTertiary }]}>
@@ -175,57 +129,53 @@ export default function DashboardScreen() {
           Constellations In Fix
         </Text>
         <View style={styles.constellationRow}>
-          {constellationData.length === 0 ? (
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                width: "100%",
-                paddingHorizontal: 4,
-              }}
-            >
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Text
-                  key={i}
-                  style={[styles.coordValue, { color: colors.textTertiary }]}
-                >
-                  -
-                </Text>
-              ))}
-            </View>
-          ) : (
-            constellationData.map(({ id, label, count }) => (
+          {Array.from({ length: 6 }).map((_, index) => {
+            const item = constellationData[index];
+            const isPlaceholder = !item;
+            const id = !isPlaceholder ? item.id : "";
+            const label = !isPlaceholder ? item.label : "-";
+            const count = !isPlaceholder ? item.count : 0;
+            const color = !isPlaceholder
+              ? (CONSTELLATION_COLOR[id] ?? colors.textTertiary)
+              : colors.textTertiary;
+
+            return (
               <View
-                key={id}
+                key={isPlaceholder ? `placeholder-${index}` : id}
                 style={[
                   styles.constBadge,
                   {
-                    backgroundColor:
-                      (CONSTELLATION_COLOR[id] ?? "#6B7280") + "22",
-                    opacity: count > 0 ? 1 : 0.5,
+                    backgroundColor: isPlaceholder
+                      ? colors.textTertiary + "10"
+                      : color + "15",
+                    borderColor: isPlaceholder
+                      ? colors.border + "33"
+                      : color + "33",
+                    opacity: !isPlaceholder && count > 0 ? 1 : 0.4,
                   },
                 ]}
               >
-                <View
-                  style={[
-                    styles.constDot,
-                    { backgroundColor: CONSTELLATION_COLOR[id] ?? "#6B7280" },
-                  ]}
-                />
+                <View style={[styles.constDot, { backgroundColor: color }]} />
                 <Text
                   style={[
                     styles.constLabel,
-                    { color: CONSTELLATION_COLOR[id] ?? "#6B7280" },
+                    { color: color, marginTop: -4 },
+                    isPlaceholder && {
+                      fontSize: 20,
+                      marginTop: -4,
+                    },
                   ]}
+                  numberOfLines={1}
                 >
                   {label}
                 </Text>
+                <View style={{ flex: 1 }} />
                 <Text style={[styles.constCount, { color: colors.text }]}>
                   {count}
                 </Text>
               </View>
-            ))
-          )}
+            );
+          })}
         </View>
       </View>
     </ScrollView>
@@ -257,19 +207,8 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     gap: 16,
   } as any,
-  fixHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  liveIndicator: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
   coordRow: {
     gap: 12,
-    marginTop: 8,
   },
   coordItem: {
     flex: 1,
@@ -290,7 +229,6 @@ const styles = StyleSheet.create({
   timeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 12,
   },
   timeText: {
     fontSize: 14,
@@ -307,20 +245,26 @@ const styles = StyleSheet.create({
   constellationRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    rowGap: 10,
+    columnGap: 8,
   },
   constBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    borderRadius: 12,
+    gap: 8,
+    borderRadius: 16,
+    borderCurve: "continuous",
+    borderWidth: 1,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    width: "48.5%",
+    flexGrow: 1,
+    maxWidth: "49%",
   },
-  constDot: { width: 8, height: 8, borderRadius: 4 },
-  constLabel: { fontSize: 13, fontFamily: "Lexend_700Bold" },
+  constDot: { width: 7, height: 7, borderRadius: 3.5 },
+  constLabel: { fontSize: 13, fontFamily: "Lexend_700Bold", flexShrink: 1 },
   constCount: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: "Lexend_800ExtraBold",
     fontVariant: ["tabular-nums"],
   },

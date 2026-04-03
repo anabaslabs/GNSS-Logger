@@ -10,65 +10,90 @@ interface SatelliteBarProps {
 
 const SNR_MAX = 50;
 
+const getSnrColor = (snr: number | null, isDark: boolean) => {
+  if (snr === null) return "#8E8E93";
+  if (snr < 25) return isDark ? "#EF4444" : "#DC2626"; // Red
+  if (snr < 35) return isDark ? "#F59E0B" : "#D97706"; // Yellow
+  if (snr < 50) return isDark ? "#10B981" : "#059669"; // Green
+  return isDark ? "#3B82F6" : "#2563EB"; // Blue
+};
+
 export const SatelliteBar = React.memo(({ satellite }: SatelliteBarProps) => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
 
   const { prn, snr, talkerId, usedInFix, elevation } = satellite;
-  const color = CONSTELLATION_COLOR[talkerId] ?? colors.iconSecondary;
+  const constellationColor =
+    CONSTELLATION_COLOR[talkerId] ?? colors.iconSecondary;
   const label = CONSTELLATION_LABEL[talkerId] ?? talkerId;
   const snrValue = snr ?? 0;
   const barFill = Math.min(snrValue / SNR_MAX, 1);
+  const barColor = getSnrColor(snr, isDark);
 
   return (
     <View style={styles.row}>
-      <View
-        style={[
-          styles.badge,
-          { backgroundColor: color + "33", borderColor: color },
-        ]}
-      >
-        <Text style={[styles.badgeText, { color }]}>{label.slice(0, 3)}</Text>
+      <View style={{ width: 64, alignItems: "center" }}>
+        <View
+          style={[
+            styles.badge,
+            {
+              backgroundColor: constellationColor + "33",
+              borderColor: constellationColor,
+            },
+          ]}
+        >
+          <Text style={[styles.badgeText, { color: constellationColor }]}>
+            {label}
+          </Text>
+        </View>
       </View>
 
-      <View style={{ width: 26, alignItems: "center" }}>
+      <View style={{ width: 32, alignItems: "center" }}>
         <Text
-          style={[styles.prn, { color: colors.textTertiary }]}
+          style={[styles.prn, { color: colors.textSecondary }]}
           numberOfLines={1}
         >
           {prn}
         </Text>
       </View>
 
-      <View style={{ width: 36, alignItems: "center" }}>
+      <View style={{ width: 40, alignItems: "center" }}>
         <Text style={[styles.elev, { color: colors.textSecondary }]}>
           {elevation}°
         </Text>
       </View>
 
-      <View style={[styles.barTrack, { backgroundColor: colors.borderLight }]}>
+      <View style={{ width: 75, alignItems: "center" }}>
         <View
-          style={[
-            styles.barFill,
-            {
-              width: `${barFill * 100}%`,
-              backgroundColor: usedInFix ? color : color + "66",
-            },
-          ]}
-        />
+          style={[styles.barTrack, { backgroundColor: colors.borderLight }]}
+        >
+          <View
+            style={[
+              styles.barFill,
+              {
+                width: `${barFill * 100}%`,
+                backgroundColor: usedInFix ? barColor : barColor + "66",
+              },
+            ]}
+          />
+        </View>
       </View>
 
       <View style={styles.statusBox}>
         <Text
           style={[
             styles.snrText,
-            { color: snr === null ? colors.textTertiary : colors.text },
+            {
+              color: snr === null ? colors.textTertiary : colors.textSecondary,
+            },
           ]}
         >
           {snr !== null ? `${snr} dB` : "-"}
         </Text>
         <View style={styles.dotContainer}>
           {usedInFix && (
-            <View style={[styles.fixDot, { backgroundColor: color }]} />
+            <View
+              style={[styles.fixDot, { backgroundColor: constellationColor }]}
+            />
           )}
         </View>
       </View>
@@ -86,63 +111,60 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   badge: {
-    borderRadius: 12,
+    borderRadius: 8,
     borderCurve: "continuous",
-    borderWidth: 1,
+    borderWidth: 0.8,
     paddingHorizontal: 6,
-    paddingVertical: 3,
-    width: 40,
+    paddingVertical: 2,
+    width: 64,
     alignItems: "center",
   },
   badgeText: {
-    fontSize: 10,
-    fontFamily: "Lexend_800ExtraBold",
-    letterSpacing: 0.5,
+    fontSize: 9,
+    fontFamily: "Lexend_600SemiBold",
+    letterSpacing: 0.2,
+    textTransform: "uppercase",
   },
   prn: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: "Lexend_600SemiBold",
     fontVariant: ["tabular-nums"],
   },
-  elevContainer: {
-    width: 36,
-    alignItems: "center",
-  },
   elev: {
-    fontSize: 11,
-    fontFamily: "Lexend_400Regular",
+    fontSize: 13,
+    fontFamily: "Lexend_600SemiBold",
     fontVariant: ["tabular-nums"],
   },
   barTrack: {
-    width: 90,
-    height: 10,
-    borderRadius: 5,
+    width: 75,
+    height: 12,
+    borderRadius: 6,
     overflow: "hidden",
   },
   barFill: {
     height: "100%",
-    borderRadius: 5,
+    borderRadius: 6,
   },
   statusBox: {
-    width: 50,
-    flexDirection: "row",
+    width: 60,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
   },
   dotContainer: {
-    width: 6,
+    position: "absolute",
+    right: 0,
+    width: 8,
     alignItems: "center",
     justifyContent: "center",
   },
   snrText: {
-    fontSize: 11,
-    fontFamily: "Lexend_700Bold",
+    fontSize: 13,
+    fontFamily: "Lexend_600SemiBold",
     fontVariant: ["tabular-nums"],
   },
   fixDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
   },
 });
