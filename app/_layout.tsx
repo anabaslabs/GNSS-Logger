@@ -128,7 +128,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <StatusBar style="auto" />
+        <StatusBar style={isDark ? "light" : "dark"} />
         <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
           <View style={{ flex: 1, backgroundColor: colors.background }}>
             <Stack
@@ -147,7 +147,7 @@ export default function RootLayout() {
                 options={{
                   headerShown: false,
                   presentation: "transparentModal",
-                  animation: "fade",
+                  animation: "none",
                 }}
               />
             </Stack>

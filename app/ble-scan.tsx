@@ -84,8 +84,8 @@ function DeviceRow({
     if (connecting) {
       pulse.value = withRepeat(
         withSequence(
-          withTiming(0.3, { duration: 800 }),
-          withTiming(1, { duration: 800 }),
+          withTiming(0.3, { duration: 200 }),
+          withTiming(1, { duration: 200 }),
         ),
         -1,
         true,

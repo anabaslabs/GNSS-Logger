@@ -384,7 +384,7 @@ export default function SettingsScreen() {
                     { color: colors.statusActive },
                   ]}
                 >
-                  {exportDirectoryUri ? "Change" : "Set Folder"}
+                  {exportDirectoryUri ? "Change" : "Set"}
                 </Text>
               </TouchableOpacity>
             }

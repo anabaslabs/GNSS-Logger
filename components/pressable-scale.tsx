@@ -30,12 +30,12 @@ export function PressableScale({
   }));
 
   const handlePressIn = (event: any) => {
-    scale.value = withTiming(activeScale, { duration: 100 });
+    scale.value = withTiming(activeScale, { duration: 60 });
     onPressIn?.(event);
   };
 
   const handlePressOut = (event: any) => {
-    scale.value = withSpring(1, { damping: 10, stiffness: 200 });
+    scale.value = withTiming(1, { duration: 80 });
     onPressOut?.(event);
   };
 
