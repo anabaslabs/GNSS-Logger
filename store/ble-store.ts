@@ -88,6 +88,7 @@ export const useBleStore = create<BleState & BleActions>((set) => ({
   setError: (lastError) => set({ lastError, status: "error" }),
 
   setAutoReconnect: (autoReconnect) => set({ autoReconnect }),
+
   setScanTimer: (scanTimer) => set({ scanTimer }),
 
   startScanWithTimer: async () => {

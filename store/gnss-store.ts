@@ -43,17 +43,13 @@ const defaultFix: NmeaFix = {
   satellitesInUse: 0,
   hdop: null,
   altitudeMsl: null,
-  geoidSeparation: null,
-  dgpsAge: null,
   talkerId: null,
   updatedAt: 0,
 };
 
 const defaultVelocity: NmeaVelocity = {
   speedKmh: null,
-  speedKnots: null,
   courseTrue: null,
-  courseMagnetic: null,
   mode: "N",
 };
 
@@ -71,22 +67,14 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
   },
 
   applyRmc: (data) => {
-    const {
-      speedKmh,
-      speedKnots,
-      courseTrue,
-      courseMagnetic,
-      mode,
-      ...fixData
-    } = data as Partial<NmeaFix & NmeaVelocity>;
+    const { speedKmh, courseTrue, mode, ...fixData } =
+      data as Partial<NmeaFix & NmeaVelocity>;
     set((s) => ({
       fix: { ...s.fix, ...fixData },
       velocity: {
         ...s.velocity,
-        ...(speedKnots !== undefined && { speedKnots }),
         ...(speedKmh !== undefined && { speedKmh }),
         ...(courseTrue !== undefined && { courseTrue }),
-        ...(courseMagnetic !== undefined && { courseMagnetic }),
         ...(mode !== undefined && { mode }),
       },
     }));
@@ -138,21 +126,12 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
             nextFix = { ...nextFix, ...parsed.data };
             break;
           case "RMC": {
-            const {
-              speedKmh,
-              speedKnots,
-              courseTrue,
-              courseMagnetic,
-              mode,
-              ...fixData
-            } = parsed.data;
+            const { speedKmh, courseTrue, mode, ...fixData } = parsed.data;
             nextFix = { ...nextFix, ...fixData };
             nextVelocity = {
               ...nextVelocity,
-              ...(speedKnots !== undefined && { speedKnots }),
               ...(speedKmh !== undefined && { speedKmh }),
               ...(courseTrue !== undefined && { courseTrue }),
-              ...(courseMagnetic !== undefined && { courseMagnetic }),
               ...(mode !== undefined && { mode }),
             };
             break;

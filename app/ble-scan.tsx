@@ -24,7 +24,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import Reanimated, {
@@ -161,11 +160,11 @@ function BleUnavailableScreen() {
   const router = useRouter();
   return (
     <View style={styles.overlay}>
-      <TouchableOpacity
+      <Pressable
         style={StyleSheet.absoluteFill}
-        activeOpacity={1}
         onPress={() => router.back()}
       />
+
       <View
         style={[
           styles.card,
@@ -363,13 +362,13 @@ export default function BleScanModal() {
 
   return (
     <View style={styles.overlay}>
-      <TouchableOpacity
+      <Pressable
         style={StyleSheet.absoluteFill}
-        activeOpacity={1}
         onPress={() => {
           if (status !== "connecting") router.back();
         }}
       />
+
       <ConfirmModal
         visible={modalConfig.visible}
         title={modalConfig.title}
@@ -413,8 +412,8 @@ export default function BleScanModal() {
           </View>
 
           {bluetoothState === "off" ||
-          bluetoothState === "turning_on" ||
-          !locationEnabled ? (
+            bluetoothState === "turning_on" ||
+            !locationEnabled ? (
             <View style={styles.empty}>
               {bluetoothState === "turning_on" ? (
                 <ActivityIndicator
@@ -552,7 +551,7 @@ export default function BleScanModal() {
               </View>
 
               <View style={styles.modalFooter}>
-                <Pressable
+                <PressableScale
                   hitSlop={12}
                   onPress={() => router.back()}
                   style={styles.footerBtn}
@@ -565,19 +564,20 @@ export default function BleScanModal() {
                   >
                     Cancel
                   </Text>
-                </Pressable>
+                </PressableScale>
 
-                <Pressable
+
+                <PressableScale
                   hitSlop={12}
                   onPress={
                     scanning
                       ? async () => {
-                          setInitialScanAttempted(true);
-                          await stopScanAndReset();
-                        }
+                        setInitialScanAttempted(true);
+                        await stopScanAndReset();
+                      }
                       : () => {
-                          handleStartScan();
-                        }
+                        handleStartScan();
+                      }
                   }
                   style={[
                     styles.footerBtn,
@@ -596,7 +596,8 @@ export default function BleScanModal() {
                   >
                     {scanning ? "Stop" : "Scan"}
                   </Text>
-                </Pressable>
+                </PressableScale>
+
               </View>
             </>
           )}

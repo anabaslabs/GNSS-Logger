@@ -11,11 +11,5 @@ export const BLE_SCAN_DURATION = 10;
 /** MTU size to negotiate — larger MTU means fewer fragmented packets per NMEA line */
 export const BLE_MTU_SIZE = 512;
 
-/** RSSI threshold to show a device in scan results (dBm) */
-export const BLE_RSSI_THRESHOLD = -90;
-
-/** Auto-reconnect attempt interval in ms */
-export const BLE_RECONNECT_INTERVAL_MS = 3000;
-
 /** Max reassembly buffer size (chars) — safety limit */
 export const BLE_BUFFER_MAX = 4096;

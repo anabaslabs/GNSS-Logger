@@ -253,7 +253,7 @@ export default function LogsScreen() {
     visible: false,
     title: "",
     message: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   async function stopLogging() {
@@ -391,7 +391,7 @@ export default function LogsScreen() {
                 styles.modal,
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
-              onPress={() => {}}
+              onPress={() => { }}
             >
               <View style={{ marginBottom: 20 }}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -464,7 +464,7 @@ export default function LogsScreen() {
               </View>
 
               <View style={styles.modalFooter}>
-                <Pressable
+                <PressableScale
                   hitSlop={12}
                   onPress={() => setShowPicker(false)}
                   style={styles.footerBtn}
@@ -477,10 +477,11 @@ export default function LogsScreen() {
                   >
                     Cancel
                   </Text>
-                </Pressable>
+                </PressableScale>
+
 
                 <View style={{ flexDirection: "row", gap: 12 }}>
-                  <Pressable
+                  <PressableScale
                     hitSlop={12}
                     onPress={() => {
                       setTimerHours("00");
@@ -501,8 +502,9 @@ export default function LogsScreen() {
                     >
                       Reset
                     </Text>
-                  </Pressable>
-                  <Pressable
+                  </PressableScale>
+
+                  <PressableScale
                     hitSlop={12}
                     onPress={handleStartTimed}
                     style={[
@@ -520,7 +522,8 @@ export default function LogsScreen() {
                     >
                       Start
                     </Text>
-                  </Pressable>
+                  </PressableScale>
+
                 </View>
               </View>
             </Pressable>
@@ -545,7 +548,7 @@ export default function LogsScreen() {
                 styles.modal,
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
-              onPress={() => {}}
+              onPress={() => { }}
             >
               <View style={{ marginBottom: 20 }}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -583,7 +586,7 @@ export default function LogsScreen() {
               </View>
 
               <View style={[styles.modalFooter, { marginTop: 24 }]}>
-                <Pressable
+                <PressableScale
                   hitSlop={12}
                   onPress={() => setShowBulkOptions(false)}
                   style={[styles.footerBtn, { flex: 1 }]}
@@ -596,7 +599,8 @@ export default function LogsScreen() {
                   >
                     Cancel
                   </Text>
-                </Pressable>
+                </PressableScale>
+
               </View>
             </Pressable>
           </View>
@@ -762,7 +766,7 @@ export default function LogsScreen() {
                 },
                 onCancel: res.needsPermission
                   ? () =>
-                      setConfirmConfig((prev) => ({ ...prev, visible: false }))
+                    setConfirmConfig((prev) => ({ ...prev, visible: false }))
                   : undefined,
               });
             }}
@@ -786,7 +790,7 @@ export default function LogsScreen() {
                 },
                 onCancel: res.needsPermission
                   ? () =>
-                      setConfirmConfig((prev) => ({ ...prev, visible: false }))
+                    setConfirmConfig((prev) => ({ ...prev, visible: false }))
                   : undefined,
               });
             }}

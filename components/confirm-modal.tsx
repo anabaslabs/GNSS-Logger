@@ -2,12 +2,13 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import React from "react";
 import {
   Modal,
-  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { PressableScale } from "./pressable-scale";
+
 
 export type ConfirmModalProps = {
   visible: boolean;
@@ -45,7 +46,7 @@ export function ConfirmModal({
         activeOpacity={1}
         onPress={onCancel || onConfirm}
       >
-        <Pressable
+        <View
           style={[
             styles.modalBox,
             {
@@ -53,8 +54,8 @@ export function ConfirmModal({
               borderColor: colors.border,
             },
           ]}
-          onPress={() => {}}
         >
+
           <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
             {message}
@@ -62,7 +63,11 @@ export function ConfirmModal({
 
           <View style={styles.buttonRow}>
             {!isAlert && (
-              <Pressable hitSlop={12} onPress={onCancel} style={styles.button}>
+              <PressableScale
+                hitSlop={12}
+                onPress={onCancel}
+                style={styles.button}
+              >
                 <Text
                   style={{
                     color: colors.textSecondary,
@@ -72,9 +77,9 @@ export function ConfirmModal({
                 >
                   {cancelText}
                 </Text>
-              </Pressable>
+              </PressableScale>
             )}
-            <Pressable
+            <PressableScale
               hitSlop={12}
               onPress={onConfirm}
               style={[
@@ -99,10 +104,12 @@ export function ConfirmModal({
               >
                 {isAlert ? "OK" : confirmText}
               </Text>
-            </Pressable>
+            </PressableScale>
+
           </View>
-        </Pressable>
+        </View>
       </TouchableOpacity>
+
     </Modal>
   );
 }

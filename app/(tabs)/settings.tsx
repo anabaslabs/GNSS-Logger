@@ -1,4 +1,5 @@
 import { ConfirmModal } from "@/components/confirm-modal";
+import { PressableScale } from "@/components/pressable-scale";
 import {
   NUS_RX_CHAR_UUID,
   NUS_SERVICE_UUID,
@@ -28,14 +29,13 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
+
 
 function SettingRow({
   label,
@@ -92,7 +92,7 @@ export default function SettingsScreen() {
     visible: false,
     title: "",
     message: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const isConnected = status === "connected";
@@ -149,9 +149,8 @@ export default function SettingsScreen() {
             style={[styles.themePicker, { borderTopColor: colors.borderLight }]}
           >
             {(["system", "light", "dark"] as const).map((mode) => (
-              <TouchableOpacity
+              <PressableScale
                 key={mode}
-                activeOpacity={0.7}
                 onPress={() => setThemeMode(mode)}
                 style={[
                   styles.themeOption,
@@ -161,6 +160,7 @@ export default function SettingsScreen() {
                   },
                 ]}
               >
+
                 {mode === "system" && (
                   <IconDeviceMobile
                     size={20}
@@ -198,8 +198,9 @@ export default function SettingsScreen() {
                     ? "Device"
                     : mode.charAt(0).toUpperCase() + mode.slice(1)}
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             ))}
+
           </View>
         </View>
         <View
@@ -220,7 +221,7 @@ export default function SettingsScreen() {
                 : (lastError ?? "Not connected")
             }
             right={
-              <Pressable
+              <PressableScale
                 style={[
                   styles.actionButton,
                   {
@@ -232,10 +233,10 @@ export default function SettingsScreen() {
                     borderColor: "transparent",
                   },
                   isScanning &&
-                    !isConnected && {
-                      backgroundColor: colors.statusSurface,
-                      borderColor: "transparent",
-                    },
+                  !isConnected && {
+                    backgroundColor: colors.statusSurface,
+                    borderColor: "transparent",
+                  },
                 ]}
                 onPress={
                   isConnected
@@ -244,6 +245,7 @@ export default function SettingsScreen() {
                 }
                 accessibilityRole="button"
               >
+
                 {status === "connecting" && (
                   <ActivityIndicator
                     size="small"
@@ -266,7 +268,8 @@ export default function SettingsScreen() {
                         ? "Connecting…"
                         : "Scan & Connect"}
                 </Text>
-              </Pressable>
+              </PressableScale>
+
             }
           />
 
@@ -300,7 +303,7 @@ export default function SettingsScreen() {
             label="Clear Live Data"
             description="Reset all parsed GNSS state (position, satellites, velocity)"
             right={
-              <TouchableOpacity
+              <PressableScale
                 style={[
                   styles.actionButton,
                   {
@@ -321,15 +324,16 @@ export default function SettingsScreen() {
                     },
                   });
                 }}
-                activeOpacity={0.7}
               >
+
                 <IconRotate size={16} color={colors.danger} />
                 <Text
                   style={[styles.actionButtonText, { color: colors.danger }]}
                 >
                   Clear
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
+
             }
           />
         </View>
@@ -351,7 +355,7 @@ export default function SettingsScreen() {
                 : "No default folder set"
             }
             right={
-              <TouchableOpacity
+              <PressableScale
                 style={[
                   styles.actionButton,
                   {
@@ -375,8 +379,8 @@ export default function SettingsScreen() {
                     });
                   }
                 }}
-                activeOpacity={0.7}
               >
+
                 <IconFolderOpen size={16} color={colors.statusActive} />
                 <Text
                   style={[
@@ -386,7 +390,8 @@ export default function SettingsScreen() {
                 >
                   {exportDirectoryUri ? "Change" : "Set"}
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
+
             }
           />
           {exportDirectoryUri && (
@@ -395,7 +400,7 @@ export default function SettingsScreen() {
                 label="Open Folder"
                 description="View your logs in the external file manager"
                 right={
-                  <TouchableOpacity
+                  <PressableScale
                     style={[
                       styles.actionButton,
                       {
@@ -420,10 +425,10 @@ export default function SettingsScreen() {
                         } else if (exportDirectoryUri) {
                           await Linking.openURL(exportDirectoryUri);
                         }
-                      } catch {}
+                      } catch { }
                     }}
-                    activeOpacity={0.7}
                   >
+
                     <IconExternalLink size={16} color={colors.statusActive} />
                     <Text
                       style={[
@@ -433,14 +438,15 @@ export default function SettingsScreen() {
                     >
                       Open
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
+
                 }
               />
               <SettingRow
                 label="Reset Permission"
                 description="Clear the saved folder and ask again on next export"
                 right={
-                  <TouchableOpacity
+                  <PressableScale
                     style={[
                       styles.actionButton,
                       {
@@ -465,8 +471,8 @@ export default function SettingsScreen() {
                         },
                       });
                     }}
-                    activeOpacity={0.7}
                   >
+
                     <IconTrashX size={16} color={colors.danger} />
                     <Text
                       style={[
@@ -476,7 +482,8 @@ export default function SettingsScreen() {
                     >
                       Reset
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
+
                 }
               />
             </>
@@ -589,13 +596,20 @@ export default function SettingsScreen() {
                   ]}
                 >
                   2025-2026{" "}
-                  <Text
-                    style={{ color: colors.tint, fontFamily: "Lexend_700Bold" }}
+                  <PressableScale
                     onPress={() => Linking.openURL("https://anabaslabs.com")}
                   >
-                    Anabas Labs
-                  </Text>
+                    <Text
+                      style={{
+                        color: colors.tint,
+                        fontFamily: "Lexend_700Bold",
+                      }}
+                    >
+                      Anabas Labs
+                    </Text>
+                  </PressableScale>
                   . All rights reserved.
+
                 </Text>
               </View>
             </View>

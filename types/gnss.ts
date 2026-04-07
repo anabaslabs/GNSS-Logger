@@ -18,10 +18,6 @@ export interface NmeaFix {
   hdop: number | null;
   /** Altitude above mean sea level (m) */
   altitudeMsl: number | null;
-  /** Geoidal separation (m) */
-  geoidSeparation: number | null;
-  /** Age of differential corrections (s) */
-  dgpsAge: number | null;
   /** Talker ID of the sentence that provided the fix */
   talkerId: string | null;
   /** Timestamp of last update */
@@ -48,12 +44,8 @@ export interface NmeaSatellite {
 export interface NmeaVelocity {
   /** Speed over ground in km/h */
   speedKmh: number | null;
-  /** Speed over ground in knots */
-  speedKnots: number | null;
   /** Course over ground, true north (degrees) */
   courseTrue: number | null;
-  /** Course over ground, magnetic north (degrees) */
-  courseMagnetic: number | null;
   /** Mode indicator (A=Autonomous, D=Differential, E=Estimated, N=None) */
   mode: string;
 }

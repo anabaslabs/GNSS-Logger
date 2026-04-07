@@ -147,7 +147,7 @@ export const useLogStore = create<LogState & LogActions>()(
               success: false,
               needsPermission: true,
               message:
-                'Please select a folder (like "Download") once. After this, your logs will save there instantly with one tap.',
+                'Please select a folder once. After this, your logs will save there instantly with one tap.',
             };
           }
 
@@ -184,7 +184,7 @@ export const useLogStore = create<LogState & LogActions>()(
               success: false,
               needsPermission: true,
               message:
-                'Please select a folder (like "Download") once. After this, your logs will save there instantly with one tap.',
+                'Please select a folder once. After this, your logs will save there instantly with one tap.',
             };
           }
 
@@ -241,7 +241,7 @@ export const useLogStore = create<LogState & LogActions>()(
             success: false,
             needsPermission: true,
             message:
-              'Please select a folder (like "Download") once. After this, your logs will save there instantly with one tap.',
+              'Please select a folder once. After this, your logs will save there instantly with one tap.',
             count: 0,
           };
         }

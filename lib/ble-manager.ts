@@ -170,7 +170,7 @@ export async function initializeBle(): Promise<void> {
     return;
   }
 
-  const stateSubscription = bleManager.onStateChange((state) => {}, true);
+  const stateSubscription = bleManager.onStateChange((state) => { }, true);
   subscriptions.push(stateSubscription);
 
   initialized = true;
@@ -388,6 +388,5 @@ export async function enableBluetoothAndroid(): Promise<void> {
   }
 }
 
-export const bleEmitter = null;
-
 export { IS_NATIVE_AVAILABLE as isBleAvailable };
+

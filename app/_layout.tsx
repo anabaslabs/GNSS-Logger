@@ -58,7 +58,6 @@ export default function RootLayout() {
 
   const applyBatch = useGnssStore((s) => s.applyBatch);
   const clearLiveData = useGnssStore((s) => s.clearLiveData);
-
   const setConnected = useBleStore((s) => s.setConnected);
   const setDisconnected = useBleStore((s) => s.setDisconnected);
   const addScannedDevice = useBleStore((s) => s.addScannedDevice);

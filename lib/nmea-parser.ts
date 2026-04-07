@@ -55,8 +55,6 @@ function parseGGA(fields: string[], talkerId: string): Partial<NmeaFix> | null {
     satellitesInUse: parseInt_(fields[7]) ?? 0,
     hdop: parseFloat_(fields[8]),
     altitudeMsl: parseFloat_(fields[9]),
-    geoidSeparation: parseFloat_(fields[11]),
-    dgpsAge: parseFloat_(fields[13]),
     talkerId,
     updatedAt: Date.now(),
   };
@@ -68,9 +66,10 @@ function parseRMC(
   if (fields.length < 10) return null;
   const status = fields[2];
   if (status !== "A") {
+    const knots = parseFloat_(fields[7]);
     return {
       updatedAt: Date.now(),
-      speedKnots: parseFloat_(fields[7]),
+      speedKmh: knots !== null ? knots * 1.852 : null,
       courseTrue: parseFloat_(fields[8]),
       talkerId,
     };
@@ -80,7 +79,10 @@ function parseRMC(
     utcDate: fields[9] ?? "",
     latitude: dmToDeg(fields[3], fields[4]),
     longitude: dmToDeg(fields[5], fields[6]),
-    speedKnots: parseFloat_(fields[7]),
+    speedKmh: (() => {
+      const knots = parseFloat_(fields[7]);
+      return knots !== null ? knots * 1.852 : null;
+    })(),
     courseTrue: parseFloat_(fields[8]),
     talkerId,
     updatedAt: Date.now(),
@@ -91,8 +93,6 @@ function parseVTG(fields: string[]): NmeaVelocity | null {
   if (fields.length < 9) return null;
   return {
     courseTrue: parseFloat_(fields[1]),
-    courseMagnetic: parseFloat_(fields[3]),
-    speedKnots: parseFloat_(fields[5]),
     speedKmh: parseFloat_(fields[7]),
     mode: fields[9] ?? "N",
   };
@@ -195,15 +195,6 @@ export function parseNmea(raw: string): NmeaParsedSentence | null {
     default:
       return { type: "UNKNOWN", raw: sentence };
   }
-}
-
-export function parseNmeaBuffer(buffer: string): NmeaParsedSentence[] {
-  return buffer
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith("$"))
-    .map((line) => parseNmea(line))
-    .filter((r): r is NmeaParsedSentence => r !== null);
 }
 
 export function formatCoord(value: number | null, axis: "lat" | "lon"): string {
