@@ -74,6 +74,7 @@ export type NmeaParsedSentence =
   | { type: "GSA"; data: NmeaDop }
   | { type: "GSV"; data: { talkerId: string; satellites: NmeaSatellite[] } }
   | { type: "GLL"; data: Partial<NmeaFix> }
+  | { type: "VER"; raw: string }
   | { type: "UNKNOWN"; raw: string };
 
 /** BLE device scan result */

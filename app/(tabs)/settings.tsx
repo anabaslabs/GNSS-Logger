@@ -18,6 +18,7 @@ import {
   IconFolderOpen,
   IconMoon,
   IconRotate,
+  IconSettings,
   IconSun,
   IconTrashX,
 } from "@tabler/icons-react-native";
@@ -35,7 +36,6 @@ import {
   Text,
   View,
 } from "react-native";
-
 
 function SettingRow({
   label,
@@ -92,7 +92,7 @@ export default function SettingsScreen() {
     visible: false,
     title: "",
     message: "",
-    onConfirm: () => { },
+    onConfirm: () => {},
   });
 
   const isConnected = status === "connected";
@@ -160,7 +160,6 @@ export default function SettingsScreen() {
                   },
                 ]}
               >
-
                 {mode === "system" && (
                   <IconDeviceMobile
                     size={20}
@@ -200,7 +199,6 @@ export default function SettingsScreen() {
                 </Text>
               </PressableScale>
             ))}
-
           </View>
         </View>
         <View
@@ -233,10 +231,10 @@ export default function SettingsScreen() {
                     borderColor: "transparent",
                   },
                   isScanning &&
-                  !isConnected && {
-                    backgroundColor: colors.statusSurface,
-                    borderColor: "transparent",
-                  },
+                    !isConnected && {
+                      backgroundColor: colors.statusSurface,
+                      borderColor: "transparent",
+                    },
                 ]}
                 onPress={
                   isConnected
@@ -245,7 +243,6 @@ export default function SettingsScreen() {
                 }
                 accessibilityRole="button"
               >
-
                 {status === "connecting" && (
                   <ActivityIndicator
                     size="small"
@@ -269,7 +266,6 @@ export default function SettingsScreen() {
                         : "Scan & Connect"}
                 </Text>
               </PressableScale>
-
             }
           />
 
@@ -286,6 +282,43 @@ export default function SettingsScreen() {
                 }}
                 thumbColor={isDark ? "#FFFFFF" : colors.iconSecondary}
               />
+            }
+          />
+        </View>
+
+        <View
+          style={[
+            styles.section,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.sectionHeader, { color: colors.textTertiary }]}>
+            Module Configuration
+          </Text>
+          <SettingRow
+            label="Device Settings"
+            description="Configure constellations, update rate, and system resets"
+            right={
+              <PressableScale
+                style={[
+                  styles.actionButton,
+                  {
+                    backgroundColor: colors.statusSurface,
+                    borderColor: "transparent",
+                  },
+                ]}
+                onPress={() => router.push("/device-config")}
+              >
+                <IconSettings size={16} color={colors.statusActive} />
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    { color: colors.statusActive },
+                  ]}
+                >
+                  Configure
+                </Text>
+              </PressableScale>
             }
           />
         </View>
@@ -325,7 +358,6 @@ export default function SettingsScreen() {
                   });
                 }}
               >
-
                 <IconRotate size={16} color={colors.danger} />
                 <Text
                   style={[styles.actionButtonText, { color: colors.danger }]}
@@ -333,7 +365,6 @@ export default function SettingsScreen() {
                   Clear
                 </Text>
               </PressableScale>
-
             }
           />
         </View>
@@ -380,7 +411,6 @@ export default function SettingsScreen() {
                   }
                 }}
               >
-
                 <IconFolderOpen size={16} color={colors.statusActive} />
                 <Text
                   style={[
@@ -391,7 +421,6 @@ export default function SettingsScreen() {
                   {exportDirectoryUri ? "Change" : "Set"}
                 </Text>
               </PressableScale>
-
             }
           />
           {exportDirectoryUri && (
@@ -425,10 +454,9 @@ export default function SettingsScreen() {
                         } else if (exportDirectoryUri) {
                           await Linking.openURL(exportDirectoryUri);
                         }
-                      } catch { }
+                      } catch {}
                     }}
                   >
-
                     <IconExternalLink size={16} color={colors.statusActive} />
                     <Text
                       style={[
@@ -439,7 +467,6 @@ export default function SettingsScreen() {
                       Open
                     </Text>
                   </PressableScale>
-
                 }
               />
               <SettingRow
@@ -472,7 +499,6 @@ export default function SettingsScreen() {
                       });
                     }}
                   >
-
                     <IconTrashX size={16} color={colors.danger} />
                     <Text
                       style={[
@@ -483,7 +509,6 @@ export default function SettingsScreen() {
                       Reset
                     </Text>
                   </PressableScale>
-
                 }
               />
             </>
@@ -609,7 +634,6 @@ export default function SettingsScreen() {
                     </Text>
                   </PressableScale>
                   . All rights reserved.
-
                 </Text>
               </View>
             </View>

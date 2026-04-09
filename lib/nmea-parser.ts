@@ -192,6 +192,9 @@ export function parseNmea(raw: string): NmeaParsedSentence | null {
       const data = parseGLL(fields, talkerId);
       return data ? { type: "GLL", data } : null;
     }
+    case "TMVERNO": {
+      return { type: "VER", raw: sentence };
+    }
     default:
       return { type: "UNKNOWN", raw: sentence };
   }
@@ -235,4 +238,17 @@ export function getIstValue(utcTime: string | undefined): string {
 
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${pad(istH)}:${pad(istM)}:${pad(istS)}`;
+}
+
+/**
+ * Generates a full NMEA sentence with checksum and CRLF from a payload string.
+ * Example: generateNmeaCommand("PAIR050,1000") -> "$PAIR050,1000*3B\r\n"
+ */
+export function generateNmeaCommand(payload: string): string {
+  let checksum = 0;
+  for (let i = 0; i < payload.length; i++) {
+    checksum ^= payload.charCodeAt(i);
+  }
+  const checksumHex = checksum.toString(16).toUpperCase().padStart(2, "0");
+  return `$${payload}*${checksumHex}\r\n`;
 }

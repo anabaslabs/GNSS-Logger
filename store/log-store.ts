@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { useConfigStore } from "./config-store";
 
 interface LogState {
   sessions: LogSession[];
@@ -48,6 +49,28 @@ async function ensureLogsDir(): Promise<void> {
   }
 }
 
+function filterSentences(lines: string[]): string[] {
+  const config = useConfigStore.getState().deviceConfig;
+  const { constellations, showCombinedTalker } = config;
+
+  return lines.filter((line) => {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("$")) return true;
+
+    const talker = trimmed.slice(1, 3);
+
+    if (talker === "GN") return showCombinedTalker;
+    if (talker === "GP") return constellations.gps;
+    if (talker === "GL") return constellations.glonass;
+    if (talker === "GA") return constellations.galileo;
+    if (talker === "GB" || talker === "BD") return constellations.beidou;
+    if (talker === "GQ") return constellations.qzss;
+    if (talker === "GI") return constellations.navic;
+
+    return true; // Keep proprietary or unknown talkers
+  });
+}
+
 function nmeaToCsv(lines: string[]): string {
   const header =
     "timestamp,raw_sentence,type,talker,lat,lon,alt,speed_kmh,sats,hdop,quality";
@@ -91,11 +114,16 @@ export const useLogStore = create<LogState & LogActions>()(
         const filePath = `${LOGS_DIR}${id}.nmea`;
         const filePathCsv = `${LOGS_DIR}${id}.csv`;
 
+        const filteredLines = filterSentences(nmeaLines);
+
         await FileSystem.writeAsStringAsync(
           filePath,
-          nmeaLines.join("\n") + "\n",
+          filteredLines.join("\n") + "\n",
         );
-        await FileSystem.writeAsStringAsync(filePathCsv, nmeaToCsv(nmeaLines));
+        await FileSystem.writeAsStringAsync(
+          filePathCsv,
+          nmeaToCsv(filteredLines),
+        );
 
         const session: LogSession = {
           id,
@@ -117,13 +145,15 @@ export const useLogStore = create<LogState & LogActions>()(
         const session = get().sessions.find((s) => s.id === sessionId);
         if (!session) return;
 
+        const filteredLines = filterSentences(nmeaLines);
+
         await FileSystem.writeAsStringAsync(
           session.filePath,
-          nmeaLines.join("\n") + "\n",
+          filteredLines.join("\n") + "\n",
         );
         await FileSystem.writeAsStringAsync(
           session.filePathCsv,
-          nmeaToCsv(nmeaLines),
+          nmeaToCsv(filteredLines),
         );
 
         set((s) => ({
@@ -147,7 +177,7 @@ export const useLogStore = create<LogState & LogActions>()(
               success: false,
               needsPermission: true,
               message:
-                'Please select a folder once. After this, your logs will save there instantly with one tap.',
+                "Please select a folder once. After this, your logs will save there instantly with one tap.",
             };
           }
 
@@ -184,7 +214,7 @@ export const useLogStore = create<LogState & LogActions>()(
               success: false,
               needsPermission: true,
               message:
-                'Please select a folder once. After this, your logs will save there instantly with one tap.',
+                "Please select a folder once. After this, your logs will save there instantly with one tap.",
             };
           }
 
@@ -241,7 +271,7 @@ export const useLogStore = create<LogState & LogActions>()(
             success: false,
             needsPermission: true,
             message:
-              'Please select a folder once. After this, your logs will save there instantly with one tap.',
+              "Please select a folder once. After this, your logs will save there instantly with one tap.",
             count: 0,
           };
         }
