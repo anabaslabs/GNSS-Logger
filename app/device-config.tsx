@@ -1,13 +1,13 @@
 import { ConfirmModal } from "@/components/confirm-modal";
 import { PressableScale } from "@/components/pressable-scale";
+import { CONSTELLATION_COLOR, TALKER_ID } from "@/constants/nmea";
 import { useAppTheme } from "@/hooks/useAppTheme";
-import { sendCommand } from "@/lib/ble-manager";
-import { generateNmeaCommand } from "@/lib/nmea-parser";
-import { TALKER_ID, CONSTELLATION_COLOR } from "@/constants/nmea";
+import { onNmeaLine, sendCommand } from "@/lib/ble-manager";
+import { generateNmeaCommand, parseNmea } from "@/lib/nmea-parser";
 import { useBleStore } from "@/store/ble-store";
 import { useConfigStore } from "@/store/config-store";
 import { Stack } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -77,28 +77,117 @@ export default function DeviceConfigScreen() {
   const {
     deviceConfig,
     setConstellation,
+    setConstellations,
     setUpdateRate,
     setShowCombinedTalker,
     setSbasEnabled,
   } = useConfigStore();
 
+  const isConnected = status === "connected";
   const [customCommand, setCustomCommand] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState<{
     visible: boolean;
     title: string;
     message: string;
-    confirmText?: string;
-    isDestructive?: boolean;
+    confirmText: string;
     onConfirm: () => void;
+    isDestructive?: boolean;
   }>({
     visible: false,
     title: "",
     message: "",
+    confirmText: "",
     onConfirm: () => {},
   });
 
-  const isConnected = status === "connected";
+  // For deduplicating alerts and handling reverts
+  const lastAlertRef = useRef<{ msg: string; time: number } | null>(null);
+  const pendingToggleRef = useRef<{ key: string; prevValue: boolean } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const unsub = onNmeaLine((line) => {
+      const parsed = parseNmea(line);
+      if (!parsed) return;
+
+      if (parsed.type === "PAIR66") {
+        // Full hardware sync!
+        setConstellations(parsed.data);
+        pendingToggleRef.current = null;
+        return;
+      }
+
+      if (parsed.type === "ACK") {
+        const { cmdId, result } = parsed.data;
+        const normalizedId = parseInt(cmdId, 10).toString();
+
+        // 1. Map Airoha/Quectel Result Codes
+        const statusMap: Record<
+          number,
+          { title: string; type: "success" | "error" | "info" }
+        > = {
+          0: { title: "Success", type: "success" },
+          1: { title: "Failed", type: "error" },
+          2: { title: "Unsupported", type: "error" },
+          3: { title: "Operation Failed", type: "error" },
+          4: { title: "Parameter Error", type: "error" },
+        };
+
+        const cmdMap: Record<string, string> = {
+          "66": "Constellation Mapping",
+          "50": "Update Rate",
+          "410": "SBAS Mode",
+          "51": "Baud Rate",
+          "513": "Flash Save",
+          "2": "Reset / Start",
+          "864": "Baud Change",
+          "21": "Fix Rate Query",
+        };
+
+        const s = statusMap[result ?? -1] || {
+          title: `Error (${result})`,
+          type: "error",
+        };
+        const cmdLabel = cmdMap[normalizedId] || `Command ${cmdId}`;
+
+        const alertTitle = `${s.title}: ${cmdLabel}`;
+        const alertMsg =
+          result === 0
+            ? "The command was successfully applied by the module."
+            : result === 4
+              ? "The module rejected the command due to incorrect parameters or malformed string. Verify the command format."
+              : `The module rejected the command. Error code: ${result}. Verify parameters or baud rate.`;
+
+        // 2. Deduplicate alerts (ignore same alert within 1s)
+        const now = Date.now();
+        if (
+          lastAlertRef.current &&
+          lastAlertRef.current.msg === alertTitle + alertMsg &&
+          now - lastAlertRef.current.time < 1000
+        ) {
+          return;
+        }
+        lastAlertRef.current = { msg: alertTitle + alertMsg, time: now };
+
+        // 3. Handle Revert for Toggles if Failed
+        if (result !== 0 && normalizedId === "66" && pendingToggleRef.current) {
+          const { key, prevValue } = pendingToggleRef.current;
+          setConstellation(key as any, prevValue);
+          pendingToggleRef.current = null;
+        } else if (result === 0) {
+          pendingToggleRef.current = null;
+        }
+
+        Alert.alert(alertTitle, alertMsg, [{ text: "OK" }]);
+      }
+    });
+
+    return () => unsub();
+  }, [isConnected]);
 
   const handleSendCommand = async (payload: string, label: string) => {
     if (!isConnected || !connectedDeviceId) {
@@ -125,11 +214,28 @@ export default function DeviceConfigScreen() {
     key: keyof typeof deviceConfig.constellations,
     value: boolean,
   ) => {
+    // 1. Set pending revert state
+    pendingToggleRef.current = {
+      key,
+      prevValue: deviceConfig.constellations[key],
+    };
+
+    // 2. Update optimistic (will revert in listener on failure)
     setConstellation(key, value);
-    // Construct the PAIR066 command
-    // Order: GPS, GLONASS, Galileo, BeiDou, QZSS, NavIC
+
+    // 3. Construct the PAIR066 bitmask
+    // Standard Airoha AG335X Bitmask mapping
     const c = { ...deviceConfig.constellations, [key]: value };
-    const payload = `PAIR066,${c.gps ? 1 : 0},${c.glonass ? 1 : 0},${c.galileo ? 1 : 0},${c.beidou ? 1 : 0},${c.qzss ? 1 : 0},${c.navic ? 1 : 0}`;
+    let mask = 0;
+    if (c.gps) mask |= 0x01;
+    if (c.glonass) mask |= 0x02;
+    if (c.galileo) mask |= 0x04;
+    if (c.beidou) mask |= 0x08;
+    if (c.qzss) mask |= 0x10;
+    if (c.navic) mask |= 0x20;
+    if (c.beidou_b1c) mask |= 0x40;
+
+    const payload = `PAIR066,${mask}`;
     handleSendCommand(payload, `Update ${key.toUpperCase()}`);
   };
 
@@ -149,10 +255,59 @@ export default function DeviceConfigScreen() {
   const handleFetchVersion = async () => {
     // Request version
     await handleSendCommand("PQTMVERNO", "Fetch Version");
-    Alert.alert(
-      "Version Requested",
-      "Check the raw logs tab for the response starting with $PQTMVERNO.",
-    );
+  };
+
+  const handleQueryConstellations = async () => {
+    // Standard Airoha Bitmask query
+    await handleSendCommand("PAIR066,-1", "Query Constellations");
+  };
+
+  const handleSyncBaud = async () => {
+    setConfirmConfig({
+      visible: true,
+      title: "Sync 115200 Baud",
+      message:
+        "ESP32 will scan 9600 and 115200 to find the module and force it to 115200. Proceed?",
+      confirmText: "Start Sync",
+      onConfirm: async () => {
+        // Bypass handleSendCommand to send raw string for ESP32 special handling
+        if (!connectedDeviceId) return;
+        setIsSending(true);
+        try {
+          // No $, No *, No checksum - ESP32 expects raw SET_BAUD_ string
+          await sendCommand(connectedDeviceId, "SET_BAUD_115200\n");
+          setTimeout(() => setIsSending(false), 500);
+        } catch (error) {
+          setIsSending(false);
+          Alert.alert("Sync Failed", "Could not send sync command.");
+        }
+        setConfirmConfig((prev) => ({ ...prev, visible: false }));
+      },
+    });
+  };
+
+  const handleRevert9600 = async () => {
+    setConfirmConfig({
+      visible: true,
+      title: "Revert to 9600 Baud",
+      message:
+        "EMERGENCY: This will force the module and ESP32 back to 9600 baud. Use this if 115200 is not working.",
+      confirmText: "Revert to 9600",
+      isDestructive: true,
+      onConfirm: async () => {
+        // Bypass handleSendCommand to send raw string for ESP32 special handling
+        if (!connectedDeviceId) return;
+        setIsSending(true);
+        try {
+          await sendCommand(connectedDeviceId, "SET_BAUD_9600\n");
+          setTimeout(() => setIsSending(false), 500);
+        } catch (error) {
+          setIsSending(false);
+          Alert.alert("Revert Failed", "Could not send revert command.");
+        }
+        setConfirmConfig((prev) => ({ ...prev, visible: false }));
+      },
+    });
   };
 
   const handleSaveToFlash = () => {
@@ -167,8 +322,17 @@ export default function DeviceConfigScreen() {
 
     const { constellations, updateRateMs, sbasEnabled } = deviceConfig;
 
-    // 1. Constellations command
-    const cPayload = `PAIR066,${constellations.gps ? 1 : 0},${constellations.glonass ? 1 : 0},${constellations.galileo ? 1 : 0},${constellations.beidou ? 1 : 0},${constellations.qzss ? 1 : 0},${constellations.navic ? 1 : 0}`;
+    // 1. Constellations bitmask
+    let mask = 0;
+    if (constellations.gps) mask |= 0x01;
+    if (constellations.glonass) mask |= 0x02;
+    if (constellations.galileo) mask |= 0x04;
+    if (constellations.beidou) mask |= 0x08;
+    if (constellations.qzss) mask |= 0x10;
+    if (constellations.navic) mask |= 0x20;
+    if (constellations.beidou_b1c) mask |= 0x40;
+
+    const cPayload = `PAIR066,${mask}`;
 
     // 2. Update rate command
     const rPayload = `PAIR050,${updateRateMs}`;
@@ -239,7 +403,20 @@ export default function DeviceConfigScreen() {
                 styles.resetButton,
                 { backgroundColor: colors.statusSurface },
               ]}
-              onPress={() => handleSendCommand("PAIR002,0", "Power Reset")}
+              onPress={() =>
+                setConfirmConfig({
+                  visible: true,
+                  title: "Power Reset",
+                  message:
+                    "This will perform a full system power cycle. Proceed?",
+                  confirmText: "Power Reset",
+                  isDestructive: true,
+                  onConfirm: () => {
+                    handleSendCommand("PAIR002,4", "Power Reset");
+                    setConfirmConfig((prev) => ({ ...prev, visible: false }));
+                  },
+                })
+              }
             >
               <Text
                 style={[styles.resetButtonText, { color: colors.statusActive }]}
@@ -255,7 +432,18 @@ export default function DeviceConfigScreen() {
                 styles.resetButton,
                 { backgroundColor: colors.statusSurface },
               ]}
-              onPress={() => handleSendCommand("PAIR004", "Hot Start")}
+              onPress={() =>
+                setConfirmConfig({
+                  visible: true,
+                  title: "Hot Start",
+                  message: "Perform a Hot Start using existing NVM data?",
+                  confirmText: "Hot Start",
+                  onConfirm: () => {
+                    handleSendCommand("PAIR002,0", "Hot Start");
+                    setConfirmConfig((prev) => ({ ...prev, visible: false }));
+                  },
+                })
+              }
             >
               <Text
                 style={[styles.resetButtonText, { color: colors.statusActive }]}
@@ -268,7 +456,18 @@ export default function DeviceConfigScreen() {
                 styles.resetButton,
                 { backgroundColor: colors.statusSurface },
               ]}
-              onPress={() => handleSendCommand("PAIR005", "Warm Start")}
+              onPress={() =>
+                setConfirmConfig({
+                  visible: true,
+                  title: "Warm Start",
+                  message: "Perform a Warm Start (clears ephemeris)?",
+                  confirmText: "Warm Start",
+                  onConfirm: () => {
+                    handleSendCommand("PAIR002,1", "Warm Start");
+                    setConfirmConfig((prev) => ({ ...prev, visible: false }));
+                  },
+                })
+              }
             >
               <Text
                 style={[styles.resetButtonText, { color: colors.statusActive }]}
@@ -288,11 +487,11 @@ export default function DeviceConfigScreen() {
                 setConfirmConfig({
                   visible: true,
                   title: "Cold Start",
-                  message: "This will reset ephemeris data. Proceed?",
+                  message: "Clear ephemeris and almanac? Proceed?",
                   confirmText: "Cold Start",
                   isDestructive: true,
                   onConfirm: () => {
-                    handleSendCommand("PAIR006", "Cold Start");
+                    handleSendCommand("PAIR002,2", "Cold Start");
                     setConfirmConfig((prev) => ({ ...prev, visible: false }));
                   },
                 })
@@ -312,11 +511,11 @@ export default function DeviceConfigScreen() {
                   visible: true,
                   title: "Full Cold Start",
                   message:
-                    "Factory reset: clears all data and settings. Proceed?",
+                    "Factory reset: clears ALL data and settings. Proceed?",
                   confirmText: "Factory Reset",
                   isDestructive: true,
                   onConfirm: () => {
-                    handleSendCommand("PAIR007", "Full Cold Start");
+                    handleSendCommand("PAIR002,3", "Full Cold Start");
                     setConfirmConfig((prev) => ({ ...prev, visible: false }));
                   },
                 })
@@ -334,14 +533,17 @@ export default function DeviceConfigScreen() {
             {Object.entries(deviceConfig.constellations)
               .sort((a, b) => b[0].localeCompare(a[0]))
               .map(([key, value]) => {
-                const talkerId = ({
-                  gps: TALKER_ID.GPS,
-                  glonass: TALKER_ID.GLONASS,
-                  galileo: TALKER_ID.GALILEO,
-                  beidou: TALKER_ID.BEIDOU,
-                  qzss: TALKER_ID.QZSS,
-                  navic: TALKER_ID.NAVIC,
-                } as any)[key];
+                const talkerId = (
+                  {
+                    gps: TALKER_ID.GPS,
+                    glonass: TALKER_ID.GLONASS,
+                    galileo: TALKER_ID.GALILEO,
+                    beidou: TALKER_ID.BEIDOU,
+                    qzss: TALKER_ID.QZSS,
+                    navic: TALKER_ID.NAVIC,
+                    beidou_b1c: TALKER_ID.BEIDOU,
+                  } as any
+                )[key];
 
                 const labelMap: Record<string, string> = {
                   gps: "GPS (US)",
@@ -350,6 +552,7 @@ export default function DeviceConfigScreen() {
                   beidou: "BeiDou (CN)",
                   qzss: "QZSS (JP)",
                   navic: "NavIC (IN)",
+                  beidou_b1c: "BDS B1C (CN)",
                 };
 
                 const color =
@@ -533,7 +736,6 @@ export default function DeviceConfigScreen() {
                   styles.actionButton,
                   {
                     backgroundColor: colors.statusSurface,
-                    borderColor: "transparent",
                   },
                 ]}
                 onPress={handleFetchVersion}
@@ -547,6 +749,79 @@ export default function DeviceConfigScreen() {
                   Query
                 </Text>
               </PressableScale>
+            }
+          />
+          <View
+            style={[styles.separator, { backgroundColor: colors.borderLight }]}
+          />
+          <SettingRow
+            label="Sync Constellations"
+            description="Query module for actual constellation state"
+            right={
+              <PressableScale
+                style={[
+                  styles.actionButton,
+                  {
+                    backgroundColor: colors.statusSurface,
+                  },
+                ]}
+                onPress={handleQueryConstellations}
+              >
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    { color: colors.statusActive },
+                  ]}
+                >
+                  Sync
+                </Text>
+              </PressableScale>
+            }
+          />
+          <View
+            style={[styles.separator, { backgroundColor: colors.borderLight }]}
+          />
+          <SettingRow
+            label="Baud Recovery"
+            description="Force 9600 / Force 115k Smart Sync"
+            right={
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <PressableScale
+                  style={[
+                    styles.actionButton,
+                    {
+                      backgroundColor: colors.dangerSurface,
+                      minWidth: 60,
+                    },
+                  ]}
+                  onPress={handleRevert9600}
+                >
+                  <Text
+                    style={[styles.actionButtonText, { color: colors.danger }]}
+                  >
+                    9600
+                  </Text>
+                </PressableScale>
+                <PressableScale
+                  style={[
+                    styles.actionButton,
+                    {
+                      backgroundColor: colors.statusSurface,
+                      minWidth: 60,
+                    },
+                  ]}
+                  onPress={handleSyncBaud}
+                >
+                  <Text
+                    style={[
+                      styles.actionButtonText,
+                      { color: colors.statusActive },
+                    ]}
+                  >
+                    115k
+                  </Text>
+                </PressableScale>
+              </View>
             }
           />
         </ConfigSection>

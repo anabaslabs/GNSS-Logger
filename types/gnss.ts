@@ -74,6 +74,20 @@ export type NmeaParsedSentence =
   | { type: "GSA"; data: NmeaDop }
   | { type: "GSV"; data: { talkerId: string; satellites: NmeaSatellite[] } }
   | { type: "GLL"; data: Partial<NmeaFix> }
+  | { type: "ACK"; data: { cmdId: string; result: number | null }; raw: string }
+  | {
+      type: "PAIR66";
+      data: {
+        gps: boolean;
+        glonass: boolean;
+        galileo: boolean;
+        beidou: boolean;
+        qzss: boolean;
+        navic: boolean;
+        beidou_b1c: boolean;
+      };
+      raw: string;
+    }
   | { type: "VER"; raw: string }
   | { type: "UNKNOWN"; raw: string };
 

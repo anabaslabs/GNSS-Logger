@@ -86,7 +86,7 @@ export type DeviceFoundCallback = (peripheral: Peripheral) => void;
 export type ConnectionCallback = (deviceId: string, connected: boolean) => void;
 
 let initialized = false;
-let nmeaCallback: NmeaLineCallback | null = null;
+const nmeaCallbacks = new Set<NmeaLineCallback>();
 let connectionCallback: ConnectionCallback | null = null;
 let deviceFoundCallback: DeviceFoundCallback | null = null;
 
@@ -159,8 +159,8 @@ function processNmeaChunk(deviceId: string, chunk: string): void {
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.startsWith("$") && nmeaCallback) {
-      nmeaCallback(trimmed);
+    if (trimmed.startsWith("$") && nmeaCallbacks.size > 0) {
+      nmeaCallbacks.forEach((cb) => cb(trimmed));
     }
   }
 }
@@ -170,7 +170,7 @@ export async function initializeBle(): Promise<void> {
     return;
   }
 
-  const stateSubscription = bleManager.onStateChange((state) => { }, true);
+  const stateSubscription = bleManager.onStateChange((state) => {}, true);
   subscriptions.push(stateSubscription);
 
   initialized = true;
@@ -187,8 +187,11 @@ export function destroyBle(): void {
   connectedDevice = null;
 }
 
-export function onNmeaLine(cb: NmeaLineCallback): void {
-  nmeaCallback = cb;
+export function onNmeaLine(cb: NmeaLineCallback): () => void {
+  nmeaCallbacks.add(cb);
+  return () => {
+    nmeaCallbacks.delete(cb);
+  };
 }
 
 export function onConnectionChange(cb: ConnectionCallback): void {
@@ -389,4 +392,3 @@ export async function enableBluetoothAndroid(): Promise<void> {
 }
 
 export { IS_NATIVE_AVAILABLE as isBleAvailable };
-

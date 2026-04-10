@@ -412,8 +412,8 @@ export default function BleScanModal() {
           </View>
 
           {bluetoothState === "off" ||
-            bluetoothState === "turning_on" ||
-            !locationEnabled ? (
+          bluetoothState === "turning_on" ||
+          !locationEnabled ? (
             <View style={styles.empty}>
               {bluetoothState === "turning_on" ? (
                 <ActivityIndicator
@@ -566,18 +566,17 @@ export default function BleScanModal() {
                   </Text>
                 </PressableScale>
 
-
                 <PressableScale
                   hitSlop={12}
                   onPress={
                     scanning
                       ? async () => {
-                        setInitialScanAttempted(true);
-                        await stopScanAndReset();
-                      }
+                          setInitialScanAttempted(true);
+                          await stopScanAndReset();
+                        }
                       : () => {
-                        handleStartScan();
-                      }
+                          handleStartScan();
+                        }
                   }
                   style={[
                     styles.footerBtn,
@@ -597,7 +596,6 @@ export default function BleScanModal() {
                     {scanning ? "Stop" : "Scan"}
                   </Text>
                 </PressableScale>
-
               </View>
             </>
           )}
@@ -629,7 +627,8 @@ const styles = StyleSheet.create({
     elevation: 12,
     overflow: "hidden",
     height: 420,
-  },   header: {
+  },
+  header: {
     padding: 20,
   },
   headerTitleRow: {

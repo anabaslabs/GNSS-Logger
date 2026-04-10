@@ -71,7 +71,7 @@ export default function RootLayout() {
   useEffect(() => {
     const nmeaBuffer: string[] = [];
 
-    onNmeaLine((line) => {
+    const unsub = onNmeaLine((line) => {
       nmeaBuffer.push(line);
     });
 
@@ -110,6 +110,7 @@ export default function RootLayout() {
 
     return () => {
       clearInterval(interval);
+      unsub();
       destroyBle();
     };
   }, [

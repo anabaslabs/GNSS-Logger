@@ -151,6 +151,44 @@ function parseGLL(fields: string[], talkerId: string): Partial<NmeaFix> | null {
   };
 }
 
+function parsePAIR066(fields: string[]): {
+  gps: boolean;
+  glonass: boolean;
+  galileo: boolean;
+  beidou: boolean;
+  qzss: boolean;
+  navic: boolean;
+  beidou_b1c: boolean;
+} | null {
+  // Support both Bitmask (Airoha AG335X) and Comma-separated (Older standard)
+  if (fields.length === 2) {
+    // Bitmask format: $PAIR066,<Mask>
+    const mask = parseInt(fields[1], 10);
+    if (isNaN(mask)) return null;
+    return {
+      gps: !!(mask & 0x01),
+      glonass: !!(mask & 0x02),
+      galileo: !!(mask & 0x04),
+      beidou: !!(mask & 0x08),
+      qzss: !!(mask & 0x10),
+      navic: !!(mask & 0x20),
+      beidou_b1c: !!(mask & 0x40),
+    };
+  }
+
+  // Comma-separated format: $PAIR066,gps,glonass,galileo,beidou,qzss,navic[,beidou_b1c]
+  if (fields.length < 7) return null;
+  return {
+    gps: fields[1] === "1",
+    glonass: fields[2] === "1",
+    galileo: fields[3] === "1",
+    beidou: fields[4] === "1",
+    qzss: fields[5] === "1",
+    navic: fields[6] === "1",
+    beidou_b1c: fields[7] === "1",
+  };
+}
+
 export function parseNmea(raw: string): NmeaParsedSentence | null {
   const sentence = raw.trim();
   if (!sentence.startsWith("$")) return null;
@@ -194,6 +232,17 @@ export function parseNmea(raw: string): NmeaParsedSentence | null {
     }
     case "TMVERNO": {
       return { type: "VER", raw: sentence };
+    }
+    case "IR001": {
+      // $PAIR001
+      const cmdId = fields[1];
+      const result = parseInt_(fields[2]);
+      return { type: "ACK", data: { cmdId, result }, raw: sentence };
+    }
+    case "IR066": {
+      // $PAIR066
+      const data = parsePAIR066(fields);
+      return data ? { type: "PAIR66", data, raw: sentence } : null;
     }
     default:
       return { type: "UNKNOWN", raw: sentence };

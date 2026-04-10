@@ -10,6 +10,7 @@ export interface DeviceConfig {
     beidou: boolean;
     qzss: boolean;
     navic: boolean;
+    beidou_b1c: boolean;
   };
   updateRateMs: number;
   showCombinedTalker: boolean;
@@ -25,6 +26,7 @@ interface ConfigActions {
     key: keyof DeviceConfig["constellations"],
     enabled: boolean,
   ) => void;
+  setConstellations: (constellations: DeviceConfig["constellations"]) => void;
   setUpdateRate: (rateMs: number) => void;
   setShowCombinedTalker: (show: boolean) => void;
   setSbasEnabled: (enabled: boolean) => void;
@@ -39,6 +41,7 @@ const defaultConfig: DeviceConfig = {
     beidou: true,
     qzss: true,
     navic: true,
+    beidou_b1c: false,
   },
   updateRateMs: 1000, // 1Hz
   showCombinedTalker: true,
@@ -58,6 +61,14 @@ export const useConfigStore = create<ConfigState & ConfigActions>()(
               ...state.deviceConfig.constellations,
               [key]: enabled,
             },
+          },
+        })),
+
+      setConstellations: (constellations) =>
+        set((state) => ({
+          deviceConfig: {
+            ...state.deviceConfig,
+            constellations,
           },
         })),
 
