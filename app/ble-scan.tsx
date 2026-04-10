@@ -562,7 +562,7 @@ export default function BleScanModal() {
                       { color: colors.textSecondary },
                     ]}
                   >
-                    Cancel
+                    Close
                   </Text>
                 </PressableScale>
 
@@ -629,10 +629,8 @@ const styles = StyleSheet.create({
     elevation: 12,
     overflow: "hidden",
     height: 420,
-  },
-  header: {
-    padding: 24,
-    paddingBottom: 20,
+  },   header: {
+    padding: 20,
   },
   headerTitleRow: {
     flexDirection: "row",
@@ -659,8 +657,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   listContainer: {
-    padding: 24,
-    paddingTop: 12,
+    padding: 20,
     gap: 12,
   },
   listFooter: {
@@ -674,7 +671,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 1,
   },
-
   hintText: {
     fontSize: 12,
     lineHeight: 18,
@@ -732,9 +728,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 24,
-    paddingTop: 0,
-    marginTop: 8,
+    padding: 20,
   },
   footerBtn: {
     height: 48,

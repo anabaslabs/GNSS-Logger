@@ -107,7 +107,7 @@ export const useBleStore = create<BleState & BleActions>((set) => ({
 
     const ok = await startScan();
     if (!ok) {
-      setError("Bluetooth unavailable or permission denied");
+      setError("Bluetooth unavailable");
       setIsScanning(false);
       return;
     }
@@ -118,7 +118,7 @@ export const useBleStore = create<BleState & BleActions>((set) => ({
       if (current <= 1) {
         if (scanInterval) clearInterval(scanInterval);
         scanInterval = null;
-        stopScan().catch(() => {});
+        stopScan().catch(() => { });
         setIsScanning(false);
         setScanTimer(0);
       } else {

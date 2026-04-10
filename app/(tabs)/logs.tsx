@@ -475,7 +475,7 @@ export default function LogsScreen() {
                       { color: colors.textSecondary },
                     ]}
                   >
-                    Cancel
+                    Close
                   </Text>
                 </PressableScale>
 
@@ -597,7 +597,7 @@ export default function LogsScreen() {
                       { color: colors.textSecondary },
                     ]}
                   >
-                    Cancel
+                    Close
                   </Text>
                 </PressableScale>
 
@@ -913,7 +913,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     borderCurve: "continuous",
     borderWidth: 1,
-    padding: 18,
+    padding: 20,
     gap: 16,
   } as any,
   cardActive: { borderWidth: 1 },
@@ -945,7 +945,7 @@ const styles = StyleSheet.create({
   },
   optionText: { fontSize: 16, fontFamily: "Lexend_600SemiBold" },
 
-  divider: { height: 1.5, width: "100%" },
+  divider: { height: 1, width: "100%" },
 
   sessionFooter: { flexDirection: "row", alignItems: "center" },
   actions: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },

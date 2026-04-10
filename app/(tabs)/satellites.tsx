@@ -224,9 +224,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     borderCurve: "continuous",
     borderWidth: 1,
-    paddingTop: 16,
-    paddingHorizontal: 20,
-    paddingBottom: 0,
+    padding: 20,
   } as any,
   listHeader: {
     flexDirection: "row",

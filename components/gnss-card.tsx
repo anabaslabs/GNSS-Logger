@@ -69,8 +69,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     borderCurve: "continuous",
     borderWidth: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 22,
+    padding: 20,
     gap: 12,
   } as any,
   label: {

@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     borderCurve: "continuous",
     borderWidth: 1,
-    padding: 28,
+    padding: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,

@@ -3,9 +3,10 @@ import { PressableScale } from "@/components/pressable-scale";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { sendCommand } from "@/lib/ble-manager";
 import { generateNmeaCommand } from "@/lib/nmea-parser";
+import { TALKER_ID, CONSTELLATION_COLOR } from "@/constants/nmea";
 import { useBleStore } from "@/store/ble-store";
 import { useConfigStore } from "@/store/config-store";
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -35,6 +36,9 @@ function ConfigSection({ title, children }: ConfigSectionProps) {
       <Text style={[styles.sectionHeader, { color: colors.textTertiary }]}>
         {title}
       </Text>
+      <View
+        style={[styles.separator, { backgroundColor: colors.borderLight }]}
+      />
       {children}
     </View>
   );
@@ -68,7 +72,6 @@ function SettingRow({ label, description, right }: SettingRowProps) {
 }
 
 export default function DeviceConfigScreen() {
-  const router = useRouter();
   const { colors, isDark } = useAppTheme();
   const { connectedDeviceId, status } = useBleStore();
   const {
@@ -230,12 +233,7 @@ export default function DeviceConfigScreen() {
         )}
 
         <ConfigSection title="System Resets">
-          <View
-            style={[
-              styles.buttonRow,
-              { borderTopWidth: 1.5, borderTopColor: colors.borderLight },
-            ]}
-          >
+          <View style={styles.buttonRow}>
             <PressableScale
               style={[
                 styles.resetButton,
@@ -332,52 +330,68 @@ export default function DeviceConfigScreen() {
         </ConfigSection>
 
         <ConfigSection title="Constellations">
-          <View style={styles.list}>
+          <View style={styles.constellationGrid}>
             {Object.entries(deviceConfig.constellations)
               .sort((a, b) => b[0].localeCompare(a[0]))
               .map(([key, value]) => {
-                const regionMap: Record<string, string> = {
-                  gps: "USA",
-                  glonass: "Russia",
-                  galileo: "Europe",
-                  beidou: "China",
-                  qzss: "Japan",
-                  navic: "India",
+                const talkerId = ({
+                  gps: TALKER_ID.GPS,
+                  glonass: TALKER_ID.GLONASS,
+                  galileo: TALKER_ID.GALILEO,
+                  beidou: TALKER_ID.BEIDOU,
+                  qzss: TALKER_ID.QZSS,
+                  navic: TALKER_ID.NAVIC,
+                } as any)[key];
+
+                const labelMap: Record<string, string> = {
+                  gps: "GPS (US)",
+                  glonass: "GLONASS (RU)",
+                  galileo: "Galileo (EU)",
+                  beidou: "BeiDou (CN)",
+                  qzss: "QZSS (JP)",
+                  navic: "NavIC (IN)",
                 };
+
+                const color =
+                  CONSTELLATION_COLOR[talkerId] || colors.textTertiary;
+
                 return (
-                  <SettingRow
+                  <PressableScale
                     key={key}
-                    label={`${key.toUpperCase()} (${regionMap[key]})`}
-                    right={
-                      <Switch
-                        value={value}
-                        onValueChange={(v) =>
-                          handleToggleConstellation(key as any, v)
-                        }
-                        trackColor={{
-                          false: colors.borderLight,
-                          true: colors.statusActive,
-                        }}
-                        thumbColor={isDark ? "#FFF" : "#F4F3F4"}
-                      />
+                    onPress={() =>
+                      handleToggleConstellation(key as any, !value)
                     }
-                  />
+                    style={[
+                      styles.constGridItem,
+                      {
+                        backgroundColor: isDark ? color + "10" : color + "05",
+                        borderColor: color + "20",
+                      },
+                      value && {
+                        backgroundColor: color + "20",
+                        borderColor: color,
+                        borderWidth: 1,
+                      },
+                    ]}
+                  >
+                    <View style={styles.constRowTop}>
+                      <Text
+                        style={[
+                          styles.constGridLabel,
+                          { color: value ? color : colors.text },
+                        ]}
+                      >
+                        {labelMap[key] || key.toUpperCase()}
+                      </Text>
+                    </View>
+                  </PressableScale>
                 );
               })}
           </View>
         </ConfigSection>
 
         <ConfigSection title="Update Rate">
-          <View
-            style={[
-              styles.rateRow,
-              {
-                borderTopWidth: 1.5,
-                borderTopColor: colors.borderLight,
-                paddingTop: 16,
-              },
-            ]}
-          >
+          <View style={styles.rateRow}>
             {[1000, 500, 200, 100].map((rate) => (
               <PressableScale
                 key={rate}
@@ -434,7 +448,9 @@ export default function DeviceConfigScreen() {
               />
             }
           />
-
+          <View
+            style={[styles.separator, { backgroundColor: colors.borderLight }]}
+          />
           <SettingRow
             label="Enable SBAS"
             description="Satellite Based Augmentation Systems (WAAS, EGNOS, GAGAN)."
@@ -450,6 +466,61 @@ export default function DeviceConfigScreen() {
               />
             }
           />
+        </ConfigSection>
+
+        <ConfigSection title="Manual Command">
+          <View style={styles.manualRow}>
+            <View
+              style={[
+                styles.inputContainer,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                  flex: 1,
+                },
+              ]}
+            >
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                placeholder="e.g. PAIR003"
+                placeholderTextColor={colors.textTertiary}
+                value={customCommand}
+                onChangeText={setCustomCommand}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+            </View>
+            <PressableScale
+              style={[
+                styles.actionButton,
+                {
+                  backgroundColor: colors.statusSurface,
+                },
+              ]}
+              onPress={() => {
+                if (!customCommand) return;
+                handleSendCommand(customCommand, "Custom");
+                setCustomCommand("");
+              }}
+            >
+              <Text
+                style={[
+                  styles.actionButtonText,
+                  { color: colors.statusActive },
+                ]}
+              >
+                Send
+              </Text>
+            </PressableScale>
+          </View>
+          <Text
+            style={[
+              styles.hintText,
+              { color: colors.textTertiary, marginTop: 12 },
+            ]}
+          >
+            Checksum will be automatically calculated and appended.
+          </Text>
         </ConfigSection>
 
         <ConfigSection title="Module Info">
@@ -478,59 +549,6 @@ export default function DeviceConfigScreen() {
               </PressableScale>
             }
           />
-        </ConfigSection>
-
-        <ConfigSection title="Manual Command">
-          <View
-            style={[
-              styles.inputContainer,
-              {
-                borderColor: colors.border,
-                backgroundColor: colors.background,
-                borderTopWidth: 1.5,
-                borderTopColor: colors.borderLight,
-                marginTop: 4,
-              },
-            ]}
-          >
-            <TextInput
-              style={[styles.input, { color: colors.text }]}
-              placeholder="e.g. PAIR003"
-              placeholderTextColor={colors.textTertiary}
-              value={customCommand}
-              onChangeText={setCustomCommand}
-              autoCapitalize="characters"
-              autoCorrect={false}
-            />
-            <PressableScale
-              style={[
-                styles.sendButton,
-                { backgroundColor: colors.statusSurface },
-              ]}
-              onPress={() => {
-                if (!customCommand) return;
-                handleSendCommand(customCommand, "Custom");
-                setCustomCommand("");
-              }}
-            >
-              <Text
-                style={{
-                  color: colors.statusActive,
-                  fontFamily: "Lexend_700Bold",
-                }}
-              >
-                Send
-              </Text>
-            </PressableScale>
-          </View>
-          <Text
-            style={[
-              styles.hintText,
-              { color: colors.textTertiary, marginTop: 12 },
-            ]}
-          >
-            Checksum will be automatically calculated and appended.
-          </Text>
         </ConfigSection>
 
         <View style={styles.footer}>
@@ -614,6 +632,12 @@ const styles = StyleSheet.create({
     fontFamily: "Lexend_800ExtraBold",
     letterSpacing: 1.2,
     textTransform: "uppercase",
+    marginBottom: 0,
+  },
+  separator: {
+    height: 1,
+    width: "100%",
+    marginTop: 12,
     marginBottom: 12,
   },
   warningBanner: {
@@ -633,7 +657,7 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: "row",
     gap: 12,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   resetButton: {
     flex: 1,
@@ -652,6 +676,36 @@ const styles = StyleSheet.create({
   list: {
     gap: 0,
   },
+  constellationGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    paddingTop: 8,
+  },
+  constGridItem: {
+    width: "48.2%",
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 16,
+    height: 56,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  constRowTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  constRowBottom: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  constGridLabel: {
+    fontSize: 14,
+    fontFamily: "Lexend_700Bold",
+    letterSpacing: -0.5,
+  },
   rateRow: {
     flexDirection: "row",
     gap: 12,
@@ -661,7 +715,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 16,
     borderCurve: "continuous" as any,
-    borderWidth: 1.5,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -679,7 +733,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 16,
     paddingVertical: 12,
-    borderTopWidth: 1.5,
   },
   settingTextContainer: {
     flex: 1,
@@ -717,29 +770,24 @@ const styles = StyleSheet.create({
     fontFamily: "Lexend_400Regular",
     lineHeight: 18,
   },
-  inputContainer: {
+  manualRow: {
     flexDirection: "row",
-    height: 56,
+    gap: 12,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  inputContainer: {
+    height: 48,
     borderRadius: 20,
     borderCurve: "continuous" as any,
-    borderWidth: 1.5,
-    paddingLeft: 16,
-    alignItems: "center",
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    justifyContent: "center",
   },
   input: {
-    flex: 1,
     height: "100%",
     fontFamily: "monospace",
     fontSize: 15,
-  },
-  sendButton: {
-    paddingHorizontal: 16,
-    height: 48,
-    borderRadius: 16,
-    borderCurve: "continuous" as any,
-    marginRight: 4,
-    alignItems: "center",
-    justifyContent: "center",
   },
   footer: {
     marginTop: 12,

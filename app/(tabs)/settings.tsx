@@ -280,7 +280,7 @@ export default function SettingsScreen() {
                   false: colors.borderLight,
                   true: colors.statusActive,
                 }}
-                thumbColor={isDark ? "#FFFFFF" : colors.iconSecondary}
+                thumbColor={isDark ? "#FFF" : "#F4F3F4"}
               />
             }
           />
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
-    borderTopWidth: 1.5,
+    borderTopWidth: 1,
     gap: 16,
   },
   rowLabel: { fontSize: 16, fontFamily: "Lexend_600SemiBold" },
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
   actionButtonText: { fontSize: 14, fontFamily: "Lexend_700Bold" },
   uuidBlock: {
     paddingVertical: 12,
-    borderTopWidth: 1.5,
+    borderTopWidth: 1,
     gap: 4,
   },
   uuidLabel: { fontSize: 12, fontFamily: "Lexend_700Bold" },
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
   themePicker: {
     flexDirection: "row",
     gap: 12,
-    borderTopWidth: 1.5,
+    borderTopWidth: 1,
     paddingTop: 16,
   },
   themeOption: {
@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 24,
     paddingTop: 16,
-    borderTopWidth: 1.5,
+    borderTopWidth: 1,
     alignItems: "center",
     gap: 8,
   },
