@@ -613,7 +613,7 @@ export default function SettingsScreen() {
               style={[styles.footer, { borderTopColor: colors.borderLight }]}
             >
               <View style={styles.copyrightRow}>
-                <IconCopyright size={14} color={colors.textSecondary} />
+                <IconCopyright size={12} color={colors.textSecondary} />
                 <Text
                   style={[
                     styles.copyrightText,
@@ -621,18 +621,28 @@ export default function SettingsScreen() {
                   ]}
                 >
                   2025-2026{" "}
-                  <PressableScale
-                    onPress={() => Linking.openURL("https://anabaslabs.com")}
-                  >
-                    <Text
-                      style={{
+                </Text>
+                <PressableScale
+                  onPress={() => Linking.openURL("https://anabaslabs.com")}
+                >
+                  <Text
+                    style={[
+                      styles.copyrightText,
+                      {
                         color: colors.tint,
                         fontFamily: "Lexend_700Bold",
-                      }}
-                    >
-                      Anabas Labs
-                    </Text>
-                  </PressableScale>
+                      },
+                    ]}
+                  >
+                    Anabas Labs
+                  </Text>
+                </PressableScale>
+                <Text
+                  style={[
+                    styles.copyrightText,
+                    { color: colors.textSecondary },
+                  ]}
+                >
                   . All rights reserved.
                 </Text>
               </View>
@@ -750,7 +760,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: 2,
   },
   copyrightText: {
     fontSize: 12,

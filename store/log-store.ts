@@ -67,7 +67,7 @@ function filterSentences(lines: string[]): string[] {
     if (talker === "GQ") return constellations.qzss;
     if (talker === "GI") return constellations.navic;
 
-    return true; // Keep proprietary or unknown talkers
+    return true;
   });
 }
 

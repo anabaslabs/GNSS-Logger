@@ -43,7 +43,7 @@ const defaultConfig: DeviceConfig = {
     navic: true,
     beidou_b1c: false,
   },
-  updateRateMs: 1000, // 1Hz
+  updateRateMs: 1000,
   showCombinedTalker: true,
   sbasEnabled: true,
 };

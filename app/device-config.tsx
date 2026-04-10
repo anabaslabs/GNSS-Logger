@@ -101,7 +101,6 @@ export default function DeviceConfigScreen() {
     onConfirm: () => {},
   });
 
-  // For deduplicating alerts and handling reverts
   const lastAlertRef = useRef<{ msg: string; time: number } | null>(null);
   const pendingToggleRef = useRef<{ key: string; prevValue: boolean } | null>(
     null,
@@ -115,7 +114,6 @@ export default function DeviceConfigScreen() {
       if (!parsed) return;
 
       if (parsed.type === "PAIR66") {
-        // Full hardware sync!
         setConstellations(parsed.data);
         pendingToggleRef.current = null;
         return;
@@ -125,7 +123,6 @@ export default function DeviceConfigScreen() {
         const { cmdId, result } = parsed.data;
         const normalizedId = parseInt(cmdId, 10).toString();
 
-        // 1. Map Airoha/Quectel Result Codes
         const statusMap: Record<
           number,
           { title: string; type: "success" | "error" | "info" }
@@ -162,7 +159,6 @@ export default function DeviceConfigScreen() {
               ? "The module rejected the command due to incorrect parameters or malformed string. Verify the command format."
               : `The module rejected the command. Error code: ${result}. Verify parameters or baud rate.`;
 
-        // 2. Deduplicate alerts (ignore same alert within 1s)
         const now = Date.now();
         if (
           lastAlertRef.current &&
@@ -173,7 +169,6 @@ export default function DeviceConfigScreen() {
         }
         lastAlertRef.current = { msg: alertTitle + alertMsg, time: now };
 
-        // 3. Handle Revert for Toggles if Failed
         if (result !== 0 && normalizedId === "66" && pendingToggleRef.current) {
           const { key, prevValue } = pendingToggleRef.current;
           setConstellation(key as any, prevValue);
@@ -199,7 +194,6 @@ export default function DeviceConfigScreen() {
     setIsSending(true);
     try {
       await sendCommand(connectedDeviceId, fullCommand);
-      // Small delay to show feedback
       setTimeout(() => setIsSending(false), 500);
     } catch (error) {
       setIsSending(false);
@@ -214,17 +208,13 @@ export default function DeviceConfigScreen() {
     key: keyof typeof deviceConfig.constellations,
     value: boolean,
   ) => {
-    // 1. Set pending revert state
     pendingToggleRef.current = {
       key,
       prevValue: deviceConfig.constellations[key],
     };
 
-    // 2. Update optimistic (will revert in listener on failure)
     setConstellation(key, value);
 
-    // 3. Construct the PAIR066 bitmask
-    // Standard Airoha AG335X Bitmask mapping
     const c = { ...deviceConfig.constellations, [key]: value };
     let mask = 0;
     if (c.gps) mask |= 0x01;
@@ -253,12 +243,10 @@ export default function DeviceConfigScreen() {
   };
 
   const handleFetchVersion = async () => {
-    // Request version
     await handleSendCommand("PQTMVERNO", "Fetch Version");
   };
 
   const handleQueryConstellations = async () => {
-    // Standard Airoha Bitmask query
     await handleSendCommand("PAIR066,-1", "Query Constellations");
   };
 
@@ -270,11 +258,9 @@ export default function DeviceConfigScreen() {
         "ESP32 will scan 9600 and 115200 to find the module and force it to 115200. Proceed?",
       confirmText: "Start Sync",
       onConfirm: async () => {
-        // Bypass handleSendCommand to send raw string for ESP32 special handling
         if (!connectedDeviceId) return;
         setIsSending(true);
         try {
-          // No $, No *, No checksum - ESP32 expects raw SET_BAUD_ string
           await sendCommand(connectedDeviceId, "SET_BAUD_115200\n");
           setTimeout(() => setIsSending(false), 500);
         } catch (error) {
@@ -295,7 +281,6 @@ export default function DeviceConfigScreen() {
       confirmText: "Revert to 9600",
       isDestructive: true,
       onConfirm: async () => {
-        // Bypass handleSendCommand to send raw string for ESP32 special handling
         if (!connectedDeviceId) return;
         setIsSending(true);
         try {
@@ -322,7 +307,6 @@ export default function DeviceConfigScreen() {
 
     const { constellations, updateRateMs, sbasEnabled } = deviceConfig;
 
-    // 1. Constellations bitmask
     let mask = 0;
     if (constellations.gps) mask |= 0x01;
     if (constellations.glonass) mask |= 0x02;
@@ -333,17 +317,12 @@ export default function DeviceConfigScreen() {
     if (constellations.beidou_b1c) mask |= 0x40;
 
     const cPayload = `PAIR066,${mask}`;
-
-    // 2. Update rate command
     const rPayload = `PAIR050,${updateRateMs}`;
-
-    // 3. SBAS command
     const sPayload = `PAIR410,${sbasEnabled ? 1 : 0}`;
 
     setIsSending(true);
     try {
       await sendCommand(connectedDeviceId, generateNmeaCommand(cPayload));
-      // Short delay between commands
       await new Promise((resolve) => setTimeout(resolve, 200));
       await sendCommand(connectedDeviceId, generateNmeaCommand(rPayload));
       await new Promise((resolve) => setTimeout(resolve, 200));
