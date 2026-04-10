@@ -58,7 +58,7 @@ export const SatelliteBar = React.memo(({ satellite }: SatelliteBarProps) => {
 
       <View style={{ width: 40, alignItems: "center" }}>
         <Text style={[styles.elev, { color: colors.textSecondary }]}>
-          {elevation}°
+          {elevation !== null ? `${elevation}°` : "-"}
         </Text>
       </View>
 

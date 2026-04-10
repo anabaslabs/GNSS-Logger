@@ -28,10 +28,10 @@ export interface NmeaFix {
 export interface NmeaSatellite {
   /** Satellite PRN / ID number */
   prn: number;
-  /** Elevation in degrees (0–90) */
-  elevation: number;
-  /** Azimuth in degrees (0–359) */
-  azimuth: number;
+  /** Elevation in degrees (0–90), null if unknown */
+  elevation: number | null;
+  /** Azimuth in degrees (0–359), null if unknown */
+  azimuth: number | null;
   /** Signal/Noise Ratio in C/N₀ (dB-Hz), null if not tracking */
   snr: number | null;
   /** Talker/constellation ID */

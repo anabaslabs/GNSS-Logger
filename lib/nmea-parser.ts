@@ -121,15 +121,25 @@ function parseGSV(
   talkerId: string,
 ): { talkerId: string; satellites: NmeaSatellite[] } | null {
   if (fields.length < 8) return null;
-  const satellites: NmeaSatellite[] = [];
 
-  for (let i = 4; i + 2 < fields.length; i += 4) {
+  const satellites: NmeaSatellite[] = [];
+  const dataFieldsCount = fields.length - 4;
+  let blockSize = 4;
+
+  if (dataFieldsCount > 0) {
+    if (dataFieldsCount % 5 === 0) blockSize = 5;
+    else if (dataFieldsCount % 4 === 0) blockSize = 4;
+    else if (dataFieldsCount > 4 && dataFieldsCount % 5 < dataFieldsCount % 4)
+      blockSize = 5;
+  }
+
+  for (let i = 4; i + 3 < fields.length; i += blockSize) {
     const prn = parseInt_(fields[i]);
     if (prn === null || prn === 0) continue;
     satellites.push({
       prn,
-      elevation: parseInt_(fields[i + 1]) ?? 0,
-      azimuth: parseInt_(fields[i + 2]) ?? 0,
+      elevation: parseInt_(fields[i + 1]),
+      azimuth: parseInt_(fields[i + 2]),
       snr: parseInt_(fields[i + 3]),
       talkerId,
       usedInFix: false,
@@ -160,9 +170,7 @@ function parsePAIR066(fields: string[]): {
   navic: boolean;
   beidou_b1c: boolean;
 } | null {
-  // Support both Bitmask (Airoha AG335X) and Comma-separated (Older standard)
   if (fields.length === 2) {
-    // Bitmask format: $PAIR066,<Mask>
     const mask = parseInt(fields[1], 10);
     if (isNaN(mask)) return null;
     return {
@@ -176,7 +184,6 @@ function parsePAIR066(fields: string[]): {
     };
   }
 
-  // Comma-separated format: $PAIR066,gps,glonass,galileo,beidou,qzss,navic[,beidou_b1c]
   if (fields.length < 7) return null;
   return {
     gps: fields[1] === "1",
@@ -234,13 +241,11 @@ export function parseNmea(raw: string): NmeaParsedSentence | null {
       return { type: "VER", raw: sentence };
     }
     case "IR001": {
-      // $PAIR001
       const cmdId = fields[1];
       const result = parseInt_(fields[2]);
       return { type: "ACK", data: { cmdId, result }, raw: sentence };
     }
     case "IR066": {
-      // $PAIR066
       const data = parsePAIR066(fields);
       return data ? { type: "PAIR66", data, raw: sentence } : null;
     }
@@ -289,10 +294,6 @@ export function getIstValue(utcTime: string | undefined): string {
   return `${pad(istH)}:${pad(istM)}:${pad(istS)}`;
 }
 
-/**
- * Generates a full NMEA sentence with checksum and CRLF from a payload string.
- * Example: generateNmeaCommand("PAIR050,1000") -> "$PAIR050,1000*3B\r\n"
- */
 export function generateNmeaCommand(payload: string): string {
   let checksum = 0;
   for (let i = 0; i < payload.length; i++) {
