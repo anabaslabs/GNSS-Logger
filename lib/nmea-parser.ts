@@ -161,14 +161,13 @@ function parseGLL(fields: string[], talkerId: string): Partial<NmeaFix> | null {
   };
 }
 
-function parsePAIR066(fields: string[]): {
+function parsePAIR067(fields: string[]): {
   gps: boolean;
   glonass: boolean;
   galileo: boolean;
   beidou: boolean;
   qzss: boolean;
   navic: boolean;
-  beidou_b1c: boolean;
 } | null {
   if (fields.length === 2) {
     const mask = parseInt(fields[1], 10);
@@ -180,7 +179,6 @@ function parsePAIR066(fields: string[]): {
       beidou: !!(mask & 0x08),
       qzss: !!(mask & 0x10),
       navic: !!(mask & 0x20),
-      beidou_b1c: !!(mask & 0x40),
     };
   }
 
@@ -192,7 +190,6 @@ function parsePAIR066(fields: string[]): {
     beidou: fields[4] === "1",
     qzss: fields[5] === "1",
     navic: fields[6] === "1",
-    beidou_b1c: fields[7] === "1",
   };
 }
 
@@ -245,9 +242,9 @@ export function parseNmea(raw: string): NmeaParsedSentence | null {
       const result = parseInt_(fields[2]);
       return { type: "ACK", data: { cmdId, result }, raw: sentence };
     }
-    case "IR066": {
-      const data = parsePAIR066(fields);
-      return data ? { type: "PAIR66", data, raw: sentence } : null;
+    case "IR067": {
+      const data = parsePAIR067(fields);
+      return data ? { type: "PAIR67", data, raw: sentence } : null;
     }
     default:
       return { type: "UNKNOWN", raw: sentence };

@@ -10,7 +10,6 @@ export interface DeviceConfig {
     beidou: boolean;
     qzss: boolean;
     navic: boolean;
-    beidou_b1c: boolean;
   };
   updateRateMs: number;
   showCombinedTalker: boolean;
@@ -22,10 +21,6 @@ interface ConfigState {
 }
 
 interface ConfigActions {
-  setConstellation: (
-    key: keyof DeviceConfig["constellations"],
-    enabled: boolean,
-  ) => void;
   setConstellations: (constellations: DeviceConfig["constellations"]) => void;
   setUpdateRate: (rateMs: number) => void;
   setShowCombinedTalker: (show: boolean) => void;
@@ -36,12 +31,11 @@ interface ConfigActions {
 const defaultConfig: DeviceConfig = {
   constellations: {
     gps: true,
-    glonass: true,
+    glonass: false,
     galileo: true,
-    beidou: true,
+    beidou: false,
     qzss: true,
     navic: true,
-    beidou_b1c: false,
   },
   updateRateMs: 1000,
   showCombinedTalker: true,
@@ -52,17 +46,6 @@ export const useConfigStore = create<ConfigState & ConfigActions>()(
   persist(
     (set) => ({
       deviceConfig: { ...defaultConfig },
-
-      setConstellation: (key, enabled) =>
-        set((state) => ({
-          deviceConfig: {
-            ...state.deviceConfig,
-            constellations: {
-              ...state.deviceConfig.constellations,
-              [key]: enabled,
-            },
-          },
-        })),
 
       setConstellations: (constellations) =>
         set((state) => ({

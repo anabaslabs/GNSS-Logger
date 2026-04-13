@@ -1,6 +1,5 @@
 import { ConfirmModal } from "@/components/confirm-modal";
 import { PressableScale } from "@/components/pressable-scale";
-import { CONSTELLATION_COLOR, TALKER_ID } from "@/constants/nmea";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { onNmeaLine, sendCommand } from "@/lib/ble-manager";
 import { generateNmeaCommand, parseNmea } from "@/lib/nmea-parser";
@@ -76,7 +75,6 @@ export default function DeviceConfigScreen() {
   const { connectedDeviceId, status } = useBleStore();
   const {
     deviceConfig,
-    setConstellation,
     setConstellations,
     setUpdateRate,
     setShowCombinedTalker,
@@ -102,9 +100,6 @@ export default function DeviceConfigScreen() {
   });
 
   const lastAlertRef = useRef<{ msg: string; time: number } | null>(null);
-  const pendingToggleRef = useRef<{ key: string; prevValue: boolean } | null>(
-    null,
-  );
 
   useEffect(() => {
     if (!isConnected) return;
@@ -113,9 +108,8 @@ export default function DeviceConfigScreen() {
       const parsed = parseNmea(line);
       if (!parsed) return;
 
-      if (parsed.type === "PAIR66") {
+      if (parsed.type === "PAIR67") {
         setConstellations(parsed.data);
-        pendingToggleRef.current = null;
         return;
       }
 
@@ -135,7 +129,8 @@ export default function DeviceConfigScreen() {
         };
 
         const cmdMap: Record<string, string> = {
-          "66": "Constellation Mapping",
+          "66": "Set Constellations",
+          "67": "Query Constellations",
           "50": "Update Rate",
           "410": "SBAS Mode",
           "51": "Baud Rate",
@@ -169,14 +164,6 @@ export default function DeviceConfigScreen() {
         }
         lastAlertRef.current = { msg: alertTitle + alertMsg, time: now };
 
-        if (result !== 0 && normalizedId === "66" && pendingToggleRef.current) {
-          const { key, prevValue } = pendingToggleRef.current;
-          setConstellation(key as any, prevValue);
-          pendingToggleRef.current = null;
-        } else if (result === 0) {
-          pendingToggleRef.current = null;
-        }
-
         Alert.alert(alertTitle, alertMsg, [{ text: "OK" }]);
       }
     });
@@ -204,31 +191,6 @@ export default function DeviceConfigScreen() {
     }
   };
 
-  const handleToggleConstellation = (
-    key: keyof typeof deviceConfig.constellations,
-    value: boolean,
-  ) => {
-    pendingToggleRef.current = {
-      key,
-      prevValue: deviceConfig.constellations[key],
-    };
-
-    setConstellation(key, value);
-
-    const c = { ...deviceConfig.constellations, [key]: value };
-    let mask = 0;
-    if (c.gps) mask |= 0x01;
-    if (c.glonass) mask |= 0x02;
-    if (c.galileo) mask |= 0x04;
-    if (c.beidou) mask |= 0x08;
-    if (c.qzss) mask |= 0x10;
-    if (c.navic) mask |= 0x20;
-    if (c.beidou_b1c) mask |= 0x40;
-
-    const payload = `PAIR066,${mask}`;
-    handleSendCommand(payload, `Update ${key.toUpperCase()}`);
-  };
-
   const handleUpdateRate = (rateMs: number) => {
     setUpdateRate(rateMs);
     handleSendCommand(`PAIR050,${rateMs}`, `Set Rate ${1000 / rateMs}Hz`);
@@ -247,7 +209,7 @@ export default function DeviceConfigScreen() {
   };
 
   const handleQueryConstellations = async () => {
-    await handleSendCommand("PAIR066,-1", "Query Constellations");
+    await handleSendCommand("PAIR067", "Query Constellations");
   };
 
   const handleSyncBaud = async () => {
@@ -307,23 +269,11 @@ export default function DeviceConfigScreen() {
 
     const { constellations, updateRateMs, sbasEnabled } = deviceConfig;
 
-    let mask = 0;
-    if (constellations.gps) mask |= 0x01;
-    if (constellations.glonass) mask |= 0x02;
-    if (constellations.galileo) mask |= 0x04;
-    if (constellations.beidou) mask |= 0x08;
-    if (constellations.qzss) mask |= 0x10;
-    if (constellations.navic) mask |= 0x20;
-    if (constellations.beidou_b1c) mask |= 0x40;
-
-    const cPayload = `PAIR066,${mask}`;
     const rPayload = `PAIR050,${updateRateMs}`;
     const sPayload = `PAIR410,${sbasEnabled ? 1 : 0}`;
 
     setIsSending(true);
     try {
-      await sendCommand(connectedDeviceId, generateNmeaCommand(cPayload));
-      await new Promise((resolve) => setTimeout(resolve, 200));
       await sendCommand(connectedDeviceId, generateNmeaCommand(rPayload));
       await new Promise((resolve) => setTimeout(resolve, 200));
       await sendCommand(connectedDeviceId, generateNmeaCommand(sPayload));
@@ -507,71 +457,6 @@ export default function DeviceConfigScreen() {
           </View>
         </ConfigSection>
 
-        <ConfigSection title="Constellations">
-          <View style={styles.constellationGrid}>
-            {Object.entries(deviceConfig.constellations)
-              .sort((a, b) => b[0].localeCompare(a[0]))
-              .map(([key, value]) => {
-                const talkerId = (
-                  {
-                    gps: TALKER_ID.GPS,
-                    glonass: TALKER_ID.GLONASS,
-                    galileo: TALKER_ID.GALILEO,
-                    beidou: TALKER_ID.BEIDOU,
-                    qzss: TALKER_ID.QZSS,
-                    navic: TALKER_ID.NAVIC,
-                    beidou_b1c: TALKER_ID.BEIDOU,
-                  } as any
-                )[key];
-
-                const labelMap: Record<string, string> = {
-                  gps: "GPS (US)",
-                  glonass: "GLONASS (RU)",
-                  galileo: "Galileo (EU)",
-                  beidou: "BeiDou (CN)",
-                  qzss: "QZSS (JP)",
-                  navic: "NavIC (IN)",
-                  beidou_b1c: "BDS B1C (CN)",
-                };
-
-                const color =
-                  CONSTELLATION_COLOR[talkerId] || colors.textTertiary;
-
-                return (
-                  <PressableScale
-                    key={key}
-                    onPress={() =>
-                      handleToggleConstellation(key as any, !value)
-                    }
-                    style={[
-                      styles.constGridItem,
-                      {
-                        backgroundColor: isDark ? color + "10" : color + "05",
-                        borderColor: color + "20",
-                      },
-                      value && {
-                        backgroundColor: color + "20",
-                        borderColor: color,
-                        borderWidth: 1,
-                      },
-                    ]}
-                  >
-                    <View style={styles.constRowTop}>
-                      <Text
-                        style={[
-                          styles.constGridLabel,
-                          { color: value ? color : colors.text },
-                        ]}
-                      >
-                        {labelMap[key] || key.toUpperCase()}
-                      </Text>
-                    </View>
-                  </PressableScale>
-                );
-              })}
-          </View>
-        </ConfigSection>
-
         <ConfigSection title="Update Rate">
           <View style={styles.rateRow}>
             {[1000, 500, 200, 100].map((rate) => (
@@ -734,8 +619,23 @@ export default function DeviceConfigScreen() {
             style={[styles.separator, { backgroundColor: colors.borderLight }]}
           />
           <SettingRow
-            label="Sync Constellations"
-            description="Query module for actual constellation state"
+            label="Active System(s)"
+            description={
+              Object.entries(deviceConfig.constellations)
+                .filter(([_, enabled]) => enabled)
+                .map(([key]) => {
+                  const labelMap: Record<string, string> = {
+                    gps: "GPS",
+                    glonass: "GLONASS",
+                    galileo: "Galileo",
+                    beidou: "BeiDou",
+                    qzss: "QZSS",
+                    navic: "NavIC",
+                  };
+                  return labelMap[key] || key.toUpperCase();
+                })
+                .join(", ") || "None / Querying..."
+            }
             right={
               <PressableScale
                 style={[
@@ -752,7 +652,7 @@ export default function DeviceConfigScreen() {
                     { color: colors.statusActive },
                   ]}
                 >
-                  Sync
+                  Refresh
                 </Text>
               </PressableScale>
             }
@@ -926,39 +826,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Lexend_700Bold",
     textAlign: "center",
-  },
-  list: {
-    gap: 0,
-  },
-  constellationGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    paddingTop: 8,
-  },
-  constGridItem: {
-    width: "48.2%",
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 16,
-    height: 56,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  constRowTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  constRowBottom: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  constGridLabel: {
-    fontSize: 14,
-    fontFamily: "Lexend_700Bold",
-    letterSpacing: -0.5,
   },
   rateRow: {
     flexDirection: "row",

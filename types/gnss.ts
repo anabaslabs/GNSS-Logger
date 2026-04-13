@@ -76,7 +76,7 @@ export type NmeaParsedSentence =
   | { type: "GLL"; data: Partial<NmeaFix> }
   | { type: "ACK"; data: { cmdId: string; result: number | null }; raw: string }
   | {
-      type: "PAIR66";
+      type: "PAIR67";
       data: {
         gps: boolean;
         glonass: boolean;
@@ -84,7 +84,6 @@ export type NmeaParsedSentence =
         beidou: boolean;
         qzss: boolean;
         navic: boolean;
-        beidou_b1c: boolean;
       };
       raw: string;
     }
