@@ -135,10 +135,25 @@ export default function DeviceConfigScreen() {
           "410": "SBAS Mode",
           "51": "Baud Rate",
           "513": "Flash Save",
-          "2": "Reset / Start",
+          "2": "Power Reset",
+          "4": "Hot Start",
+          "5": "Warm Start",
+          "6": "Cold Start",
+          "7": "Full Cold Start",
+          "511": "Factory Reset",
           "864": "Baud Change",
-          "21": "Fix Rate Query",
+          "21": "Module Status",
         };
+
+        const resetCmds = ["4", "5", "6", "7", "511"];
+
+        if (resetCmds.includes(normalizedId) && result === 1) {
+          return;
+        }
+
+        if (normalizedId === "21") {
+          return;
+        }
 
         const s = statusMap[result ?? -1] || {
           title: `Error (${result})`,
@@ -335,40 +350,12 @@ export default function DeviceConfigScreen() {
               onPress={() =>
                 setConfirmConfig({
                   visible: true,
-                  title: "Power Reset",
-                  message:
-                    "This will perform a full system power cycle. Proceed?",
-                  confirmText: "Power Reset",
-                  isDestructive: true,
-                  onConfirm: () => {
-                    handleSendCommand("PAIR002,4", "Power Reset");
-                    setConfirmConfig((prev) => ({ ...prev, visible: false }));
-                  },
-                })
-              }
-            >
-              <Text
-                style={[styles.resetButtonText, { color: colors.statusActive }]}
-              >
-                Power Reset
-              </Text>
-            </PressableScale>
-          </View>
-
-          <View style={styles.buttonRow}>
-            <PressableScale
-              style={[
-                styles.resetButton,
-                { backgroundColor: colors.statusSurface },
-              ]}
-              onPress={() =>
-                setConfirmConfig({
-                  visible: true,
                   title: "Hot Start",
-                  message: "Perform a Hot Start using existing NVM data?",
+                  message:
+                    "Restarts using all available data (ephemeris, almanac, time, and position) for the fastest fix. Proceed?",
                   confirmText: "Hot Start",
                   onConfirm: () => {
-                    handleSendCommand("PAIR002,0", "Hot Start");
+                    handleSendCommand("PAIR004", "Hot Start");
                     setConfirmConfig((prev) => ({ ...prev, visible: false }));
                   },
                 })
@@ -389,10 +376,11 @@ export default function DeviceConfigScreen() {
                 setConfirmConfig({
                   visible: true,
                   title: "Warm Start",
-                  message: "Perform a Warm Start (clears ephemeris)?",
+                  message:
+                    "Restarts without using ephemeris data, but retains almanac, time, and position. Proceed?",
                   confirmText: "Warm Start",
                   onConfirm: () => {
-                    handleSendCommand("PAIR002,1", "Warm Start");
+                    handleSendCommand("PAIR005", "Warm Start");
                     setConfirmConfig((prev) => ({ ...prev, visible: false }));
                   },
                 })
@@ -410,24 +398,76 @@ export default function DeviceConfigScreen() {
             <PressableScale
               style={[
                 styles.resetButton,
-                { backgroundColor: colors.dangerSurface },
+                { backgroundColor: colors.warningSurface },
               ]}
               onPress={() =>
                 setConfirmConfig({
                   visible: true,
                   title: "Cold Start",
-                  message: "Clear ephemeris and almanac? Proceed?",
+                  message:
+                    "Restarts without using position, almanac, or ephemeris data. Proceed?",
                   confirmText: "Cold Start",
                   isDestructive: true,
                   onConfirm: () => {
-                    handleSendCommand("PAIR002,2", "Cold Start");
+                    handleSendCommand("PAIR006", "Cold Start");
+                    setConfirmConfig((prev) => ({ ...prev, visible: false }));
+                  },
+                })
+              }
+            >
+              <Text style={[styles.resetButtonText, { color: colors.warning }]}>
+                Cold Start
+              </Text>
+            </PressableScale>
+            <PressableScale
+              style={[
+                styles.resetButton,
+                { backgroundColor: colors.warningSurface },
+              ]}
+              onPress={() =>
+                setConfirmConfig({
+                  visible: true,
+                  title: "Full Cold Start",
+                  message:
+                    "Clears all internal data including flash-based configurations and returns the module to its factory default state. Proceed?",
+                  confirmText: "Factory Reset",
+                  isDestructive: true,
+                  onConfirm: () => {
+                    handleSendCommand("PAIR007", "Full Cold Start");
+                    setConfirmConfig((prev) => ({ ...prev, visible: false }));
+                  },
+                })
+              }
+            >
+              <Text style={[styles.resetButtonText, { color: colors.warning }]}>
+                Full Cold Start
+              </Text>
+            </PressableScale>
+          </View>
+
+          <View style={styles.buttonRow}>
+            <PressableScale
+              style={[
+                styles.resetButton,
+                { backgroundColor: colors.dangerSurface },
+              ]}
+              onPress={() =>
+                setConfirmConfig({
+                  visible: true,
+                  title: "Power Reset",
+                  message:
+                    "Triggers a system power-on/reboot of the GNSS subsystem (DSP, RF, and Clock). Proceed?",
+                  confirmText: "Power Reset",
+                  isDestructive: true,
+                  onConfirm: () => {
+                    handleSendCommand("PAIR002", "Power Reset");
                     setConfirmConfig((prev) => ({ ...prev, visible: false }));
                   },
                 })
               }
             >
               <Text style={[styles.resetButtonText, { color: colors.danger }]}>
-                Cold Start
+                Power Reset
               </Text>
             </PressableScale>
             <PressableScale
@@ -438,20 +478,20 @@ export default function DeviceConfigScreen() {
               onPress={() =>
                 setConfirmConfig({
                   visible: true,
-                  title: "Full Cold Start",
+                  title: "Factory Reset",
                   message:
-                    "Factory reset: clears ALL data and settings. Proceed?",
-                  confirmText: "Factory Reset",
+                    "This will wipe ALL custom settings (Baud rate, Constellations, Update rate) and return the module to Quectel defaults. Proceed?",
+                  confirmText: "Wipe & Reset",
                   isDestructive: true,
                   onConfirm: () => {
-                    handleSendCommand("PAIR002,3", "Full Cold Start");
+                    handleSendCommand("PAIR511", "Factory Reset");
                     setConfirmConfig((prev) => ({ ...prev, visible: false }));
                   },
                 })
               }
             >
               <Text style={[styles.resetButtonText, { color: colors.danger }]}>
-                Full Cold Start
+                Factory Reset
               </Text>
             </PressableScale>
           </View>
