@@ -1,10 +1,12 @@
 import { ConfirmModal } from "@/components/confirm-modal";
 import { PressableScale } from "@/components/pressable-scale";
+import { CONSTELLATION_COLOR } from "@/constants/nmea";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { onNmeaLine, sendCommand } from "@/lib/ble-manager";
 import { generateNmeaCommand, parseNmea } from "@/lib/nmea-parser";
 import { useBleStore } from "@/store/ble-store";
 import { useConfigStore } from "@/store/config-store";
+import { IconRefresh } from "@tabler/icons-react-native";
 import { Stack } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -21,9 +23,10 @@ import {
 interface ConfigSectionProps {
   title: string;
   children: React.ReactNode;
+  action?: React.ReactNode;
 }
 
-function ConfigSection({ title, children }: ConfigSectionProps) {
+function ConfigSection({ title, children, action }: ConfigSectionProps) {
   const { colors } = useAppTheme();
   return (
     <View
@@ -32,9 +35,12 @@ function ConfigSection({ title, children }: ConfigSectionProps) {
         { backgroundColor: colors.surface, borderColor: colors.border },
       ]}
     >
-      <Text style={[styles.sectionHeader, { color: colors.textTertiary }]}>
-        {title}
-      </Text>
+      <View style={styles.sectionHeaderRow}>
+        <Text style={[styles.sectionHeader, { color: colors.textTertiary }]}>
+          {title}
+        </Text>
+        {action}
+      </View>
       <View
         style={[styles.separator, { backgroundColor: colors.borderLight }]}
       />
@@ -79,6 +85,7 @@ export default function DeviceConfigScreen() {
     setUpdateRate,
     setShowCombinedTalker,
     setSbasEnabled,
+    setFirmwareVersion,
   } = useConfigStore();
 
   const isConnected = status === "connected";
@@ -110,6 +117,16 @@ export default function DeviceConfigScreen() {
 
       if (parsed.type === "PAIR67") {
         setConstellations(parsed.data);
+        return;
+      }
+
+      if (parsed.type === "VER") {
+        const { version, date, time } = parsed.data;
+        if (version && date && time) {
+          setFirmwareVersion(`${version} (${date} ${time})`);
+        } else if (version) {
+          setFirmwareVersion(version);
+        }
         return;
       }
 
@@ -225,51 +242,6 @@ export default function DeviceConfigScreen() {
 
   const handleQueryConstellations = async () => {
     await handleSendCommand("PAIR067", "Query Constellations");
-  };
-
-  const handleSyncBaud = async () => {
-    setConfirmConfig({
-      visible: true,
-      title: "Sync 115200 Baud",
-      message:
-        "ESP32 will scan 9600 and 115200 to find the module and force it to 115200. Proceed?",
-      confirmText: "Start Sync",
-      onConfirm: async () => {
-        if (!connectedDeviceId) return;
-        setIsSending(true);
-        try {
-          await sendCommand(connectedDeviceId, "SET_BAUD_115200\n");
-          setTimeout(() => setIsSending(false), 500);
-        } catch (error) {
-          setIsSending(false);
-          Alert.alert("Sync Failed", "Could not send sync command.");
-        }
-        setConfirmConfig((prev) => ({ ...prev, visible: false }));
-      },
-    });
-  };
-
-  const handleRevert9600 = async () => {
-    setConfirmConfig({
-      visible: true,
-      title: "Revert to 9600 Baud",
-      message:
-        "EMERGENCY: This will force the module and ESP32 back to 9600 baud. Use this if 115200 is not working.",
-      confirmText: "Revert to 9600",
-      isDestructive: true,
-      onConfirm: async () => {
-        if (!connectedDeviceId) return;
-        setIsSending(true);
-        try {
-          await sendCommand(connectedDeviceId, "SET_BAUD_9600\n");
-          setTimeout(() => setIsSending(false), 500);
-        } catch (error) {
-          setIsSending(false);
-          Alert.alert("Revert Failed", "Could not send revert command.");
-        }
-        setConfirmConfig((prev) => ({ ...prev, visible: false }));
-      },
-    });
   };
 
   const handleSaveToFlash = () => {
@@ -528,15 +500,6 @@ export default function DeviceConfigScreen() {
               </PressableScale>
             ))}
           </View>
-          <Text
-            style={[
-              styles.hintText,
-              { color: colors.textTertiary, marginTop: 12 },
-            ]}
-          >
-            Higher rates (5Hz+) may require increasing the baud rate to avoid
-            NMEA overflow.
-          </Text>
         </ConfigSection>
 
         <ConfigSection title="Log Filtering">
@@ -630,119 +593,96 @@ export default function DeviceConfigScreen() {
           </Text>
         </ConfigSection>
 
-        <ConfigSection title="Module Info">
-          <SettingRow
-            label="Firmware Version"
-            description="Request module ID and firmware build info"
-            right={
-              <PressableScale
-                style={[
-                  styles.actionButton,
-                  {
-                    backgroundColor: colors.statusSurface,
-                  },
-                ]}
-                onPress={handleFetchVersion}
-              >
-                <Text
-                  style={[
-                    styles.actionButtonText,
-                    { color: colors.statusActive },
-                  ]}
-                >
-                  Query
-                </Text>
-              </PressableScale>
-            }
-          />
-          <View
-            style={[styles.separator, { backgroundColor: colors.borderLight }]}
-          />
-          <SettingRow
-            label="Active System(s)"
-            description={
-              Object.entries(deviceConfig.constellations)
-                .filter(([_, enabled]) => enabled)
-                .map(([key]) => {
-                  const labelMap: Record<string, string> = {
-                    gps: "GPS",
-                    glonass: "GLONASS",
-                    galileo: "Galileo",
-                    beidou: "BeiDou",
-                    qzss: "QZSS",
-                    navic: "NavIC",
-                  };
-                  return labelMap[key] || key.toUpperCase();
-                })
-                .join(", ") || "None / Querying..."
-            }
-            right={
-              <PressableScale
-                style={[
-                  styles.actionButton,
-                  {
-                    backgroundColor: colors.statusSurface,
-                  },
-                ]}
-                onPress={handleQueryConstellations}
-              >
-                <Text
-                  style={[
-                    styles.actionButtonText,
-                    { color: colors.statusActive },
-                  ]}
-                >
-                  Refresh
-                </Text>
-              </PressableScale>
-            }
-          />
-          <View
-            style={[styles.separator, { backgroundColor: colors.borderLight }]}
-          />
-          <SettingRow
-            label="Baud Recovery"
-            description="Force 9600 / Force 115k Smart Sync"
-            right={
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                <PressableScale
-                  style={[
-                    styles.actionButton,
-                    {
-                      backgroundColor: colors.dangerSurface,
-                      minWidth: 60,
-                    },
-                  ]}
-                  onPress={handleRevert9600}
-                >
-                  <Text
-                    style={[styles.actionButtonText, { color: colors.danger }]}
-                  >
-                    9600
-                  </Text>
-                </PressableScale>
-                <PressableScale
-                  style={[
-                    styles.actionButton,
-                    {
-                      backgroundColor: colors.statusSurface,
-                      minWidth: 60,
-                    },
-                  ]}
-                  onPress={handleSyncBaud}
-                >
-                  <Text
+        <ConfigSection
+          title="Active Systems"
+          action={
+            <PressableScale
+              onPress={handleQueryConstellations}
+              style={{
+                padding: 0,
+              }}
+            >
+              <IconRefresh color={colors.statusActive} size={22} />
+            </PressableScale>
+          }
+        >
+          <View style={styles.constellationRow}>
+            {Object.entries(deviceConfig.constellations)
+              .filter(([_, enabled]) => enabled)
+              .map(([key]) => {
+                const mapping: Record<string, { id: string; label: string }> = {
+                  gps: { id: "GP", label: "GPS" },
+                  glonass: { id: "GL", label: "GLONASS" },
+                  galileo: { id: "GA", label: "Galileo" },
+                  beidou: { id: "GB", label: "BeiDou" },
+                  qzss: { id: "GQ", label: "QZSS" },
+                  navic: { id: "GI", label: "NavIC" },
+                };
+                return { key, ...mapping[key] };
+              })
+              .map((item) => {
+                const color =
+                  CONSTELLATION_COLOR[item.id] || colors.textTertiary;
+                return (
+                  <View
+                    key={item.key}
                     style={[
-                      styles.actionButtonText,
-                      { color: colors.statusActive },
+                      styles.constBadge,
+                      {
+                        backgroundColor: color + "15",
+                        borderColor: color + "33",
+                      },
                     ]}
                   >
-                    115k
-                  </Text>
-                </PressableScale>
-              </View>
-            }
-          />
+                    <View
+                      style={[styles.constDot, { backgroundColor: color }]}
+                    />
+                    <Text
+                      style={[styles.constLabel, { color: color }]}
+                      numberOfLines={1}
+                    >
+                      {item.label}
+                    </Text>
+                  </View>
+                );
+              })}
+            {Object.values(deviceConfig.constellations).every((v) => !v) && (
+              <Text
+                style={[
+                  styles.hintText,
+                  { color: colors.textTertiary, paddingVertical: 8 },
+                ]}
+              >
+                Not queried. Tap refresh to fetch.
+              </Text>
+            )}
+          </View>
+        </ConfigSection>
+
+        <ConfigSection
+          title="Firmware Version"
+          action={
+            <PressableScale
+              onPress={handleFetchVersion}
+              style={{
+                padding: 0,
+              }}
+            >
+              <IconRefresh color={colors.statusActive} size={22} />
+            </PressableScale>
+          }
+        >
+          <View style={styles.infoContent}>
+            {deviceConfig.firmwareVersion ? (
+              <Text style={[styles.infoText, { color: colors.text }]}>
+                {deviceConfig.firmwareVersion}
+              </Text>
+            ) : (
+              <Text style={[styles.hintText, { color: colors.textTertiary }]}>
+                Not queried. Tap refresh to fetch.
+              </Text>
+            )}
+          </View>
         </ConfigSection>
 
         <View style={styles.footer}>
@@ -827,6 +767,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     textTransform: "uppercase",
     marginBottom: 0,
+    flex: 1,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   separator: {
     height: 1,
@@ -898,6 +844,38 @@ const styles = StyleSheet.create({
   settingTextContainer: {
     flex: 1,
     gap: 2,
+  },
+  constellationRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    rowGap: 10,
+    columnGap: 8,
+    marginTop: 12,
+  },
+  constBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 16,
+    borderCurve: "continuous" as any,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minWidth: "47%",
+    flexGrow: 1,
+  },
+  constDot: { width: 7, height: 7, borderRadius: 3.5 },
+  constLabel: {
+    fontSize: 13,
+    fontFamily: "Lexend_700Bold",
+    flexShrink: 1,
+    marginTop: -2,
+  },
+  refreshRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 4,
   },
   settingLabel: {
     fontSize: 16,
@@ -994,5 +972,13 @@ const styles = StyleSheet.create({
   loaderText: {
     fontSize: 14,
     fontFamily: "Lexend_600SemiBold",
+  },
+  infoContent: {
+    paddingVertical: 12,
+    gap: 8,
+  },
+  infoText: {
+    fontSize: 14,
+    fontFamily: "Lexend_400Regular",
   },
 });

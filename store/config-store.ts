@@ -14,6 +14,7 @@ export interface DeviceConfig {
   updateRateMs: number;
   showCombinedTalker: boolean;
   sbasEnabled: boolean;
+  firmwareVersion: string | null;
 }
 
 interface ConfigState {
@@ -25,6 +26,8 @@ interface ConfigActions {
   setUpdateRate: (rateMs: number) => void;
   setShowCombinedTalker: (show: boolean) => void;
   setSbasEnabled: (enabled: boolean) => void;
+  setFirmwareVersion: (version: string | null) => void;
+  clearDeviceData: () => void;
   resetConfig: () => void;
 }
 
@@ -40,6 +43,7 @@ const defaultConfig: DeviceConfig = {
   updateRateMs: 1000,
   showCombinedTalker: true,
   sbasEnabled: true,
+  firmwareVersion: null,
 };
 
 export const useConfigStore = create<ConfigState & ConfigActions>()(
@@ -76,6 +80,30 @@ export const useConfigStore = create<ConfigState & ConfigActions>()(
           deviceConfig: {
             ...state.deviceConfig,
             sbasEnabled: enabled,
+          },
+        })),
+
+      setFirmwareVersion: (version) =>
+        set((state) => ({
+          deviceConfig: {
+            ...state.deviceConfig,
+            firmwareVersion: version,
+          },
+        })),
+
+      clearDeviceData: () =>
+        set((state) => ({
+          deviceConfig: {
+            ...state.deviceConfig,
+            constellations: {
+              gps: false,
+              glonass: false,
+              galileo: false,
+              beidou: false,
+              qzss: false,
+              navic: false,
+            },
+            firmwareVersion: null,
           },
         })),
 

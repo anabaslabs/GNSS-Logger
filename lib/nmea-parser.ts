@@ -235,7 +235,15 @@ export function parseNmea(raw: string): NmeaParsedSentence | null {
       return data ? { type: "GLL", data } : null;
     }
     case "TMVERNO": {
-      return { type: "VER", raw: sentence };
+      return {
+        type: "VER",
+        data: {
+          version: fields[1],
+          date: fields[2],
+          time: fields[3],
+        },
+        raw: sentence,
+      };
     }
     case "IR001": {
       const cmdId = fields[1];

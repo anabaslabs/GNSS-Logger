@@ -87,7 +87,11 @@ export type NmeaParsedSentence =
       };
       raw: string;
     }
-  | { type: "VER"; raw: string }
+  | {
+      type: "VER";
+      data: { version: string; date?: string; time?: string };
+      raw: string;
+    }
   | { type: "UNKNOWN"; raw: string };
 
 /** BLE device scan result */

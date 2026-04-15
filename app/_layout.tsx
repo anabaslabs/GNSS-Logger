@@ -5,9 +5,11 @@ import {
   onConnectionChange,
   onDeviceFound,
   onNmeaLine,
+  sendCommand,
 } from "@/lib/ble-manager";
-import { parseNmea } from "@/lib/nmea-parser";
+import { generateNmeaCommand, parseNmea } from "@/lib/nmea-parser";
 import { useBleStore } from "@/store/ble-store";
+import { useConfigStore } from "@/store/config-store";
 import { useGnssStore } from "@/store/gnss-store";
 import type { BleDevice, NmeaParsedSentence } from "@/types/gnss";
 import {
@@ -61,6 +63,7 @@ export default function RootLayout() {
   const setConnected = useBleStore((s) => s.setConnected);
   const setDisconnected = useBleStore((s) => s.setDisconnected);
   const addScannedDevice = useBleStore((s) => s.addScannedDevice);
+  const clearDeviceData = useConfigStore((s) => s.clearDeviceData);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -91,9 +94,21 @@ export default function RootLayout() {
     onConnectionChange((deviceId, connected) => {
       if (connected) {
         setConnected(deviceId, null);
+
+        // Auto-query device info after connection stabilizes
+        setTimeout(async () => {
+          try {
+            await sendCommand(deviceId, generateNmeaCommand("PAIR067"));
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            await sendCommand(deviceId, generateNmeaCommand("PQTMVERNO"));
+          } catch (err) {
+            console.error("[BLE] Auto-query failed:", err);
+          }
+        }, 1000);
       } else {
         setDisconnected();
         clearLiveData();
+        clearDeviceData();
       }
     });
 
