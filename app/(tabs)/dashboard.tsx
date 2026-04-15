@@ -1,5 +1,4 @@
 import { ConnectionBanner } from "@/components/connection-banner";
-import { GnssCard } from "@/components/gnss-card";
 import {
   CONSTELLATION_COLOR,
   CONSTELLATION_LABEL,
@@ -180,20 +179,70 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      <View style={styles.cardRow}>
-        <GnssCard
-          label="Speed"
-          value={hasFix ? speedKmh.toFixed(1) : "-"}
-          unit="km/h"
-          accent="#F59E0B"
-        />
-        <GnssCard
-          label="Heading"
-          value={heading !== null ? heading.toFixed(1) : "-"}
-          unit="°"
-          accent="#38BDF8"
-          secondary={heading !== null ? compassPoint(heading) : undefined}
-        />
+      <View
+        style={[
+          styles.section,
+          {
+            backgroundColor: colors.surface,
+            borderColor: "#38BDF822",
+            paddingBottom: 24,
+          },
+        ]}
+      >
+        <Text style={[styles.sectionTitle, { color: "#38BDF8" }]}>
+          Movement
+        </Text>
+        <View style={styles.metricRow}>
+          <View style={styles.metricItem}>
+            <Text style={[styles.metricLabel, { color: colors.textTertiary }]}>
+              SPEED
+            </Text>
+            <View style={styles.metricValueContainer}>
+              <Text style={[styles.metricValue, { color: colors.text }]}>
+                {hasFix ? speedKmh.toFixed(1) : "-"}
+              </Text>
+              <Text
+                style={[styles.metricUnit, { color: colors.textSecondary }]}
+              >
+                km/h
+              </Text>
+            </View>
+          </View>
+          <View style={styles.metricItem}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={[styles.metricLabel, { color: colors.textTertiary }]}
+              >
+                HEADING
+              </Text>
+              {heading !== null && (
+                <View
+                  style={[styles.statusBadge, { backgroundColor: "#38BDF815" }]}
+                >
+                  <Text style={[styles.statusText, { color: "#38BDF8" }]}>
+                    {compassPoint(heading)}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.metricValueContainer}>
+              <Text style={[styles.metricValue, { color: colors.text }]}>
+                {heading !== null ? heading.toFixed(1) : "-"}
+              </Text>
+              <Text
+                style={[styles.metricUnit, { color: colors.textSecondary }]}
+              >
+                °
+              </Text>
+            </View>
+          </View>
+        </View>
       </View>
 
       <View
@@ -300,12 +349,16 @@ export default function DashboardScreen() {
       <View
         style={[
           styles.section,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          {
+            backgroundColor: colors.surface,
+            borderColor: "#F43F5E22",
+          },
         ]}
       >
-        <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>
+        <Text style={[styles.sectionTitle, { color: "#F43F5E" }]}>
           Constellations In Fix
         </Text>
+
         <View style={styles.constellationRow}>
           {Array.from({ length: 6 }).map((_, index) => {
             const item = constellationData[index];

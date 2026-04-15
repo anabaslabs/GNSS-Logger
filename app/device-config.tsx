@@ -211,7 +211,13 @@ export default function DeviceConfigScreen() {
     });
 
     return () => unsub();
-  }, [isConnected]);
+  }, [
+    isConnected,
+    setConstellations,
+    setUpdateRate,
+    setSbasEnabled,
+    setFirmwareVersion,
+  ]);
 
   const handleSendCommand = async (payload: string, label: string) => {
     if (!isConnected || !connectedDeviceId) {
@@ -295,7 +301,7 @@ export default function DeviceConfigScreen() {
       return;
     }
 
-    const { constellations, updateRateMs, sbasEnabled } = deviceConfig;
+    const { updateRateMs, sbasEnabled } = deviceConfig;
 
     const rPayload = `PAIR050,${updateRateMs}`;
     const sPayload = `PAIR410,${sbasEnabled ? 1 : 0}`;
