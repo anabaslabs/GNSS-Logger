@@ -95,7 +95,6 @@ export default function RootLayout() {
       if (connected) {
         setConnected(deviceId, null);
 
-        // Auto-query device info after connection stabilizes
         setTimeout(async () => {
           try {
             await sendCommand(deviceId, generateNmeaCommand("PAIR067"));

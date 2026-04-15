@@ -120,6 +120,16 @@ export default function DeviceConfigScreen() {
         return;
       }
 
+      if (parsed.type === "PAIR050") {
+        setUpdateRate(parsed.data);
+        return;
+      }
+
+      if (parsed.type === "PAIR410") {
+        setSbasEnabled(parsed.data);
+        return;
+      }
+
       if (parsed.type === "VER") {
         const { version, date, time } = parsed.data;
         if (version && date && time) {
@@ -246,6 +256,37 @@ export default function DeviceConfigScreen() {
 
   const handleSaveToFlash = () => {
     handleSendCommand("PAIR513", "Save to Flash");
+  };
+
+  const handlePullConfig = async () => {
+    if (!isConnected || !connectedDeviceId) {
+      Alert.alert("Error", "Device not connected");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      await sendCommand(connectedDeviceId, generateNmeaCommand("PAIR050"));
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      await sendCommand(connectedDeviceId, generateNmeaCommand("PAIR410"));
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      await sendCommand(connectedDeviceId, generateNmeaCommand("PAIR067"));
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      await sendCommand(connectedDeviceId, generateNmeaCommand("PQTMVERNO"));
+
+      setTimeout(() => {
+        setIsSending(false);
+      }, 1000);
+    } catch (error) {
+      setIsSending(false);
+      Alert.alert(
+        "Pull Failed",
+        error instanceof Error ? error.message : "Unknown error",
+      );
+    }
   };
 
   const handlePushConfig = async () => {
@@ -552,7 +593,7 @@ export default function DeviceConfigScreen() {
             >
               <TextInput
                 style={[styles.input, { color: colors.text }]}
-                placeholder="e.g. PAIR003"
+                placeholder="e.g. $PAIR067"
                 placeholderTextColor={colors.textTertiary}
                 value={customCommand}
                 onChangeText={setCustomCommand}
@@ -589,7 +630,8 @@ export default function DeviceConfigScreen() {
               { color: colors.textTertiary, marginTop: 12 },
             ]}
           >
-            Checksum will be automatically calculated and appended.
+            Accepts full NMEA strings or just the body. Checksum is calculated
+            automatically if missing.
           </Text>
         </ConfigSection>
 
@@ -685,54 +727,58 @@ export default function DeviceConfigScreen() {
           </View>
         </ConfigSection>
 
-        <View style={styles.footer}>
-          <PressableScale
-            style={[
-              styles.pushButton,
-              {
-                backgroundColor: isDark
-                  ? colors.tint + "15"
-                  : colors.statusSurface,
-                borderColor: colors.tint + "33",
-                marginBottom: 12,
-              },
-            ]}
-            onPress={handlePushConfig}
-          >
-            <Text style={[styles.saveButtonText, { color: colors.tint }]}>
-              Push Configuration to Device
-            </Text>
-          </PressableScale>
+        <ConfigSection title="Config Sync">
+          <View style={styles.buttonRow}>
+            <PressableScale
+              style={[
+                styles.resetButton,
+                {
+                  backgroundColor: isDark
+                    ? colors.tint + "15"
+                    : colors.statusSurface,
+                },
+              ]}
+              onPress={handlePullConfig}
+            >
+              <Text style={[styles.resetButtonText, { color: colors.tint }]}>
+                Pull Config
+              </Text>
+            </PressableScale>
+
+            <PressableScale
+              style={[
+                styles.resetButton,
+                {
+                  backgroundColor: isDark
+                    ? colors.tint + "15"
+                    : colors.statusSurface,
+                },
+              ]}
+              onPress={handlePushConfig}
+            >
+              <Text style={[styles.resetButtonText, { color: colors.tint }]}>
+                Push Config
+              </Text>
+            </PressableScale>
+          </View>
 
           <PressableScale
             style={[
-              styles.saveButton,
+              styles.resetButton,
               {
+                marginTop: 4,
                 backgroundColor: colors.statusSurface,
-                borderColor: colors.statusActive + "33",
               },
             ]}
             onPress={handleSaveToFlash}
           >
             <Text
-              style={[styles.saveButtonText, { color: colors.statusActive }]}
+              style={[styles.resetButtonText, { color: colors.statusActive }]}
             >
-              Save Settings to Flash
+              Save Config to Flash
             </Text>
           </PressableScale>
-          <Text
-            style={[
-              styles.hintText,
-              {
-                textAlign: "center",
-                color: colors.textTertiary,
-                marginTop: 12,
-              },
-            ]}
-          >
-            Settings saved to flash persist across module reboots.
-          </Text>
-        </View>
+        </ConfigSection>
       </ScrollView>
 
       {isSending && (

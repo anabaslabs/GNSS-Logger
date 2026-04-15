@@ -92,6 +92,8 @@ export type NmeaParsedSentence =
       data: { version: string; date?: string; time?: string };
       raw: string;
     }
+  | { type: "PAIR050"; data: number; raw: string }
+  | { type: "PAIR410"; data: boolean; raw: string }
   | { type: "UNKNOWN"; raw: string };
 
 /** BLE device scan result */

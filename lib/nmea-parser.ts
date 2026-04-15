@@ -250,6 +250,16 @@ export function parseNmea(raw: string): NmeaParsedSentence | null {
       const result = parseInt_(fields[2]);
       return { type: "ACK", data: { cmdId, result }, raw: sentence };
     }
+    case "IR050": {
+      const rate = parseInt_(fields[1]);
+      return rate !== null
+        ? { type: "PAIR050", data: rate, raw: sentence }
+        : null;
+    }
+    case "IR410": {
+      const enabled = fields[1] === "1";
+      return { type: "PAIR410", data: enabled, raw: sentence };
+    }
     case "IR067": {
       const data = parsePAIR067(fields);
       return data ? { type: "PAIR67", data, raw: sentence } : null;
@@ -299,11 +309,29 @@ export function getIstValue(utcTime: string | undefined): string {
   return `${pad(istH)}:${pad(istM)}:${pad(istS)}`;
 }
 
-export function generateNmeaCommand(payload: string): string {
-  let checksum = 0;
-  for (let i = 0; i < payload.length; i++) {
-    checksum ^= payload.charCodeAt(i);
+export function generateNmeaCommand(input: string): string {
+  let cleaned = input.trim();
+
+  if (cleaned.startsWith("$")) {
+    cleaned = cleaned.slice(1);
   }
-  const checksumHex = checksum.toString(16).toUpperCase().padStart(2, "0");
-  return `$${payload}*${checksumHex}\r\n`;
+  cleaned = cleaned.replace(/[\r\n]+$/, "");
+
+  const starIdx = cleaned.lastIndexOf("*");
+  let body: string;
+  let checksumHex: string;
+
+  if (starIdx !== -1) {
+    body = cleaned.slice(0, starIdx);
+    checksumHex = cleaned.slice(starIdx + 1, starIdx + 3).toUpperCase();
+  } else {
+    body = cleaned;
+    let checksum = 0;
+    for (let i = 0; i < body.length; i++) {
+      checksum ^= body.charCodeAt(i);
+    }
+    checksumHex = checksum.toString(16).toUpperCase().padStart(2, "0");
+  }
+
+  return `$${body}*${checksumHex}\r\n`;
 }
