@@ -16,8 +16,16 @@ export interface NmeaFix {
   satellitesInUse: number;
   /** Horizontal dilution of precision */
   hdop: number | null;
+  /** Position dilution of precision */
+  pdop: number | null;
+  /** Vertical dilution of precision */
+  vdop: number | null;
   /** Altitude above mean sea level (m) */
   altitudeMsl: number | null;
+  /** Geoidal separation (m) */
+  geoidalSeparation: number | null;
+  /** Fix mode: 1=No fix, 2=2D, 3=3D */
+  fixMode: 1 | 2 | 3 | null;
   /** Talker ID of the sentence that provided the fix */
   talkerId: string | null;
   /** Timestamp of last update */
@@ -74,6 +82,10 @@ export type NmeaParsedSentence =
   | { type: "GSA"; data: NmeaDop }
   | { type: "GSV"; data: { talkerId: string; satellites: NmeaSatellite[] } }
   | { type: "GLL"; data: Partial<NmeaFix> }
+  | {
+      type: "ANT";
+      data: { status: "Normal" | "Open" | "Short" | "Unknown"; power: boolean };
+    }
   | { type: "ACK"; data: { cmdId: string; result: number | null }; raw: string }
   | {
       type: "PAIR67";

@@ -55,6 +55,7 @@ function parseGGA(fields: string[], talkerId: string): Partial<NmeaFix> | null {
     satellitesInUse: parseInt_(fields[7]) ?? 0,
     hdop: parseFloat_(fields[8]),
     altitudeMsl: parseFloat_(fields[9]),
+    geoidalSeparation: parseFloat_(fields[11]),
     talkerId,
     updatedAt: Date.now(),
   };
@@ -64,19 +65,28 @@ function parseRMC(
   talkerId: string,
 ): Partial<NmeaFix & NmeaVelocity> | null {
   if (fields.length < 10) return null;
+
   const status = fields[2];
+  const common = {
+    utcTime: fields[1] ?? "",
+    utcDate: fields[9] ?? "",
+    updatedAt: Date.now(),
+    talkerId,
+  };
+
   if (status !== "A") {
     const knots = parseFloat_(fields[7]);
     return {
-      updatedAt: Date.now(),
+      ...common,
       speedKmh: knots !== null ? knots * 1.852 : null,
       courseTrue: parseFloat_(fields[8]),
-      talkerId,
+      latitude: null,
+      longitude: null,
     };
   }
+
   return {
-    utcTime: fields[1] ?? "",
-    utcDate: fields[9] ?? "",
+    ...common,
     latitude: dmToDeg(fields[3], fields[4]),
     longitude: dmToDeg(fields[5], fields[6]),
     speedKmh: (() => {
@@ -84,8 +94,6 @@ function parseRMC(
       return knots !== null ? knots * 1.852 : null;
     })(),
     courseTrue: parseFloat_(fields[8]),
-    talkerId,
-    updatedAt: Date.now(),
   };
 }
 
@@ -100,14 +108,14 @@ function parseVTG(fields: string[]): NmeaVelocity | null {
 
 function parseGSA(fields: string[], talkerId: string): NmeaDop | null {
   if (fields.length < 18) return null;
-  const fixMode = parseInt_(fields[2]) as 1 | 2 | 3 | null;
+  const fixMode = parseInt_(fields[2]);
   const satsUsed: number[] = [];
   for (let i = 3; i <= 14; i++) {
     const prn = parseInt_(fields[i]);
     if (prn !== null && prn > 0) satsUsed.push(prn);
   }
   return {
-    fixMode: fixMode ?? 1,
+    fixMode: (fixMode ?? 1) as 1 | 2 | 3,
     satellitesUsed: satsUsed,
     pdop: parseFloat_(fields[15]),
     hdop: parseFloat_(fields[16]),
@@ -151,13 +159,42 @@ function parseGSV(
 function parseGLL(fields: string[], talkerId: string): Partial<NmeaFix> | null {
   if (fields.length < 6) return null;
   const status = fields[6];
-  if (status && status !== "A") return null;
-  return {
-    latitude: dmToDeg(fields[1], fields[2]),
-    longitude: dmToDeg(fields[3], fields[4]),
+  const common = {
     utcTime: fields[5] ?? "",
     talkerId,
     updatedAt: Date.now(),
+  };
+
+  if (status !== "A") {
+    return {
+      ...common,
+      latitude: null,
+      longitude: null,
+    };
+  }
+
+  return {
+    ...common,
+    latitude: dmToDeg(fields[1], fields[2]),
+    longitude: dmToDeg(fields[3], fields[4]),
+  };
+}
+
+function parsePQTMANTENNASTATUS(fields: string[]): {
+  status: "Normal" | "Open" | "Short" | "Unknown";
+  power: boolean;
+} | null {
+  const antStatus = parseInt_(fields[2]);
+  const antPower = parseInt_(fields[3]);
+
+  let status: "Normal" | "Open" | "Short" | "Unknown" = "Unknown";
+  if (antStatus === 0) status = "Normal";
+  else if (antStatus === 1) status = "Open";
+  else if (antStatus === 2) status = "Short";
+
+  return {
+    status,
+    power: antPower === 1,
   };
 }
 
@@ -234,6 +271,10 @@ export function parseNmea(raw: string): NmeaParsedSentence | null {
       const data = parseGLL(fields, talkerId);
       return data ? { type: "GLL", data } : null;
     }
+    case "TMANTENNASTATUS": {
+      const data = parsePQTMANTENNASTATUS(fields);
+      return data ? { type: "ANT", data } : null;
+    }
     case "TMVERNO": {
       return {
         type: "VER",
@@ -282,12 +323,12 @@ export function formatCoord(value: number | null, axis: "lat" | "lon"): string {
 }
 
 export function getUtcValue(utcTime: string | undefined): string {
-  if (!utcTime || utcTime.length < 6) return "-";
+  if (!utcTime || utcTime.length < 6) return "--:--:--";
   return `${utcTime.slice(0, 2)}:${utcTime.slice(2, 4)}:${utcTime.slice(4, 6)}`;
 }
 
 export function getIstValue(utcTime: string | undefined): string {
-  if (!utcTime || utcTime.length < 6) return "-";
+  if (!utcTime || utcTime.length < 6) return "--:--:--";
 
   const hh = parseInt(utcTime.slice(0, 2), 10);
   const mm = parseInt(utcTime.slice(2, 4), 10);

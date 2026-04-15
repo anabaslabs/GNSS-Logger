@@ -3,18 +3,36 @@ import { GnssCard } from "@/components/gnss-card";
 import {
   CONSTELLATION_COLOR,
   CONSTELLATION_LABEL,
-  FixQuality,
+  FIX_QUALITY_LABEL,
 } from "@/constants/nmea";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { formatCoord, getIstValue, getUtcValue } from "@/lib/nmea-parser";
+import { useBleStore } from "@/store/ble-store";
 import { useGnssStore } from "@/store/gnss-store";
 import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 export default function DashboardScreen() {
   const { colors, isDark } = useAppTheme();
-  const { fix, velocity, satellites } = useGnssStore();
-  const hasFix = fix.quality !== FixQuality.NoFix && fix.latitude !== null;
+  const { fix, velocity, satellites, antenna } = useGnssStore();
+  const { status: bleStatus } = useBleStore();
+  const isConnected = bleStatus === "connected";
+  const hasTime = fix.utcTime !== "";
+  const hasFix = fix.fixMode !== null && fix.fixMode > 1;
+
+  const fixStatus = useMemo(() => {
+    if (fix.fixMode === 3) return "3D";
+    if (fix.fixMode === 2) return "2D";
+    if (hasTime) return "PENDING";
+    return "-";
+  }, [fix.fixMode, hasTime]);
+
+  const fixColor = useMemo(() => {
+    if (fix.fixMode === 3) return colors.success;
+    if (fix.fixMode === 2) return colors.warning;
+    if (hasTime) return colors.warning;
+    return colors.textTertiary;
+  }, [fix.fixMode, hasTime, colors]);
 
   const constellationData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -55,16 +73,86 @@ export default function DashboardScreen() {
           { backgroundColor: colors.surface, borderColor: colors.border },
         ]}
       >
+        <View style={styles.statusGrid}>
+          <View style={styles.gridItem}>
+            <Text style={[styles.gridLabel, { color: colors.textTertiary }]}>
+              ANTENNA POWER
+            </Text>
+            <Text
+              style={[
+                styles.gridValue,
+                {
+                  color:
+                    isConnected && antenna?.power
+                      ? colors.success
+                      : colors.textTertiary,
+                },
+              ]}
+            >
+              {isConnected ? (antenna?.power ? "ON" : "OFF") : "-"}
+            </Text>
+          </View>
+          <View style={styles.gridItem}>
+            <Text style={[styles.gridLabel, { color: colors.textTertiary }]}>
+              ANTENNA STATUS
+            </Text>
+            <Text
+              style={[
+                styles.gridValue,
+                {
+                  color:
+                    isConnected && antenna?.status === "Normal"
+                      ? colors.success
+                      : isConnected && antenna
+                        ? colors.error
+                        : colors.textTertiary,
+                },
+              ]}
+            >
+              {isConnected && antenna ? antenna.status.toUpperCase() : "-"}
+            </Text>
+          </View>
+          <View style={styles.gridItem}>
+            <Text style={[styles.gridLabel, { color: colors.textTertiary }]}>
+              FIX MODE
+            </Text>
+            <Text
+              style={[
+                styles.gridValue,
+                { color: isConnected ? fixColor : colors.textTertiary },
+              ]}
+            >
+              {isConnected ? fixStatus : "-"}
+            </Text>
+          </View>
+          <View style={styles.gridItem}>
+            <Text style={[styles.gridLabel, { color: colors.textTertiary }]}>
+              FIX QUALITY
+            </Text>
+            <Text
+              style={[
+                styles.gridValue,
+                { color: isConnected ? colors.text : colors.textTertiary },
+              ]}
+            >
+              {isConnected ? FIX_QUALITY_LABEL[fix.quality] || "-" : "-"}
+            </Text>
+          </View>
+        </View>
+
         <View style={styles.coordRow}>
           <View style={styles.coordItem}>
             <Text style={[styles.coordLabel, { color: colors.textTertiary }]}>
               LATITUDE
             </Text>
             <Text
-              style={[styles.coordValue, { color: colors.text }]}
+              style={[
+                styles.coordValue,
+                { color: isConnected ? colors.text : colors.textTertiary },
+              ]}
               selectable
             >
-              {formatCoord(fix.latitude, "lat")}
+              {isConnected ? formatCoord(fix.latitude, "lat") : "-"}
             </Text>
           </View>
           <View style={styles.coordItem}>
@@ -72,51 +160,141 @@ export default function DashboardScreen() {
               LONGITUDE
             </Text>
             <Text
-              style={[styles.coordValue, { color: colors.text }]}
+              style={[
+                styles.coordValue,
+                { color: isConnected ? colors.text : colors.textTertiary },
+              ]}
               selectable
             >
-              {formatCoord(fix.longitude, "lon")}
+              {isConnected ? formatCoord(fix.longitude, "lon") : "-"}
             </Text>
           </View>
         </View>
         <View style={styles.timeRow}>
           <Text style={[styles.timeText, { color: colors.textSecondary }]}>
-            IST: {getIstValue(fix.utcTime)}
+            IST: {isConnected ? getIstValue(fix.utcTime) : "--:--:--"}
           </Text>
           <Text style={[styles.timeText, { color: colors.textSecondary }]}>
-            UTC: {getUtcValue(fix.utcTime)}
+            UTC: {isConnected ? getUtcValue(fix.utcTime) : "--:--:--"}
           </Text>
         </View>
       </View>
 
       <View style={styles.cardRow}>
-        <GnssCard
-          label="Altitude"
-          value={fix.altitudeMsl !== null ? fix.altitudeMsl.toFixed(1) : "-"}
-          unit="m"
-          accent="#6366F1"
-        />
         <GnssCard
           label="Speed"
           value={hasFix ? speedKmh.toFixed(1) : "-"}
           unit="km/h"
           accent="#F59E0B"
         />
-      </View>
-
-      <View style={styles.cardRow}>
-        <GnssCard
-          label="HDOP"
-          value={fix.hdop !== null ? fix.hdop.toFixed(2) : "-"}
-          accent="#10B981"
-          secondary={fix.hdop !== null ? hdopQuality(fix.hdop) : undefined}
-        />
         <GnssCard
           label="Heading"
-          value={heading !== null ? `${heading.toFixed(1)}°` : "-"}
+          value={heading !== null ? heading.toFixed(1) : "-"}
+          unit="°"
           accent="#38BDF8"
           secondary={heading !== null ? compassPoint(heading) : undefined}
         />
+      </View>
+
+      <View
+        style={[
+          styles.section,
+          {
+            backgroundColor: colors.surface,
+            borderColor: "#6366F133",
+            paddingBottom: 24,
+          },
+        ]}
+      >
+        <Text style={[styles.sectionTitle, { color: "#6366F1" }]}>
+          Altitude Metrics
+        </Text>
+        <View style={styles.metricRow}>
+          <View style={styles.metricItem}>
+            <Text style={[styles.metricLabel, { color: colors.textTertiary }]}>
+              MSL ALTITUDE
+            </Text>
+            <View style={styles.metricValueContainer}>
+              <Text style={[styles.metricValue, { color: colors.text }]}>
+                {fix.altitudeMsl !== null ? fix.altitudeMsl.toFixed(1) : "-"}
+              </Text>
+              <Text
+                style={[styles.metricUnit, { color: colors.textSecondary }]}
+              >
+                m
+              </Text>
+            </View>
+          </View>
+          <View style={styles.metricItem}>
+            <Text style={[styles.metricLabel, { color: colors.textTertiary }]}>
+              GEOIDAL SEPARATION
+            </Text>
+            <View style={styles.metricValueContainer}>
+              <Text style={[styles.metricValue, { color: colors.text }]}>
+                {fix.geoidalSeparation !== null
+                  ? fix.geoidalSeparation.toFixed(1)
+                  : "-"}
+              </Text>
+              <Text
+                style={[styles.metricUnit, { color: colors.textSecondary }]}
+              >
+                m
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <View
+        style={[
+          styles.section,
+          {
+            backgroundColor: colors.surface,
+            borderColor: "#10B98133",
+            paddingBottom: 24,
+          },
+        ]}
+      >
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, { color: "#10B981" }]}>
+            Dilution of Precision (DOP)
+          </Text>
+          {fix.pdop !== null && (
+            <View
+              style={[styles.statusBadge, { backgroundColor: "#10B98115" }]}
+            >
+              <Text style={[styles.statusText, { color: "#10B981" }]}>
+                {hdopQuality(fix.pdop)}
+              </Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.metricRow}>
+          <View style={[styles.metricItem, { flex: 1 }]}>
+            <Text style={[styles.metricLabel, { color: colors.textTertiary }]}>
+              PDOP
+            </Text>
+            <Text style={[styles.metricValue, { color: colors.text }]}>
+              {fix.pdop !== null ? fix.pdop.toFixed(2) : "-"}
+            </Text>
+          </View>
+          <View style={[styles.metricItem, { flex: 1 }]}>
+            <Text style={[styles.metricLabel, { color: colors.textTertiary }]}>
+              HDOP
+            </Text>
+            <Text style={[styles.metricValue, { color: colors.text }]}>
+              {fix.hdop !== null ? fix.hdop.toFixed(2) : "-"}
+            </Text>
+          </View>
+          <View style={[styles.metricItem, { flex: 1 }]}>
+            <Text style={[styles.metricLabel, { color: colors.textTertiary }]}>
+              VDOP
+            </Text>
+            <Text style={[styles.metricValue, { color: colors.text }]}>
+              {fix.vdop !== null ? fix.vdop.toFixed(2) : "-"}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <View
@@ -171,7 +349,7 @@ export default function DashboardScreen() {
                 </Text>
                 <View style={{ flex: 1 }} />
                 <Text style={[styles.constCount, { color: colors.text }]}>
-                  {count}
+                  {isConnected ? count : "-"}
                 </Text>
               </View>
             );
@@ -206,6 +384,26 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 16,
   } as any,
+  statusGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+    marginBottom: 8,
+  },
+  gridItem: {
+    width: "47%",
+    gap: 2,
+  },
+  gridLabel: {
+    fontSize: 10,
+    fontFamily: "Lexend_700Bold",
+    letterSpacing: 0.5,
+  },
+  gridValue: {
+    fontSize: 16,
+    fontFamily: "Lexend_600SemiBold",
+    textTransform: "uppercase",
+  },
   coordRow: {
     gap: 12,
   },
@@ -214,12 +412,12 @@ const styles = StyleSheet.create({
   },
   coordLabel: {
     fontSize: 10,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "Lexend_700Bold",
     letterSpacing: 1.2,
     textTransform: "uppercase",
   },
   coordValue: {
-    fontSize: 26,
+    fontSize: 24,
     fontFamily: "Lexend_600SemiBold",
     fontVariant: ["tabular-nums"],
     letterSpacing: -1,
@@ -234,12 +432,58 @@ const styles = StyleSheet.create({
     fontFamily: "Lexend_500Medium",
     fontVariant: ["tabular-nums"],
   },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 0,
+  },
+  statusText: {
+    fontSize: 10,
+    fontFamily: "Lexend_800ExtraBold",
+    letterSpacing: 0.5,
+  },
   cardRow: { flexDirection: "row", gap: 16 },
   sectionTitle: {
     fontSize: 12,
     fontFamily: "Lexend_800ExtraBold",
     letterSpacing: 1,
     textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  metricRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 20,
+  },
+  metricItem: {
+    flex: 1,
+  },
+  metricLabel: {
+    fontSize: 10,
+    fontFamily: "Lexend_700Bold",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  metricValueContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 4,
+  },
+  metricValue: {
+    fontSize: 24,
+    fontFamily: "Lexend_600SemiBold",
+    fontVariant: ["tabular-nums"],
+  },
+  metricUnit: {
+    fontSize: 12,
+    fontFamily: "Lexend_600SemiBold",
   },
   constellationRow: {
     flexDirection: "row",

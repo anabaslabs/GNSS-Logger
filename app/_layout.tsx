@@ -131,6 +131,7 @@ export default function RootLayout() {
     addScannedDevice,
     applyBatch,
     clearLiveData,
+    clearDeviceData,
     setConnected,
     setDisconnected,
   ]);

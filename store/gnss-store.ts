@@ -15,6 +15,7 @@ interface GnssState {
   satellites: NmeaSatellite[];
   velocity: NmeaVelocity;
   dop: NmeaDop | null;
+  antenna: { status: string; power: boolean } | null;
   rawBuffer: string[];
   sessionBuffer: string[];
   isLogging: boolean;
@@ -42,7 +43,11 @@ const defaultFix: NmeaFix = {
   quality: FixQuality.NoFix,
   satellitesInUse: 0,
   hdop: null,
+  pdop: null,
+  vdop: null,
   altitudeMsl: null,
+  geoidalSeparation: null,
+  fixMode: null,
   talkerId: null,
   updatedAt: 0,
 };
@@ -58,6 +63,7 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
   satellites: [],
   velocity: { ...defaultVelocity },
   dop: null,
+  antenna: null,
   rawBuffer: [],
   sessionBuffer: [],
   isLogging: false,
@@ -67,8 +73,9 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
   },
 
   applyRmc: (data) => {
-    const { speedKmh, courseTrue, mode, ...fixData } =
-      data as Partial<NmeaFix & NmeaVelocity>;
+    const { speedKmh, courseTrue, mode, ...fixData } = data as Partial<
+      NmeaFix & NmeaVelocity
+    >;
     set((s) => ({
       fix: { ...s.fix, ...fixData },
       velocity: {
@@ -92,7 +99,17 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
           ? { ...sat, usedInFix: usedSet.has(sat.prn) }
           : sat,
       );
-      return { dop: data, satellites: updatedSats };
+      return {
+        dop: data,
+        satellites: updatedSats,
+        fix: {
+          ...s.fix,
+          pdop: data.pdop,
+          vdop: data.vdop,
+          fixMode: data.fixMode,
+          hdop: data.hdop ?? s.fix.hdop,
+        },
+      };
     });
   },
 
@@ -148,6 +165,13 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
                 : sat,
             );
             nextDop = parsed.data;
+            nextFix = {
+              ...nextFix,
+              pdop: parsed.data.pdop,
+              vdop: parsed.data.vdop,
+              fixMode: parsed.data.fixMode,
+              hdop: parsed.data.hdop ?? nextFix.hdop,
+            };
             break;
           }
           case "GSV": {
@@ -161,6 +185,9 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
           }
           case "GLL":
             nextFix = { ...nextFix, ...parsed.data };
+            break;
+          case "ANT":
+            set({ antenna: parsed.data });
             break;
         }
       }
@@ -195,6 +222,7 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
       satellites: [],
       velocity: { ...defaultVelocity },
       dop: null,
+      antenna: null,
     });
   },
 
@@ -204,6 +232,7 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
       satellites: [],
       velocity: { ...defaultVelocity },
       dop: null,
+      antenna: null,
       rawBuffer: [],
       sessionBuffer: [],
       isLogging: false,
