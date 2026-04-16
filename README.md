@@ -4,7 +4,13 @@
   <b>GNSS Logger</b>
 </h2>
 
-A professional-grade GNSS data logger and visualizer. Connects to
+<p align="center">
+  <a href="https://github.com/anabaslabs/GNSS-Logger/releases/latest">
+    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/anabaslabs/GNSS-Logger?style=for-the-badge&logo=android&color=3DDC84">
+  </a>
+</p>
+
+An advanced GNSS data logger and visualizer. Connects to
 external high-precision receivers via BLE (Bluetooth Low Energy)
 to capture, parse, and export multi-constellation NMEA and CSV
 data.

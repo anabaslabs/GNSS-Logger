@@ -306,7 +306,7 @@ export default function DashboardScreen() {
       >
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.sectionTitle, { color: "#10B981" }]}>
-            Dilution of Precision (DOP)
+            Dilution of Precision
           </Text>
           {fix.pdop !== null && (
             <View
