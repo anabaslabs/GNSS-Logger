@@ -121,39 +121,49 @@ function parseGSA(fields: string[], talkerId: string): NmeaDop | null {
     hdop: parseFloat_(fields[16]),
     vdop: parseFloat_(fields[17]),
     talkerId,
+    systemId: parseInt_(fields[18]),
   };
 }
 
 function parseGSV(
   fields: string[],
   talkerId: string,
-): { talkerId: string; satellites: NmeaSatellite[] } | null {
-  if (fields.length < 8) return null;
+): {
+  talkerId: string;
+  satellites: NmeaSatellite[];
+  numMsg: number;
+  msgNum: number;
+} | null {
+  if (fields.length < 4) return null;
 
+  const numMsg = parseInt_(fields[1]) ?? 1;
+  const msgNum = parseInt_(fields[2]) ?? 1;
   const satellites: NmeaSatellite[] = [];
-  const dataFieldsCount = fields.length - 4;
-  let blockSize = 4;
 
-  if (dataFieldsCount > 0) {
-    if (dataFieldsCount % 5 === 0) blockSize = 5;
-    else if (dataFieldsCount % 4 === 0) blockSize = 4;
-    else if (dataFieldsCount > 4 && dataFieldsCount % 5 < dataFieldsCount % 4)
-      blockSize = 5;
-  }
+  const dataFields = fields.slice(4);
+  const numSatsInMsg = Math.floor(dataFields.length / 4);
+  const potentialSignalIdField = dataFields[numSatsInMsg * 4];
+  const signalId = parseInt_(potentialSignalIdField);
 
-  for (let i = 4; i + 3 < fields.length; i += blockSize) {
-    const prn = parseInt_(fields[i]);
+  const now = Date.now();
+  for (let i = 0; i < numSatsInMsg; i++) {
+    const base = i * 4;
+    const prn = parseInt_(dataFields[base]);
     if (prn === null || prn === 0) continue;
+
     satellites.push({
       prn,
-      elevation: parseInt_(fields[i + 1]),
-      azimuth: parseInt_(fields[i + 2]),
-      snr: parseInt_(fields[i + 3]),
+      elevation: parseInt_(dataFields[base + 1]),
+      azimuth: parseInt_(dataFields[base + 2]),
+      snr: parseInt_(dataFields[base + 3]),
       talkerId,
       usedInFix: false,
+      signalId: signalId,
+      lastSeen: now,
     });
   }
-  return { talkerId, satellites };
+
+  return { talkerId, satellites, numMsg, msgNum };
 }
 
 function parseGLL(fields: string[], talkerId: string): Partial<NmeaFix> | null {

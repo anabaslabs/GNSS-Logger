@@ -9,6 +9,7 @@ import type {
 import { create } from "zustand";
 
 const RAW_BUFFER_MAX = 200;
+const SAT_STALE_TIMEOUT_MS = 3000;
 
 interface GnssState {
   fix: NmeaFix;
@@ -26,7 +27,12 @@ interface GnssActions {
   applyRmc: (data: Partial<NmeaFix & NmeaVelocity>) => void;
   applyVtg: (data: NmeaVelocity) => void;
   applyGsa: (data: NmeaDop) => void;
-  applyGsv: (talkerId: string, satellites: NmeaSatellite[]) => void;
+  applyGsv: (data: {
+    talkerId: string;
+    satellites: NmeaSatellite[];
+    msgNum: number;
+    numMsg: number;
+  }) => void;
   appendRaw: (line: string) => void;
   applyBatch: (sentences: NmeaParsedSentence[], rawLines: string[]) => void;
   setLogging: (active: boolean) => void;
@@ -94,11 +100,24 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
   applyGsa: (data) => {
     set((s) => {
       const usedSet = new Set(data.satellitesUsed);
-      const updatedSats = s.satellites.map((sat) =>
-        sat.talkerId === data.talkerId || data.talkerId === "GN"
-          ? { ...sat, usedInFix: usedSet.has(sat.prn) }
-          : sat,
-      );
+      const updatedSats = s.satellites.map((sat) => {
+        let isMatch = sat.talkerId === data.talkerId;
+
+        if (!isMatch && data.talkerId === "GN" && data.systemId != null) {
+          const sysMap: Record<number, string> = {
+            1: "GP",
+            2: "GL",
+            3: "GA",
+            4: "GB",
+            5: "GQ",
+            6: "GI",
+          };
+          isMatch = sat.talkerId === sysMap[data.systemId];
+        }
+
+        return isMatch ? { ...sat, usedInFix: usedSet.has(sat.prn) } : sat;
+      });
+
       return {
         dop: data,
         satellites: updatedSats,
@@ -113,10 +132,33 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
     });
   },
 
-  applyGsv: (talkerId, newSats) => {
+  applyGsv: (data) => {
     set((s) => {
-      const otherSats = s.satellites.filter((sat) => sat.talkerId !== talkerId);
-      return { satellites: [...otherSats, ...newSats] };
+      const now = Date.now();
+      const { talkerId, satellites: newSats } = data;
+
+      const satMap = new Map<string, NmeaSatellite>();
+      s.satellites.forEach((sat) => {
+        const key = `${sat.talkerId}-${sat.prn}-${sat.signalId ?? 0}`;
+        satMap.set(key, sat);
+      });
+
+      newSats.forEach((newSat) => {
+        const key = `${newSat.talkerId}-${newSat.prn}-${newSat.signalId ?? 0}`;
+        const existing = satMap.get(key);
+
+        satMap.set(key, {
+          ...newSat,
+          usedInFix: existing?.usedInFix ?? false,
+          lastSeen: now,
+        });
+      });
+
+      const filteredSats = Array.from(satMap.values()).filter(
+        (sat) => now - sat.lastSeen < SAT_STALE_TIMEOUT_MS,
+      );
+
+      return { satellites: filteredSats };
     });
   },
 
@@ -158,12 +200,28 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
             break;
           case "GSA": {
             const usedSet = new Set(parsed.data.satellitesUsed);
-            nextSats = nextSats.map((sat) =>
-              sat.talkerId === parsed.data.talkerId ||
-              parsed.data.talkerId === "GN"
+            nextSats = nextSats.map((sat) => {
+              let isMatch = sat.talkerId === parsed.data.talkerId;
+              if (
+                !isMatch &&
+                parsed.data.talkerId === "GN" &&
+                parsed.data.systemId != null
+              ) {
+                const sysMap: Record<number, string> = {
+                  1: "GP",
+                  2: "GL",
+                  3: "GA",
+                  4: "GB",
+                  5: "GQ",
+                  6: "GI",
+                };
+                isMatch = sat.talkerId === sysMap[parsed.data.systemId];
+              }
+
+              return isMatch
                 ? { ...sat, usedInFix: usedSet.has(sat.prn) }
-                : sat,
-            );
+                : sat;
+            });
             nextDop = parsed.data;
             nextFix = {
               ...nextFix,
@@ -175,12 +233,28 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
             break;
           }
           case "GSV": {
-            const talkerId = parsed.data.talkerId;
-            const newSats = parsed.data.satellites;
-            const otherSats = nextSats.filter(
-              (sat) => sat.talkerId !== talkerId,
+            const { talkerId, satellites: newSats } = parsed.data;
+            const now = Date.now();
+
+            const satMap = new Map<string, NmeaSatellite>();
+            nextSats.forEach((sat) => {
+              const key = `${sat.talkerId}-${sat.prn}-${sat.signalId ?? 0}`;
+              satMap.set(key, sat);
+            });
+
+            newSats.forEach((ns) => {
+              const key = `${ns.talkerId}-${ns.prn}-${ns.signalId ?? 0}`;
+              const existing = satMap.get(key);
+              satMap.set(key, {
+                ...ns,
+                usedInFix: existing?.usedInFix ?? false,
+                lastSeen: now,
+              });
+            });
+
+            nextSats = Array.from(satMap.values()).filter(
+              (sat) => now - sat.lastSeen < SAT_STALE_TIMEOUT_MS,
             );
-            nextSats = [...otherSats, ...newSats];
             break;
           }
           case "GLL":

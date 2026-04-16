@@ -46,6 +46,10 @@ export interface NmeaSatellite {
   talkerId: string;
   /** Whether this satellite is in fix (from GSA) */
   usedInFix: boolean;
+  /** Signal ID for frequency band (NMEA 4.10+) */
+  signalId: number | null;
+  /** Timestamp of when this satellite was last seen */
+  lastSeen: number;
 }
 
 /** Velocity data from VTG and RMC sentences */
@@ -72,6 +76,8 @@ export interface NmeaDop {
   vdop: number | null;
   /** Talker ID (constellation) */
   talkerId: string;
+  /** System ID for GNGSA (NMEA 4.10+) */
+  systemId?: number | null;
 }
 
 /** Full parsed NMEA result from a single sentence */
@@ -80,7 +86,15 @@ export type NmeaParsedSentence =
   | { type: "RMC"; data: Partial<NmeaFix & NmeaVelocity> }
   | { type: "VTG"; data: NmeaVelocity }
   | { type: "GSA"; data: NmeaDop }
-  | { type: "GSV"; data: { talkerId: string; satellites: NmeaSatellite[] } }
+  | {
+      type: "GSV";
+      data: {
+        talkerId: string;
+        satellites: NmeaSatellite[];
+        msgNum: number;
+        numMsg: number;
+      };
+    }
   | { type: "GLL"; data: Partial<NmeaFix> }
   | {
       type: "ANT";

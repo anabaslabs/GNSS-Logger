@@ -71,3 +71,29 @@ export const FIX_QUALITY_COLOR: Record<FixQuality, string> = {
   [FixQuality.Manual]: "#6B7280",
   [FixQuality.Simulation]: "#6B7280",
 };
+
+/** Frequency Band Labels based on Constellation and NMEA Signal ID */
+export function getBandLabel(
+  talkerId: string,
+  signalId: number | null,
+): string {
+  if (signalId === null) return "";
+
+  switch (talkerId) {
+    case "GP":
+    case "GN":
+      return signalId === 7 || signalId === 8 ? "L5" : "L1";
+    case "GA":
+      return signalId === 7 ? "E5a" : "E1";
+    case "GB":
+      return signalId === 7 ? "B2a" : "B1";
+    case "GI":
+      return "L5";
+    case "GL":
+      return "G1";
+    case "GQ":
+      return signalId === 7 ? "L5" : "L1";
+    default:
+      return signalId === 1 ? "L1" : signalId >= 7 ? "L5" : "";
+  }
+}

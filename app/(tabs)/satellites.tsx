@@ -28,7 +28,24 @@ export default function SatellitesScreen() {
       filter === "ALL"
         ? satellites
         : satellites.filter((s) => s.talkerId === filter);
-    return [...list].sort((a, b) => (b.snr ?? 0) - (a.snr ?? 0));
+
+    return [...list].sort((a, b) => {
+      const snrA = a.snr ?? 0;
+      const snrB = b.snr ?? 0;
+      if (snrA !== snrB) return snrB - snrA;
+
+      const elA = a.elevation ?? -1;
+      const elB = b.elevation ?? -1;
+      if (elA !== elB) return elB - elA;
+
+      const azA = a.azimuth ?? -1;
+      const azB = b.azimuth ?? -1;
+      if (azA !== azB) return azB - azA;
+
+      if (a.talkerId !== b.talkerId)
+        return a.talkerId.localeCompare(b.talkerId);
+      return a.prn - b.prn;
+    });
   }, [satellites, filter]);
 
   const totalVisible = satellites.length;
@@ -120,7 +137,12 @@ export default function SatellitesScreen() {
               SYS
             </Text>
           </View>
-          <View style={{ width: 32, alignItems: "center" }}>
+          <View style={{ width: 44, alignItems: "center" }}>
+            <Text style={[styles.headerCell, { color: colors.textSecondary }]}>
+              BAND
+            </Text>
+          </View>
+          <View style={{ width: 32, alignItems: "center", marginLeft: 10 }}>
             <Text style={[styles.headerCell, { color: colors.textSecondary }]}>
               PRN
             </Text>
@@ -130,12 +152,12 @@ export default function SatellitesScreen() {
               EL
             </Text>
           </View>
-          <View style={{ width: 75, alignItems: "center" }}>
+          <View style={{ width: 40, alignItems: "center" }}>
             <Text style={[styles.headerCell, { color: colors.textSecondary }]}>
-              SNR
+              AZ
             </Text>
           </View>
-          <View style={{ width: 60, alignItems: "center" }}>
+          <View style={{ width: 75, alignItems: "center" }}>
             <Text style={[styles.headerCell, { color: colors.textSecondary }]}>
               C/N₀
             </Text>
@@ -152,7 +174,7 @@ export default function SatellitesScreen() {
 
         {visible.length > 0 ? (
           visible.map((item) => (
-            <View key={`${item.talkerId}-${item.prn}`}>
+            <View key={`${item.talkerId}-${item.prn}-${item.signalId ?? 0}`}>
               <SatelliteBar satellite={item} />
             </View>
           ))
@@ -164,8 +186,15 @@ export default function SatellitesScreen() {
               paddingVertical: 24,
             }}
           >
-            {[64, 32, 40, 75, 60].map((w, i) => (
-              <View key={i} style={{ width: w, alignItems: "center" }}>
+            {[64, 44, 32, 40, 40, 75].map((w, i) => (
+              <View
+                key={i}
+                style={{
+                  width: w,
+                  alignItems: "center",
+                  marginLeft: i === 2 ? 10 : 0,
+                }}
+              >
                 <Text style={[styles.bigDash, { color: colors.textTertiary }]}>
                   -
                 </Text>
