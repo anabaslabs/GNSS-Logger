@@ -32,7 +32,7 @@ export const SatelliteBar = React.memo(({ satellite }: SatelliteBarProps) => {
   const band = getBandLabel(talkerId, signalId);
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, !usedInFix && { opacity: 0.6 }]}>
       <View style={{ width: 64, alignItems: "center" }}>
         <View
           style={[
@@ -151,18 +151,20 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   snrContainer: {
-    flexDirection: "row",
+    width: "100%",
     alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 8,
+    justifyContent: "center",
+    position: "relative",
   },
   snrText: {
     fontSize: 13,
     fontFamily: "Lexend_600SemiBold",
     fontVariant: ["tabular-nums"],
-    textAlign: "right",
+    textAlign: "center",
   },
   fixDot: {
+    position: "absolute",
+    right: 14,
     width: 6,
     height: 6,
     borderRadius: 3,
