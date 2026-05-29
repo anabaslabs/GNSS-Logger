@@ -6,6 +6,7 @@ import {
   IconBluetooth,
   IconBluetoothConnected,
   IconBluetoothOff,
+  IconSettings,
 } from "@tabler/icons-react-native";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -91,6 +92,62 @@ export function ConnectionBanner() {
     );
   }
 
+  if (isConnected) {
+    return (
+      <View
+        style={[
+          styles.banner,
+          {
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+            paddingRight: 16,
+          },
+        ]}
+      >
+        <PressableScale
+          style={styles.leftPressable}
+          onPress={() => router.push("/ble-scan")}
+        >
+          <View style={[styles.iconBox, { backgroundColor: color + "22" }]}>
+            {getStatusIcon(status, color)}
+          </View>
+          <View style={styles.textContainer}>
+            <Text
+              style={[styles.text, { color: colors.text }]}
+              numberOfLines={1}
+            >
+              {label}
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginTop: 4,
+              }}
+            >
+              <Text style={[styles.tapHint, { color: colors.textSecondary }]}>
+                {hint}
+              </Text>
+            </View>
+          </View>
+        </PressableScale>
+
+        <PressableScale
+          style={[
+            styles.configButton,
+            {
+              backgroundColor: colors.borderLight,
+            },
+          ]}
+          onPress={() => router.push("/device-config")}
+        >
+          <IconSettings color={colors.textSecondary} size={22} />
+        </PressableScale>
+      </View>
+    );
+  }
+
   return (
     <PressableScale
       style={[
@@ -117,14 +174,7 @@ export function ConnectionBanner() {
             marginTop: 4,
           }}
         >
-          <Text
-            style={[
-              styles.tapHint,
-              { color: isConnected ? colors.textSecondary : color },
-            ]}
-          >
-            {hint}
-          </Text>
+          <Text style={[styles.tapHint, { color: color }]}>{hint}</Text>
         </View>
       </View>
     </PressableScale>
@@ -141,6 +191,12 @@ const styles = StyleSheet.create({
     borderCurve: "continuous",
     gap: 16,
   } as any,
+  leftPressable: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
   iconBox: {
     width: 48,
     height: 48,
@@ -153,6 +209,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
+  configButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    borderCurve: "continuous",
+    alignItems: "center",
+    justifyContent: "center",
+  } as any,
   text: {
     fontSize: 16,
     fontFamily: "Lexend_700Bold",
