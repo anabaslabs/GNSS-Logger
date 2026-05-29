@@ -96,7 +96,7 @@ export const SatelliteBar = React.memo(({ satellite }: SatelliteBarProps) => {
           >
             {snr !== null ? snr : "-"}
           </Text>
-          {usedInFix && (
+          {snr !== null && snr > 0 && (
             <View
               style={[styles.fixDot, { backgroundColor: constellationColor }]}
             />
