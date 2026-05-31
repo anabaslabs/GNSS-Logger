@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
-    borderRadius: 32,
+    borderRadius: 24,
     borderCurve: "continuous",
     gap: 16,
   } as any,
@@ -219,10 +219,10 @@ const styles = StyleSheet.create({
   } as any,
   text: {
     fontSize: 16,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "YsabeauInfant_700Bold",
   },
   tapHint: {
     fontSize: 12,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
   },
 });

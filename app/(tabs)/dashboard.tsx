@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   container: { padding: 16, paddingBottom: 40, gap: 16 },
   section: {
-    borderRadius: 32,
+    borderRadius: 24,
     borderCurve: "continuous",
     borderWidth: 1,
     padding: 20,
@@ -449,12 +449,12 @@ const styles = StyleSheet.create({
   },
   gridLabel: {
     fontSize: 10,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "YsabeauInfant_700Bold",
     letterSpacing: 0.5,
   },
   gridValue: {
     fontSize: 16,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
     textTransform: "uppercase",
   },
   coordRow: {
@@ -465,13 +465,13 @@ const styles = StyleSheet.create({
   },
   coordLabel: {
     fontSize: 10,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "YsabeauInfant_700Bold",
     letterSpacing: 1.2,
     textTransform: "uppercase",
   },
   coordValue: {
     fontSize: 24,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
     fontVariant: ["tabular-nums"],
     letterSpacing: -1,
     marginTop: 2,
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 14,
-    fontFamily: "Lexend_500Medium",
+    fontFamily: "YsabeauInfant_500Medium",
     fontVariant: ["tabular-nums"],
   },
   statusBadge: {
@@ -493,13 +493,12 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "YsabeauInfant_800ExtraBold",
     letterSpacing: 0.5,
   },
-  cardRow: { flexDirection: "row", gap: 16 },
   sectionTitle: {
     fontSize: 12,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "YsabeauInfant_800ExtraBold",
     letterSpacing: 1,
     textTransform: "uppercase",
     marginBottom: 4,
@@ -520,7 +519,7 @@ const styles = StyleSheet.create({
   },
   metricLabel: {
     fontSize: 10,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "YsabeauInfant_700Bold",
     letterSpacing: 0.5,
     marginBottom: 4,
   },
@@ -531,12 +530,12 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     fontSize: 24,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
     fontVariant: ["tabular-nums"],
   },
   metricUnit: {
     fontSize: 12,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
   },
   constellationRow: {
     flexDirection: "row",
@@ -558,11 +557,14 @@ const styles = StyleSheet.create({
     maxWidth: "49%",
   },
   constDot: { width: 7, height: 7, borderRadius: 3.5 },
-  constLabel: { fontSize: 13, fontFamily: "Lexend_700Bold", flexShrink: 1 },
+  constLabel: {
+    fontSize: 13,
+    fontFamily: "YsabeauInfant_700Bold",
+    flexShrink: 1,
+  },
   constCount: {
     fontSize: 16,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "YsabeauInfant_800ExtraBold",
     fontVariant: ["tabular-nums"],
   },
-  noData: { fontSize: 14, fontFamily: "Lexend_500Medium" },
 });

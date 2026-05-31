@@ -253,7 +253,7 @@ export default function LogsScreen() {
     visible: false,
     title: "",
     message: "",
-    onConfirm: () => { },
+    onConfirm: () => {},
   });
 
   async function stopLogging() {
@@ -391,7 +391,7 @@ export default function LogsScreen() {
                 styles.modal,
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
-              onPress={() => { }}
+              onPress={() => {}}
             >
               <View style={{ marginBottom: 20 }}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -479,7 +479,6 @@ export default function LogsScreen() {
                   </Text>
                 </PressableScale>
 
-
                 <View style={{ flexDirection: "row", gap: 12 }}>
                   <PressableScale
                     hitSlop={12}
@@ -523,7 +522,6 @@ export default function LogsScreen() {
                       Start
                     </Text>
                   </PressableScale>
-
                 </View>
               </View>
             </Pressable>
@@ -548,7 +546,7 @@ export default function LogsScreen() {
                 styles.modal,
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
-              onPress={() => { }}
+              onPress={() => {}}
             >
               <View style={{ marginBottom: 20 }}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -600,7 +598,6 @@ export default function LogsScreen() {
                     Close
                   </Text>
                 </PressableScale>
-
               </View>
             </Pressable>
           </View>
@@ -766,7 +763,7 @@ export default function LogsScreen() {
                 },
                 onCancel: res.needsPermission
                   ? () =>
-                    setConfirmConfig((prev) => ({ ...prev, visible: false }))
+                      setConfirmConfig((prev) => ({ ...prev, visible: false }))
                   : undefined,
               });
             }}
@@ -790,7 +787,7 @@ export default function LogsScreen() {
                 },
                 onCancel: res.needsPermission
                   ? () =>
-                    setConfirmConfig((prev) => ({ ...prev, visible: false }))
+                      setConfirmConfig((prev) => ({ ...prev, visible: false }))
                   : undefined,
               });
             }}
@@ -828,7 +825,7 @@ const styles = StyleSheet.create({
   modalMount: { width: "100%", alignItems: "center" },
   modal: {
     width: "100%",
-    borderRadius: 32,
+    borderRadius: 24,
     borderCurve: "continuous",
     borderWidth: 1,
     padding: 24,
@@ -842,12 +839,12 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 24,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "YsabeauInfant_800ExtraBold",
     letterSpacing: -0.5,
   },
   modalSubtitle: {
     fontSize: 14,
-    fontFamily: "Lexend_400Regular",
+    fontFamily: "YsabeauInfant_400Regular",
     marginTop: 4,
   },
 
@@ -856,7 +853,7 @@ const styles = StyleSheet.create({
   pickerColumn: { flex: 1, alignItems: "center", gap: 8 },
   pickerLabel: {
     fontSize: 12,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
     textTransform: "uppercase",
     letterSpacing: 1,
   },
@@ -875,11 +872,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
   },
-  footerBtnText: { fontSize: 15, fontFamily: "Lexend_700Bold" },
+  footerBtnText: { fontSize: 15, fontFamily: "YsabeauInfant_700Bold" },
 
   logButton: {
     height: 80,
-    borderRadius: 32,
+    borderRadius: 24,
     borderCurve: "continuous",
     borderWidth: 1,
     paddingHorizontal: 20,
@@ -891,11 +888,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   leftSide: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-  logLabel: { fontSize: 15, fontFamily: "Lexend_700Bold" },
-  logHint: { fontSize: 12, fontFamily: "Lexend_400Regular", marginTop: 2 },
+  logLabel: { fontSize: 15, fontFamily: "YsabeauInfant_700Bold" },
+  logHint: {
+    fontSize: 12,
+    fontFamily: "YsabeauInfant_400Regular",
+    marginTop: 2,
+  },
   timer: {
     fontSize: 22,
-    fontFamily: "Lexend_300Light",
+    fontFamily: "YsabeauInfant_300Light",
     fontVariant: ["tabular-nums"],
     letterSpacing: -0.5,
   },
@@ -906,11 +907,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 2,
   },
-  title: { fontSize: 18, fontFamily: "Lexend_800ExtraBold" },
-  clearAll: { fontSize: 14, fontFamily: "Lexend_700Bold" },
+  title: { fontSize: 18, fontFamily: "YsabeauInfant_800ExtraBold" },
 
   card: {
-    borderRadius: 32,
+    borderRadius: 24,
     borderCurve: "continuous",
     borderWidth: 1,
     padding: 20,
@@ -922,7 +922,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  sessionDate: { fontSize: 16, fontFamily: "Lexend_800ExtraBold" },
+  sessionDate: { fontSize: 16, fontFamily: "YsabeauInfant_800ExtraBold" },
 
   badgeRow: {
     flexDirection: "row",
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
   },
   miniBadgeText: {
     fontSize: 12,
-    fontFamily: "Lexend_500Medium",
+    fontFamily: "YsabeauInfant_500Medium",
     fontVariant: ["tabular-nums"],
     lineHeight: 16,
   },
@@ -943,7 +943,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  optionText: { fontSize: 16, fontFamily: "Lexend_600SemiBold" },
+  optionText: { fontSize: 16, fontFamily: "YsabeauInfant_600SemiBold" },
 
   divider: { height: 1, width: "100%" },
 
@@ -961,13 +961,13 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderColor: "rgba(0,0,0,0.1)",
   },
-  actionBtnText: { fontSize: 13, fontFamily: "Lexend_700Bold" },
+  actionBtnText: { fontSize: 13, fontFamily: "YsabeauInfant_700Bold" },
 
   emptyState: { alignItems: "center", gap: 16, paddingVertical: 64 },
-  emptyTitle: { fontSize: 20, fontFamily: "Lexend_700Bold" },
+  emptyTitle: { fontSize: 20, fontFamily: "YsabeauInfant_700Bold" },
   emptyDesc: {
     fontSize: 14,
-    fontFamily: "Lexend_400Regular",
+    fontFamily: "YsabeauInfant_400Regular",
     textAlign: "center",
     lineHeight: 22,
     maxWidth: 280,

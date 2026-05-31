@@ -1,16 +1,3 @@
-/** NMEA Talker IDs */
-export const TALKER_ID = {
-  GPS: "GP",
-  GLONASS: "GL",
-  GALILEO: "GA",
-  BEIDOU: "GB",
-  NAVIC: "GI",
-  QZSS: "GQ",
-  MULTI: "GN",
-} as const;
-
-export type TalkerId = (typeof TALKER_ID)[keyof typeof TALKER_ID];
-
 /** Human-readable constellation labels */
 export const CONSTELLATION_LABEL: Record<string, string> = {
   GP: "GPS",

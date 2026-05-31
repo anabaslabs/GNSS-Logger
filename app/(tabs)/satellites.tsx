@@ -97,7 +97,7 @@ export default function SatellitesScreen() {
           const active = filter === id;
           const color =
             id === "ALL"
-              ? "#38BDF8"
+              ? colors.tint
               : (CONSTELLATION_COLOR[id] ?? colors.iconSecondary);
           return (
             <PressableScale
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   summaryChip: {
     flex: 1,
     height: 80,
-    borderRadius: 32,
+    borderRadius: 24,
     borderCurve: "continuous",
     borderWidth: 1,
     justifyContent: "center",
@@ -229,13 +229,13 @@ const styles = StyleSheet.create({
   } as any,
   summaryNum: {
     fontSize: 28,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
     fontVariant: ["tabular-nums"],
     letterSpacing: -1,
   },
   summaryLabel: {
     fontSize: 11,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "YsabeauInfant_700Bold",
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
@@ -248,9 +248,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  filterText: { fontSize: 13, fontFamily: "Lexend_700Bold" },
+  filterText: { fontSize: 13, fontFamily: "YsabeauInfant_700Bold" },
   listCard: {
-    borderRadius: 32,
+    borderRadius: 24,
     borderCurve: "continuous",
     borderWidth: 1,
     padding: 20,
@@ -263,12 +263,12 @@ const styles = StyleSheet.create({
   },
   headerCell: {
     fontSize: 11,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "YsabeauInfant_800ExtraBold",
     letterSpacing: 1,
   },
   bigDash: {
     fontSize: 26,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
     fontVariant: ["tabular-nums"],
     letterSpacing: -1,
   },

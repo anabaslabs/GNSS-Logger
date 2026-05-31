@@ -13,14 +13,15 @@ import { useConfigStore } from "@/store/config-store";
 import { useGnssStore } from "@/store/gnss-store";
 import type { BleDevice, NmeaParsedSentence } from "@/types/gnss";
 import {
-  Lexend_300Light,
-  Lexend_400Regular,
-  Lexend_500Medium,
-  Lexend_600SemiBold,
-  Lexend_700Bold,
-  Lexend_800ExtraBold,
   useFonts,
-} from "@expo-google-fonts/lexend";
+  YsabeauInfant_300Light,
+  YsabeauInfant_400Regular,
+  YsabeauInfant_500Medium,
+  YsabeauInfant_600SemiBold,
+  YsabeauInfant_700Bold,
+  YsabeauInfant_800ExtraBold,
+} from "@expo-google-fonts/ysabeau-infant";
+import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono";
 import {
   DarkTheme,
   DefaultTheme,
@@ -42,7 +43,7 @@ interface TextWithDefaultProps extends React.FC {
 const TextComp = Text as unknown as TextWithDefaultProps;
 if (!TextComp.defaultProps) TextComp.defaultProps = {};
 TextComp.defaultProps.style = [
-  { fontFamily: "Lexend_400Regular" },
+  { fontFamily: "YsabeauInfant_400Regular" },
   TextComp.defaultProps.style,
 ];
 
@@ -50,12 +51,13 @@ export default function RootLayout() {
   const { colors, isDark } = useAppTheme();
 
   const [fontsLoaded, fontError] = useFonts({
-    Lexend_300Light,
-    Lexend_400Regular,
-    Lexend_500Medium,
-    Lexend_600SemiBold,
-    Lexend_700Bold,
-    Lexend_800ExtraBold,
+    YsabeauInfant_300Light,
+    YsabeauInfant_400Regular,
+    YsabeauInfant_500Medium,
+    YsabeauInfant_600SemiBold,
+    YsabeauInfant_700Bold,
+    YsabeauInfant_800ExtraBold,
+    JetBrainsMono_400Regular,
   });
 
   const applyBatch = useGnssStore((s) => s.applyBatch);
@@ -151,7 +153,7 @@ export default function RootLayout() {
                 headerShown: false,
                 headerStyle: { backgroundColor: colors.background },
                 headerTintColor: colors.text,
-                headerTitleStyle: { fontFamily: "Lexend_700Bold" },
+                headerTitleStyle: { fontFamily: "YsabeauInfant_700Bold" },
                 contentStyle: { backgroundColor: colors.background },
                 animation: "ios_from_right",
               }}

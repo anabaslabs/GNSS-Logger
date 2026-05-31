@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    borderRadius: 32,
+    borderRadius: 24,
     borderWidth: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 12 },
@@ -644,12 +644,12 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 22,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "YsabeauInfant_800ExtraBold",
     letterSpacing: -0.5,
   },
   modalSubtitle: {
     fontSize: 14,
-    fontFamily: "Lexend_400Regular",
+    fontFamily: "YsabeauInfant_400Regular",
   },
   content: {
     flex: 1,
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   hintText: {
     fontSize: 12,
     lineHeight: 18,
-    fontFamily: "Lexend_400Regular",
+    fontFamily: "YsabeauInfant_400Regular",
     textAlign: "center",
     paddingHorizontal: 32,
   },
@@ -692,12 +692,12 @@ const styles = StyleSheet.create({
   },
   deviceName: {
     fontSize: 16,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "YsabeauInfant_800ExtraBold",
     letterSpacing: -0.2,
   },
   deviceId: {
     fontSize: 11,
-    fontFamily: "monospace",
+    fontFamily: "JetBrainsMono_400Regular",
     lineHeight: 14,
     opacity: 0.7,
   },
@@ -716,12 +716,9 @@ const styles = StyleSheet.create({
   },
   rssiText: {
     fontSize: 10,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
     fontVariant: ["tabular-nums"],
     opacity: 0.8,
-  },
-  rowSpinner: {
-    marginLeft: 8,
   },
   modalFooter: {
     flexDirection: "row",
@@ -737,7 +734,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
   },
-  footerBtnText: { fontSize: 15, fontFamily: "Lexend_700Bold" },
+  footerBtnText: { fontSize: 15, fontFamily: "YsabeauInfant_700Bold" },
 
   empty: {
     paddingVertical: 40,
@@ -746,7 +743,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "YsabeauInfant_700Bold",
     opacity: 0.8,
   },
   unavailableBox: {
@@ -763,7 +760,7 @@ const styles = StyleSheet.create({
   },
   codeText: {
     fontSize: 14,
-    fontFamily: "monospace",
+    fontFamily: "JetBrainsMono_400Regular",
   },
   closeBtn: {
     height: 48,
@@ -775,6 +772,6 @@ const styles = StyleSheet.create({
   },
   closeBtnText: {
     fontSize: 14,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "YsabeauInfant_700Bold",
   },
 });

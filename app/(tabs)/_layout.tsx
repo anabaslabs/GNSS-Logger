@@ -21,7 +21,7 @@ export default function TabLayout() {
         },
         headerTitleAlign: "left",
         headerTitleStyle: {
-          fontFamily: "Lexend_700Bold",
+          fontFamily: "YsabeauInfant_700Bold",
           fontSize: 20,
           color: colors.text,
           marginLeft: 8,
@@ -36,7 +36,7 @@ export default function TabLayout() {
           paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontFamily: "Lexend_600SemiBold",
+          fontFamily: "YsabeauInfant_600SemiBold",
           fontSize: 12,
           marginTop: -4,
         },
