@@ -14,7 +14,7 @@ import {
   IconTerminal2,
   IconTrash,
 } from "@tabler/icons-react-native";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Modal,
@@ -221,7 +221,7 @@ const ActiveRecordingBanner = ({
 
 export default function LogsScreen() {
   const { colors, isDark } = useAppTheme();
-  const { isLogging, setLogging, clearSession } = useGnssStore();
+  const { isLogging, setLogging } = useGnssStore();
   const {
     sessions,
     exportNmea,
@@ -232,6 +232,7 @@ export default function LogsScreen() {
     activeSessionId,
     setExportDirectory,
     exportBulk,
+    stopLogging: stopLoggingGlobal,
   } = useLogStore();
 
   const [showPicker, setShowPicker] = useState(false);
@@ -239,7 +240,6 @@ export default function LogsScreen() {
   const [timerHours, setTimerHours] = useState("00");
   const [timerMinutes, setTimerMinutes] = useState("01");
   const [timerSeconds, setTimerSeconds] = useState("00");
-  const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [confirmConfig, setConfirmConfig] = useState<{
     visible: boolean;
@@ -257,31 +257,12 @@ export default function LogsScreen() {
   });
 
   async function stopLogging() {
-    if (autoStopRef.current) {
-      clearTimeout(autoStopRef.current);
-      autoStopRef.current = null;
-    }
-    const freshLogState = useLogStore.getState();
-    const freshGnssState = useGnssStore.getState();
-    const sid = freshLogState.activeSessionId;
-
-    if (sid) {
-      const lines = freshGnssState.sessionBuffer;
-      const fixCount = lines.filter((l) => l.includes("GGA")).length;
-      await freshLogState.endSession(sid, lines, fixCount);
-    }
-    clearSession();
-    setLogging(false);
+    await stopLoggingGlobal();
   }
 
   async function startLogging(sec: number) {
     setLogging(true);
-    await startSession([]);
-    if (sec > 0) {
-      autoStopRef.current = setTimeout(() => {
-        stopLogging();
-      }, sec * 1000);
-    }
+    await startSession([], sec);
   }
 
   function handleStartTimed() {

@@ -4,20 +4,23 @@ import * as FileSystem from "expo-file-system/legacy";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { useConfigStore } from "./config-store";
+import { useGnssStore } from "./gnss-store";
 
 interface LogState {
   sessions: LogSession[];
   activeSessionId: string | null;
   exportDirectoryUri: string | null;
+  autoStopAt: number | null;
 }
 
 interface LogActions {
-  startSession: (nmeaLines: string[]) => Promise<string | null>;
+  startSession: (nmeaLines: string[], durationSecs?: number) => Promise<string | null>;
   endSession: (
     sessionId: string,
     nmeaLines: string[],
     fixCount: number,
   ) => Promise<void>;
+  stopLogging: () => Promise<void>;
   exportNmea: (sessionId: string) => Promise<{
     success: boolean;
     message: string;
@@ -106,8 +109,9 @@ export const useLogStore = create<LogState & LogActions>()(
       sessions: [],
       activeSessionId: null,
       exportDirectoryUri: null,
+      autoStopAt: null,
 
-      startSession: async (nmeaLines) => {
+      startSession: async (nmeaLines, durationSecs) => {
         await ensureLogsDir();
         const id = `session_${Date.now()}`;
         const startTime = Date.now();
@@ -134,9 +138,12 @@ export const useLogStore = create<LogState & LogActions>()(
           filePathCsv,
         };
 
+        const autoStopAt = durationSecs && durationSecs > 0 ? startTime + durationSecs * 1000 : null;
+
         set((s) => ({
           sessions: [session, ...s.sessions],
           activeSessionId: id,
+          autoStopAt,
         }));
         return id;
       },
@@ -163,7 +170,20 @@ export const useLogStore = create<LogState & LogActions>()(
               : sess,
           ),
           activeSessionId: null,
+          autoStopAt: null,
         }));
+      },
+
+      stopLogging: async () => {
+        const sid = get().activeSessionId;
+        if (sid) {
+          const freshGnssState = useGnssStore.getState();
+          const lines = freshGnssState.sessionBuffer;
+          const fixCount = lines.filter((l) => l.includes("GGA")).length;
+          await get().endSession(sid, lines, fixCount);
+        }
+        useGnssStore.getState().clearSession();
+        useGnssStore.getState().setLogging(false);
       },
 
       exportNmea: async (sessionId) => {

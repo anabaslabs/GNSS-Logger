@@ -11,6 +11,7 @@ import { generateNmeaCommand, parseNmea } from "@/lib/nmea-parser";
 import { useBleStore } from "@/store/ble-store";
 import { useConfigStore } from "@/store/config-store";
 import { useGnssStore } from "@/store/gnss-store";
+import { useLogStore } from "@/store/log-store";
 import type { BleDevice, NmeaParsedSentence } from "@/types/gnss";
 import {
   useFonts,
@@ -81,6 +82,16 @@ export default function RootLayout() {
     });
 
     const interval = setInterval(() => {
+      // Check if we need to auto-stop the active logging session
+      const logState = useLogStore.getState();
+      if (
+        logState.activeSessionId &&
+        logState.autoStopAt &&
+        Date.now() >= logState.autoStopAt
+      ) {
+        logState.stopLogging();
+      }
+
       if (nmeaBuffer.length === 0) return;
 
       const lines = [...nmeaBuffer];
