@@ -1,6 +1,7 @@
 import type { LogSession } from "@/types/gnss";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
+import * as Notifications from "expo-notifications";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { useConfigStore } from "./config-store";
@@ -11,6 +12,7 @@ interface LogState {
   activeSessionId: string | null;
   exportDirectoryUri: string | null;
   autoStopAt: number | null;
+  activeNotificationId: string | null;
 }
 
 interface LogActions {
@@ -103,6 +105,21 @@ function nmeaToCsv(lines: string[]): string {
   return [header, ...rows].join("\n");
 }
 
+async function requestNotificationPermission(): Promise<boolean> {
+  try {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    return finalStatus === "granted";
+  } catch (e) {
+    console.error("[Notifications] Permission request failed:", e);
+    return false;
+  }
+}
+
 export const useLogStore = create<LogState & LogActions>()(
   persist(
     (set, get) => ({
@@ -110,6 +127,7 @@ export const useLogStore = create<LogState & LogActions>()(
       activeSessionId: null,
       exportDirectoryUri: null,
       autoStopAt: null,
+      activeNotificationId: null,
 
       startSession: async (nmeaLines, durationSecs) => {
         await ensureLogsDir();
@@ -140,10 +158,40 @@ export const useLogStore = create<LogState & LogActions>()(
 
         const autoStopAt = durationSecs && durationSecs > 0 ? startTime + durationSecs * 1000 : null;
 
+        let notificationId: string | null = null;
+        try {
+          const hasPermission = await requestNotificationPermission();
+          if (hasPermission) {
+            notificationId = await Notifications.scheduleNotificationAsync({
+              content: {
+                title: "GNSS Logging Active",
+                body: durationSecs && durationSecs > 0
+                  ? `Recording timed session (${durationSecs}s)...`
+                  : "Recording active log session...",
+                color: "#3B82F6",
+                android: {
+                  sticky: true,
+                  ongoing: true,
+                  color: "#3B82F6",
+                  priority: "high",
+                  categoryIdentifier: "recording-controls",
+                },
+                ios: {
+                  categoryIdentifier: "recording-controls",
+                },
+              },
+              trigger: null,
+            });
+          }
+        } catch (err) {
+          console.error("[Notifications] Present failed:", err);
+        }
+
         set((s) => ({
           sessions: [session, ...s.sessions],
           activeSessionId: id,
           autoStopAt,
+          activeNotificationId: notificationId,
         }));
         return id;
       },
@@ -163,6 +211,15 @@ export const useLogStore = create<LogState & LogActions>()(
           nmeaToCsv(filteredLines),
         );
 
+        const notifId = get().activeNotificationId;
+        if (notifId) {
+          try {
+            await Notifications.dismissNotificationAsync(notifId);
+          } catch (e) {
+            console.error("[Notifications] Dismiss failed:", e);
+          }
+        }
+
         set((s) => ({
           sessions: s.sessions.map((sess) =>
             sess.id === sessionId
@@ -171,6 +228,7 @@ export const useLogStore = create<LogState & LogActions>()(
           ),
           activeSessionId: null,
           autoStopAt: null,
+          activeNotificationId: null,
         }));
       },
 
@@ -182,8 +240,19 @@ export const useLogStore = create<LogState & LogActions>()(
           const fixCount = lines.filter((l) => l.includes("GGA")).length;
           await get().endSession(sid, lines, fixCount);
         }
+
+        const notifId = get().activeNotificationId;
+        if (notifId) {
+          try {
+            await Notifications.dismissNotificationAsync(notifId);
+          } catch (e) {
+            console.error("[Notifications] Dismiss failed:", e);
+          }
+        }
+
         useGnssStore.getState().clearSession();
         useGnssStore.getState().setLogging(false);
+        set({ activeNotificationId: null });
       },
 
       exportNmea: async (sessionId) => {

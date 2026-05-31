@@ -12,6 +12,7 @@ import { useBleStore } from "@/store/ble-store";
 import { useConfigStore } from "@/store/config-store";
 import { useGnssStore } from "@/store/gnss-store";
 import { useLogStore } from "@/store/log-store";
+import * as Notifications from "expo-notifications";
 import type { BleDevice, NmeaParsedSentence } from "@/types/gnss";
 import {
   useFonts,
@@ -37,6 +38,14 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 SplashScreen.preventAutoHideAsync();
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
 
 interface TextWithDefaultProps extends React.FC {
   defaultProps?: any;
@@ -73,6 +82,34 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    // 1. Define notification category and action buttons
+    Notifications.setNotificationCategoryAsync("recording-controls", [
+      {
+        identifier: "stop-logging",
+        buttonTitle: "Stop Recording",
+        options: {
+          opensAppToForeground: false,
+        },
+      },
+    ]).catch((err) =>
+      console.error("[Notifications] Category setup failed:", err)
+    );
+
+    // 2. Listen for 'Stop Recording' clicks from notification center
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        if (response.actionIdentifier === "stop-logging") {
+          useLogStore.getState().stopLogging();
+        }
+      }
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const nmeaBuffer: string[] = [];
