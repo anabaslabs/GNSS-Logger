@@ -10,9 +10,10 @@ import {
   IconFileText,
   IconFolderOff,
   IconPlayerRecordFilled,
-  IconSquareRoundedFilled,
   IconTerminal2,
   IconTrash,
+  IconSquareFilled,
+  IconXFilled,
 } from "@tabler/icons-react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -173,11 +174,13 @@ SessionCard.displayName = "SessionCard";
 const ActiveRecordingBanner = ({
   startTime,
   onStop,
+  onCancel,
 }: {
   startTime: number;
   onStop: () => void;
+  onCancel: () => void;
 }) => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { sessionBuffer } = useGnssStore();
   const [elapsed, setElapsed] = useState(0);
 
@@ -188,34 +191,67 @@ const ActiveRecordingBanner = ({
   }, [startTime]);
 
   return (
-    <PressableScale
+    <View
       style={[
         styles.logButton,
         {
           backgroundColor: colors.dangerSurface,
           borderColor: colors.dangerBorder,
           borderWidth: 1,
+          height: 84,
         },
       ]}
-      onPress={onStop}
     >
       <View style={styles.row}>
-        <View style={styles.leftSide}>
-          <IconSquareRoundedFilled color={colors.danger} size={24} />
-          <View>
-            <Text style={[styles.logLabel, { color: colors.danger }]}>
-              Recording...
-            </Text>
-            <Text style={[styles.logHint, { color: colors.textTertiary }]}>
-              {sessionBuffer.length} lines captured
-            </Text>
-          </View>
+        {/* Left Side: "Recording..." and subtitle */}
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={[styles.logLabel, { color: colors.danger }]} numberOfLines={1}>
+            Recording...
+          </Text>
+          <Text style={[styles.logHint, { color: colors.textTertiary }]} numberOfLines={1}>
+            {sessionBuffer.length} lines
+          </Text>
         </View>
-        <Text style={[styles.timer, { color: colors.danger }]}>
+
+        {/* Middle: Live Timer shifted slightly left */}
+        <Text style={[styles.timer, { color: colors.danger, marginRight: 24 }]} numberOfLines={1}>
           {formatElapsed(elapsed)}
         </Text>
+
+        {/* Right Side: Action Buttons ■ and ✕ using Tabler Icons */}
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          {/* Stop Button (■) */}
+          <PressableScale
+            onPress={onStop}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              backgroundColor: colors.danger,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <IconSquareFilled size={14} color="#0F172A" />
+          </PressableScale>
+
+          {/* Cancel Button (✕) */}
+          <PressableScale
+            onPress={onCancel}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              backgroundColor: isDark ? "#2D3748" : "#E2E8F0",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <IconXFilled size={14} color={isDark ? "#9CA3AF" : "#4B5563"} />
+          </PressableScale>
+        </View>
       </View>
-    </PressableScale>
+    </View>
   );
 };
 
@@ -233,6 +269,7 @@ export default function LogsScreen() {
     setExportDirectory,
     exportBulk,
     stopLogging: stopLoggingGlobal,
+    cancelLogging: cancelLoggingGlobal,
   } = useLogStore();
 
   const [showPicker, setShowPicker] = useState(false);
@@ -258,6 +295,10 @@ export default function LogsScreen() {
 
   async function stopLogging() {
     await stopLoggingGlobal();
+  }
+
+  async function handleCancelLogging() {
+    await cancelLoggingGlobal();
   }
 
   async function startLogging(sec: number) {
@@ -608,6 +649,7 @@ export default function LogsScreen() {
                   Date.now()
                 }
                 onStop={() => stopLogging()}
+                onCancel={() => handleCancelLogging()}
               />
             ) : (
               <View style={{ flexDirection: "row", gap: 12 }}>

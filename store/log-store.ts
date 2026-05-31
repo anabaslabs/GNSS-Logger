@@ -23,6 +23,7 @@ interface LogActions {
     fixCount: number,
   ) => Promise<void>;
   stopLogging: () => Promise<void>;
+  cancelLogging: () => Promise<void>;
   exportNmea: (sessionId: string) => Promise<{
     success: boolean;
     message: string;
@@ -43,6 +44,16 @@ interface LogActions {
   clearAll: () => Promise<void>;
   setExportDirectory: () => Promise<boolean>;
   resetExportDirectory: () => void;
+}
+
+let activeNotificationTimer: NodeJS.Timeout | null = null;
+
+function formatTime(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
 }
 
 const LOGS_DIR = `${FileSystem.documentDirectory}gnss-logs/`;
@@ -158,30 +169,55 @@ export const useLogStore = create<LogState & LogActions>()(
 
         const autoStopAt = durationSecs && durationSecs > 0 ? startTime + durationSecs * 1000 : null;
 
+        if (activeNotificationTimer) {
+          clearInterval(activeNotificationTimer);
+          activeNotificationTimer = null;
+        }
+
         let notificationId: string | null = null;
         try {
           const hasPermission = await requestNotificationPermission();
           if (hasPermission) {
             notificationId = await Notifications.scheduleNotificationAsync({
+              identifier: "active-session-notification",
               content: {
-                title: "GNSS Logging Active",
-                body: durationSecs && durationSecs > 0
-                  ? `Recording timed session (${durationSecs}s)...`
-                  : "Recording active log session...",
+                title: "Recording...",
+                body: "00:00:00",
                 color: "#3B82F6",
+                categoryIdentifier: "recordingControls",
                 android: {
                   sticky: true,
                   ongoing: true,
                   color: "#3B82F6",
                   priority: "high",
-                  categoryIdentifier: "recording-controls",
-                },
-                ios: {
-                  categoryIdentifier: "recording-controls",
                 },
               },
               trigger: null,
             });
+
+            activeNotificationTimer = setInterval(async () => {
+              const elapsed = Date.now() - startTime;
+              try {
+                await Notifications.scheduleNotificationAsync({
+                  identifier: "active-session-notification",
+                  content: {
+                    title: "Recording...",
+                    body: formatTime(elapsed),
+                    color: "#3B82F6",
+                    categoryIdentifier: "recordingControls",
+                    android: {
+                      sticky: true,
+                      ongoing: true,
+                      color: "#3B82F6",
+                      priority: "high",
+                    },
+                  },
+                  trigger: null,
+                });
+              } catch (err) {
+                console.error("[Notifications] Present failed:", err);
+              }
+            }, 1000);
           }
         } catch (err) {
           console.error("[Notifications] Present failed:", err);
@@ -211,6 +247,11 @@ export const useLogStore = create<LogState & LogActions>()(
           nmeaToCsv(filteredLines),
         );
 
+        if (activeNotificationTimer) {
+          clearInterval(activeNotificationTimer);
+          activeNotificationTimer = null;
+        }
+
         const notifId = get().activeNotificationId;
         if (notifId) {
           try {
@@ -219,6 +260,9 @@ export const useLogStore = create<LogState & LogActions>()(
             console.error("[Notifications] Dismiss failed:", e);
           }
         }
+        try {
+          await Notifications.dismissNotificationAsync("active-session-notification");
+        } catch {}
 
         set((s) => ({
           sessions: s.sessions.map((sess) =>
@@ -241,6 +285,11 @@ export const useLogStore = create<LogState & LogActions>()(
           await get().endSession(sid, lines, fixCount);
         }
 
+        if (activeNotificationTimer) {
+          clearInterval(activeNotificationTimer);
+          activeNotificationTimer = null;
+        }
+
         const notifId = get().activeNotificationId;
         if (notifId) {
           try {
@@ -249,6 +298,47 @@ export const useLogStore = create<LogState & LogActions>()(
             console.error("[Notifications] Dismiss failed:", e);
           }
         }
+        try {
+          await Notifications.dismissNotificationAsync("active-session-notification");
+        } catch {}
+
+        useGnssStore.getState().clearSession();
+        useGnssStore.getState().setLogging(false);
+        set({ activeNotificationId: null });
+      },
+
+      cancelLogging: async () => {
+        const sid = get().activeSessionId;
+        if (sid) {
+          // Delete temp files without saving
+          const session = get().sessions.find((s) => s.id === sid);
+          if (session) {
+            try { await FileSystem.deleteAsync(session.filePath, { idempotent: true }); } catch {}
+            try { await FileSystem.deleteAsync(session.filePathCsv, { idempotent: true }); } catch {}
+          }
+          set((s) => ({
+            sessions: s.sessions.filter((sess) => sess.id !== sid),
+            activeSessionId: null,
+            autoStopAt: null,
+          }));
+        }
+
+        if (activeNotificationTimer) {
+          clearInterval(activeNotificationTimer);
+          activeNotificationTimer = null;
+        }
+
+        const notifId = get().activeNotificationId;
+        if (notifId) {
+          try {
+            await Notifications.dismissNotificationAsync(notifId);
+          } catch (e) {
+            console.error("[Notifications] Dismiss failed:", e);
+          }
+        }
+        try {
+          await Notifications.dismissNotificationAsync("active-session-notification");
+        } catch {}
 
         useGnssStore.getState().clearSession();
         useGnssStore.getState().setLogging(false);

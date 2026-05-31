@@ -84,24 +84,33 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   useEffect(() => {
-    // 1. Define notification category and action buttons
-    Notifications.setNotificationCategoryAsync("recording-controls", [
+    Notifications.setNotificationCategoryAsync("recordingControls", [
       {
         identifier: "stop-logging",
-        buttonTitle: "Stop Recording",
+        buttonTitle: "Stop",
         options: {
           opensAppToForeground: false,
+        },
+      },
+      {
+        identifier: "cancel-logging",
+        buttonTitle: "Cancel",
+        options: {
+          opensAppToForeground: false,
+          isDestructive: true,
         },
       },
     ]).catch((err) =>
       console.error("[Notifications] Category setup failed:", err)
     );
 
-    // 2. Listen for 'Stop Recording' clicks from notification center
+    // 2. Route notification action taps
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         if (response.actionIdentifier === "stop-logging") {
           useLogStore.getState().stopLogging();
+        } else if (response.actionIdentifier === "cancel-logging") {
+          useLogStore.getState().cancelLogging();
         }
       }
     );
