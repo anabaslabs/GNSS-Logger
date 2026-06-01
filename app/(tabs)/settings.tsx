@@ -28,7 +28,6 @@ import Constants from "expo-constants";
 import * as IntentLauncher from "expo-intent-launcher";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { ToogleButton } from "@/components/toogle-button";
 import {
   ActivityIndicator,
   Linking,
@@ -72,8 +71,6 @@ export default function SettingsScreen() {
     isScanning,
     connectedDeviceId,
     connectedDeviceName,
-    autoReconnect,
-    setAutoReconnect,
     lastError,
     scanTimer,
   } = useBleStore();
@@ -272,17 +269,6 @@ export default function SettingsScreen() {
                         : "Connect"}
                 </Text>
               </PressableScale>
-            }
-          />
-
-          <SettingRow
-            label="Auto-Reconnect"
-            description="Automatically reconnect if the BLE connection drops"
-            right={
-              <ToogleButton
-                value={autoReconnect}
-                onValueChange={setAutoReconnect}
-              />
             }
           />
         </View>

@@ -724,42 +724,44 @@ export default function DeviceConfigScreen() {
         </ConfigSection>
 
         <ConfigSection title="Config Sync">
-          <View style={styles.buttonRow}>
-            <PressableScale
-              style={[
-                styles.resetButton,
-                {
-                  backgroundColor: isDark
-                    ? colors.tint + "15"
-                    : colors.statusSurface,
-                },
-              ]}
-              onPress={handlePullConfig}
-            >
-              <Text style={[styles.resetButtonText, { color: colors.tint }]}>
-                Pull
-              </Text>
-            </PressableScale>
+          <View style={{ gap: 12, paddingVertical: 8 }}>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <PressableScale
+                style={[
+                  styles.resetButton,
+                  {
+                    backgroundColor: isDark
+                      ? colors.tint + "15"
+                      : colors.statusSurface,
+                  },
+                ]}
+                onPress={handlePullConfig}
+              >
+                <Text style={[styles.resetButtonText, { color: colors.tint }]}>
+                  Pull Config
+                </Text>
+              </PressableScale>
+
+              <PressableScale
+                style={[
+                  styles.resetButton,
+                  {
+                    backgroundColor: isDark
+                      ? colors.tint + "15"
+                      : colors.statusSurface,
+                  },
+                ]}
+                onPress={handlePushConfig}
+              >
+                <Text style={[styles.resetButtonText, { color: colors.tint }]}>
+                  Push Config
+                </Text>
+              </PressableScale>
+            </View>
 
             <PressableScale
               style={[
-                styles.resetButton,
-                {
-                  backgroundColor: isDark
-                    ? colors.tint + "15"
-                    : colors.statusSurface,
-                },
-              ]}
-              onPress={handlePushConfig}
-            >
-              <Text style={[styles.resetButtonText, { color: colors.tint }]}>
-                Push
-              </Text>
-            </PressableScale>
-
-            <PressableScale
-              style={[
-                styles.resetButton,
+                styles.fullWidthButton,
                 {
                   backgroundColor: isDark
                     ? colors.statusActive + "15"
@@ -771,7 +773,7 @@ export default function DeviceConfigScreen() {
               <Text
                 style={[styles.resetButtonText, { color: colors.statusActive }]}
               >
-                Save to Flash
+                Save Config to Flash
               </Text>
             </PressableScale>
           </View>
@@ -849,6 +851,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 8,
+  },
+  fullWidthButton: {
+    height: 48,
+    borderRadius: 16,
+    borderCurve: "continuous" as any,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    width: "100%",
   },
   resetButtonText: {
     fontSize: 14,

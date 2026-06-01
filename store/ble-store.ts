@@ -18,7 +18,6 @@ interface BleState {
   scannedDevices: BleDevice[];
   rssi: number | null;
   lastError: string | null;
-  autoReconnect: boolean;
   scanTimer: number;
 }
 
@@ -29,7 +28,6 @@ interface BleActions {
   addScannedDevice: (device: BleDevice) => void;
   clearScannedDevices: () => void;
   setError: (err: string | null) => void;
-  setAutoReconnect: (v: boolean) => void;
   setScanTimer: (v: number) => void;
   startScanWithTimer: () => Promise<void>;
   stopScanAndReset: () => Promise<void>;
@@ -46,7 +44,6 @@ export const useBleStore = create<BleState & BleActions>((set) => ({
   scannedDevices: [],
   rssi: null,
   lastError: null,
-  autoReconnect: true,
   scanTimer: 0,
 
   setStatus: (status) => set({ status }),
@@ -83,8 +80,6 @@ export const useBleStore = create<BleState & BleActions>((set) => ({
   clearScannedDevices: () => set({ scannedDevices: [] }),
 
   setError: (lastError) => set({ lastError, status: "error" }),
-
-  setAutoReconnect: (autoReconnect) => set({ autoReconnect }),
 
   setScanTimer: (scanTimer) => set({ scanTimer }),
 

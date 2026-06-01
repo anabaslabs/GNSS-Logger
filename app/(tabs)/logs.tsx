@@ -203,53 +203,60 @@ const ActiveRecordingBanner = ({
       ]}
     >
       <View style={styles.row}>
-        {/* Left Side: "Recording..." and subtitle */}
+        {/* Left Side: Stop Button (■) */}
+        <PressableScale
+          onPress={onStop}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 19,
+            backgroundColor: colors.danger,
+            justifyContent: "center",
+            alignItems: "center",
+            marginRight: 12,
+          }}
+        >
+          <IconSquareFilled size={14} color="#0F172A" />
+        </PressableScale>
+
+        {/* Left-Middle: "Recording..." and subtitle */}
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={[styles.logLabel, { color: colors.danger }]} numberOfLines={1}>
+          <Text
+            style={[styles.logLabel, { color: colors.danger }]}
+            numberOfLines={1}
+          >
             Recording...
           </Text>
-          <Text style={[styles.logHint, { color: colors.textTertiary }]} numberOfLines={1}>
+          <Text
+            style={[styles.logHint, { color: colors.textTertiary }]}
+            numberOfLines={1}
+          >
             {sessionBuffer.length} lines
           </Text>
         </View>
 
-        {/* Middle: Live Timer shifted slightly left */}
-        <Text style={[styles.timer, { color: colors.danger, marginRight: 24 }]} numberOfLines={1}>
+        {/* Middle-Right: Live Timer */}
+        <Text
+          style={[styles.timer, { color: colors.danger, marginRight: 16 }]}
+          numberOfLines={1}
+        >
           {formatElapsed(elapsed)}
         </Text>
 
-        {/* Right Side: Action Buttons ■ and ✕ using Tabler Icons */}
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          {/* Stop Button (■) */}
-          <PressableScale
-            onPress={onStop}
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 19,
-              backgroundColor: colors.danger,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <IconSquareFilled size={14} color="#0F172A" />
-          </PressableScale>
-
-          {/* Cancel Button (✕) */}
-          <PressableScale
-            onPress={onCancel}
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 19,
-              backgroundColor: isDark ? "#2D3748" : "#E2E8F0",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <IconXFilled size={14} color={isDark ? "#9CA3AF" : "#4B5563"} />
-          </PressableScale>
-        </View>
+        {/* Right Side: Cancel Button (✕) */}
+        <PressableScale
+          onPress={onCancel}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 19,
+            backgroundColor: isDark ? "#2D3748" : "#E2E8F0",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <IconXFilled size={14} color={isDark ? "#9CA3AF" : "#4B5563"} />
+        </PressableScale>
       </View>
     </View>
   );

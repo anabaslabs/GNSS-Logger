@@ -101,7 +101,7 @@ export default function RootLayout() {
         },
       },
     ]).catch((err) =>
-      console.error("[Notifications] Category setup failed:", err)
+      console.error("[Notifications] Category setup failed:", err),
     );
 
     // 2. Route notification action taps
@@ -112,7 +112,7 @@ export default function RootLayout() {
         } else if (response.actionIdentifier === "cancel-logging") {
           useLogStore.getState().cancelLogging();
         }
-      }
+      },
     );
 
     return () => {

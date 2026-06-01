@@ -16,7 +16,10 @@ interface LogState {
 }
 
 interface LogActions {
-  startSession: (nmeaLines: string[], durationSecs?: number) => Promise<string | null>;
+  startSession: (
+    nmeaLines: string[],
+    durationSecs?: number,
+  ) => Promise<string | null>;
   endSession: (
     sessionId: string,
     nmeaLines: string[],
@@ -118,7 +121,8 @@ function nmeaToCsv(lines: string[]): string {
 
 async function requestNotificationPermission(): Promise<boolean> {
   try {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     if (existingStatus !== "granted") {
       const { status } = await Notifications.requestPermissionsAsync();
@@ -167,7 +171,10 @@ export const useLogStore = create<LogState & LogActions>()(
           filePathCsv,
         };
 
-        const autoStopAt = durationSecs && durationSecs > 0 ? startTime + durationSecs * 1000 : null;
+        const autoStopAt =
+          durationSecs && durationSecs > 0
+            ? startTime + durationSecs * 1000
+            : null;
 
         if (activeNotificationTimer) {
           clearInterval(activeNotificationTimer);
@@ -261,7 +268,9 @@ export const useLogStore = create<LogState & LogActions>()(
           }
         }
         try {
-          await Notifications.dismissNotificationAsync("active-session-notification");
+          await Notifications.dismissNotificationAsync(
+            "active-session-notification",
+          );
         } catch {}
 
         set((s) => ({
@@ -299,7 +308,9 @@ export const useLogStore = create<LogState & LogActions>()(
           }
         }
         try {
-          await Notifications.dismissNotificationAsync("active-session-notification");
+          await Notifications.dismissNotificationAsync(
+            "active-session-notification",
+          );
         } catch {}
 
         useGnssStore.getState().clearSession();
@@ -313,8 +324,16 @@ export const useLogStore = create<LogState & LogActions>()(
           // Delete temp files without saving
           const session = get().sessions.find((s) => s.id === sid);
           if (session) {
-            try { await FileSystem.deleteAsync(session.filePath, { idempotent: true }); } catch {}
-            try { await FileSystem.deleteAsync(session.filePathCsv, { idempotent: true }); } catch {}
+            try {
+              await FileSystem.deleteAsync(session.filePath, {
+                idempotent: true,
+              });
+            } catch {}
+            try {
+              await FileSystem.deleteAsync(session.filePathCsv, {
+                idempotent: true,
+              });
+            } catch {}
           }
           set((s) => ({
             sessions: s.sessions.filter((sess) => sess.id !== sid),
@@ -337,7 +356,9 @@ export const useLogStore = create<LogState & LogActions>()(
           }
         }
         try {
-          await Notifications.dismissNotificationAsync("active-session-notification");
+          await Notifications.dismissNotificationAsync(
+            "active-session-notification",
+          );
         } catch {}
 
         useGnssStore.getState().clearSession();
