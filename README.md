@@ -9,7 +9,7 @@
 </h2>
 
 <p align="center">
-  <a href="https://github.com/anabaslabs/GNSS-Logger/releases/download/v1.3.0/GNSS-Logger-v1.3.0.apk">
+  <a href="https://github.com/anabaslabs/GNSS-Logger/releases/download/v1.4.0/GNSS-Logger-v1.4.0.apk">
     <img alt="Download Android APK" width="170" src="assets/download-android-apk.png">
   </a>
 </p>

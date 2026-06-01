@@ -579,7 +579,7 @@ export default function SettingsScreen() {
                 <Text
                   style={[styles.badgeText, { color: colors.statusActive }]}
                 >
-                  v{Constants.expoConfig?.version ?? "1.0.0"}
+                  v{Constants.expoConfig?.version ?? "1.4.0"}
                 </Text>
               </View>
             </View>
@@ -716,7 +716,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 12,
-    fontFamily: "YsabeauInfant_700Bold",
+    fontFamily: "JetBrainsMono_400Regular",
   },
   themePicker: {
     flexDirection: "row",
