@@ -127,7 +127,6 @@ export interface BleDevice {
   id: string;
   name: string | null;
   rssi: number;
-  advertising?: Record<string, unknown>;
 }
 
 /** GNSS log session */

@@ -11,16 +11,19 @@ import { generateNmeaCommand, parseNmea } from "@/lib/nmea-parser";
 import { useBleStore } from "@/store/ble-store";
 import { useConfigStore } from "@/store/config-store";
 import { useGnssStore } from "@/store/gnss-store";
+import { useLogStore } from "@/store/log-store";
+import * as Notifications from "expo-notifications";
 import type { BleDevice, NmeaParsedSentence } from "@/types/gnss";
 import {
-  Lexend_300Light,
-  Lexend_400Regular,
-  Lexend_500Medium,
-  Lexend_600SemiBold,
-  Lexend_700Bold,
-  Lexend_800ExtraBold,
   useFonts,
-} from "@expo-google-fonts/lexend";
+  YsabeauInfant_300Light,
+  YsabeauInfant_400Regular,
+  YsabeauInfant_500Medium,
+  YsabeauInfant_600SemiBold,
+  YsabeauInfant_700Bold,
+  YsabeauInfant_800ExtraBold,
+} from "@expo-google-fonts/ysabeau-infant";
+import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono";
 import {
   DarkTheme,
   DefaultTheme,
@@ -36,13 +39,21 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 SplashScreen.preventAutoHideAsync();
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
+
 interface TextWithDefaultProps extends React.FC {
   defaultProps?: any;
 }
 const TextComp = Text as unknown as TextWithDefaultProps;
 if (!TextComp.defaultProps) TextComp.defaultProps = {};
 TextComp.defaultProps.style = [
-  { fontFamily: "Lexend_400Regular" },
+  { fontFamily: "YsabeauInfant_400Regular" },
   TextComp.defaultProps.style,
 ];
 
@@ -50,12 +61,13 @@ export default function RootLayout() {
   const { colors, isDark } = useAppTheme();
 
   const [fontsLoaded, fontError] = useFonts({
-    Lexend_300Light,
-    Lexend_400Regular,
-    Lexend_500Medium,
-    Lexend_600SemiBold,
-    Lexend_700Bold,
-    Lexend_800ExtraBold,
+    YsabeauInfant_300Light,
+    YsabeauInfant_400Regular,
+    YsabeauInfant_500Medium,
+    YsabeauInfant_600SemiBold,
+    YsabeauInfant_700Bold,
+    YsabeauInfant_800ExtraBold,
+    JetBrainsMono_400Regular,
   });
 
   const applyBatch = useGnssStore((s) => s.applyBatch);
@@ -72,6 +84,43 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   useEffect(() => {
+    Notifications.setNotificationCategoryAsync("recordingControls", [
+      {
+        identifier: "stop-logging",
+        buttonTitle: "Stop",
+        options: {
+          opensAppToForeground: false,
+        },
+      },
+      {
+        identifier: "cancel-logging",
+        buttonTitle: "Cancel",
+        options: {
+          opensAppToForeground: false,
+          isDestructive: true,
+        },
+      },
+    ]).catch((err) =>
+      console.error("[Notifications] Category setup failed:", err),
+    );
+
+    // 2. Route notification action taps
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        if (response.actionIdentifier === "stop-logging") {
+          useLogStore.getState().stopLogging();
+        } else if (response.actionIdentifier === "cancel-logging") {
+          useLogStore.getState().cancelLogging();
+        }
+      },
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     const nmeaBuffer: string[] = [];
 
     const unsub = onNmeaLine((line) => {
@@ -79,6 +128,16 @@ export default function RootLayout() {
     });
 
     const interval = setInterval(() => {
+      // Check if we need to auto-stop the active logging session
+      const logState = useLogStore.getState();
+      if (
+        logState.activeSessionId &&
+        logState.autoStopAt &&
+        Date.now() >= logState.autoStopAt
+      ) {
+        logState.stopLogging();
+      }
+
       if (nmeaBuffer.length === 0) return;
 
       const lines = [...nmeaBuffer];
@@ -151,7 +210,7 @@ export default function RootLayout() {
                 headerShown: false,
                 headerStyle: { backgroundColor: colors.background },
                 headerTintColor: colors.text,
-                headerTitleStyle: { fontFamily: "Lexend_700Bold" },
+                headerTitleStyle: { fontFamily: "YsabeauInfant_700Bold" },
                 contentStyle: { backgroundColor: colors.background },
                 animation: "ios_from_right",
               }}

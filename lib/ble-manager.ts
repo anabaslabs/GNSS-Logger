@@ -67,10 +67,12 @@ function base64Encode(str: string): string {
 
 let bleManager: BleManager | null = null;
 
-try {
-  bleManager = new BleManager();
-} catch (e) {
-  console.error("[BLE] Failed to create BleManager:", e);
+if (Platform.OS !== "web") {
+  try {
+    bleManager = new BleManager();
+  } catch (e) {
+    console.error("[BLE] Failed to create BleManager:", e);
+  }
 }
 
 const IS_NATIVE_AVAILABLE = bleManager !== null;
@@ -344,20 +346,6 @@ export async function disconnectDevice(deviceId: string): Promise<void> {
   connectionCallback?.(deviceId, false);
 }
 
-export async function getConnectedDevices(): Promise<Peripheral[]> {
-  if (!IS_NATIVE_AVAILABLE || !bleManager) return [];
-  try {
-    const devices = await bleManager.connectedDevices([NUS_SERVICE_UUID]);
-    return devices.map((d) => ({
-      id: d.id,
-      name: d.name,
-      rssi: d.rssi,
-    }));
-  } catch {
-    return [];
-  }
-}
-
 export async function checkBluetoothState(): Promise<string> {
   if (!IS_NATIVE_AVAILABLE || !bleManager) return "off";
   try {
@@ -379,15 +367,6 @@ export async function checkBluetoothState(): Promise<string> {
   } catch (e) {
     console.error("[BLE] Error checking state:", e);
     return "off";
-  }
-}
-
-export async function enableBluetoothAndroid(): Promise<void> {
-  if (Platform.OS !== "android" || !IS_NATIVE_AVAILABLE || !bleManager) return;
-  try {
-    await bleManager.enable();
-  } catch (e) {
-    console.error("[BLE] Could not enable Bluetooth:", e);
   }
 }
 

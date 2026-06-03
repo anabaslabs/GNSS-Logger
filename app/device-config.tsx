@@ -9,12 +9,12 @@ import { useConfigStore } from "@/store/config-store";
 import { IconRefresh } from "@tabler/icons-react-native";
 import { Stack } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
+import { ToogleButton } from "@/components/toogle-button";
 import {
   ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -554,14 +554,9 @@ export default function DeviceConfigScreen() {
             label="Log Combined Talker (GN)"
             description="If disabled, sentences starting with $GN (like GNGGA) will be removed from recorded logs."
             right={
-              <Switch
+              <ToogleButton
                 value={deviceConfig.showCombinedTalker}
                 onValueChange={setShowCombinedTalker}
-                trackColor={{
-                  false: colors.borderLight,
-                  true: colors.statusActive,
-                }}
-                thumbColor={isDark ? "#FFF" : "#F4F3F4"}
               />
             }
           />
@@ -572,14 +567,9 @@ export default function DeviceConfigScreen() {
             label="Enable SBAS"
             description="Satellite Based Augmentation Systems (WAAS, EGNOS, GAGAN)."
             right={
-              <Switch
+              <ToogleButton
                 value={deviceConfig.sbasEnabled}
                 onValueChange={handleToggleSbas}
-                trackColor={{
-                  false: colors.borderLight,
-                  true: colors.statusActive,
-                }}
-                thumbColor={isDark ? "#FFF" : "#F4F3F4"}
               />
             }
           />
@@ -734,56 +724,59 @@ export default function DeviceConfigScreen() {
         </ConfigSection>
 
         <ConfigSection title="Config Sync">
-          <View style={styles.buttonRow}>
-            <PressableScale
-              style={[
-                styles.resetButton,
-                {
-                  backgroundColor: isDark
-                    ? colors.tint + "15"
-                    : colors.statusSurface,
-                },
-              ]}
-              onPress={handlePullConfig}
-            >
-              <Text style={[styles.resetButtonText, { color: colors.tint }]}>
-                Pull Config
-              </Text>
-            </PressableScale>
+          <View style={{ gap: 12, paddingVertical: 8 }}>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <PressableScale
+                style={[
+                  styles.resetButton,
+                  {
+                    backgroundColor: isDark
+                      ? colors.tint + "15"
+                      : colors.statusSurface,
+                  },
+                ]}
+                onPress={handlePullConfig}
+              >
+                <Text style={[styles.resetButtonText, { color: colors.tint }]}>
+                  Pull Config
+                </Text>
+              </PressableScale>
+
+              <PressableScale
+                style={[
+                  styles.resetButton,
+                  {
+                    backgroundColor: isDark
+                      ? colors.tint + "15"
+                      : colors.statusSurface,
+                  },
+                ]}
+                onPress={handlePushConfig}
+              >
+                <Text style={[styles.resetButtonText, { color: colors.tint }]}>
+                  Push Config
+                </Text>
+              </PressableScale>
+            </View>
 
             <PressableScale
               style={[
-                styles.resetButton,
+                styles.fullWidthButton,
                 {
                   backgroundColor: isDark
-                    ? colors.tint + "15"
+                    ? colors.statusActive + "15"
                     : colors.statusSurface,
                 },
               ]}
-              onPress={handlePushConfig}
+              onPress={handleSaveToFlash}
             >
-              <Text style={[styles.resetButtonText, { color: colors.tint }]}>
-                Push Config
+              <Text
+                style={[styles.resetButtonText, { color: colors.statusActive }]}
+              >
+                Save Config to Flash
               </Text>
             </PressableScale>
           </View>
-
-          <PressableScale
-            style={[
-              styles.resetButton,
-              {
-                marginTop: 4,
-                backgroundColor: colors.statusSurface,
-              },
-            ]}
-            onPress={handleSaveToFlash}
-          >
-            <Text
-              style={[styles.resetButtonText, { color: colors.statusActive }]}
-            >
-              Save Config to Flash
-            </Text>
-          </PressableScale>
         </ConfigSection>
       </ScrollView>
 
@@ -808,14 +801,14 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 16, gap: 16, paddingBottom: 60 },
   section: {
     padding: 20,
-    borderRadius: 32,
+    borderRadius: 24,
     borderWidth: 1,
     borderCurve: "continuous" as any,
     gap: 0,
   },
   sectionHeader: {
     fontSize: 12,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "YsabeauInfant_800ExtraBold",
     letterSpacing: 1.2,
     textTransform: "uppercase",
     marginBottom: 0,
@@ -839,11 +832,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderCurve: "continuous" as any,
     gap: 10,
-    marginBottom: 8,
   },
   warningText: {
     fontSize: 14,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
     flex: 1,
   },
   buttonRow: {
@@ -860,9 +852,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 8,
   },
+  fullWidthButton: {
+    height: 48,
+    borderRadius: 16,
+    borderCurve: "continuous" as any,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    width: "100%",
+  },
   resetButtonText: {
     fontSize: 14,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "YsabeauInfant_700Bold",
     textAlign: "center",
   },
   rateRow: {
@@ -880,11 +881,7 @@ const styles = StyleSheet.create({
   },
   rateButtonText: {
     fontSize: 14,
-    fontFamily: "Lexend_700Bold",
-  },
-  divider: {
-    height: 1,
-    width: "100%",
+    fontFamily: "YsabeauInfant_700Bold",
   },
   settingRow: {
     flexDirection: "row",
@@ -912,30 +909,23 @@ const styles = StyleSheet.create({
     borderCurve: "continuous" as any,
     borderWidth: 1,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    minWidth: "47%",
-    flexGrow: 1,
+    height: 48,
+    width: "48%",
   },
   constDot: { width: 7, height: 7, borderRadius: 3.5 },
   constLabel: {
     fontSize: 13,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "YsabeauInfant_700Bold",
     flexShrink: 1,
     marginTop: -2,
   },
-  refreshRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 4,
-  },
   settingLabel: {
     fontSize: 16,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
   },
   settingDescription: {
     fontSize: 13,
-    fontFamily: "Lexend_400Regular",
+    fontFamily: "YsabeauInfant_400Regular",
     lineHeight: 18,
     marginTop: 2,
   },
@@ -954,11 +944,11 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 14,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "YsabeauInfant_700Bold",
   },
   hintText: {
     fontSize: 12,
-    fontFamily: "Lexend_400Regular",
+    fontFamily: "YsabeauInfant_400Regular",
     lineHeight: 18,
   },
   manualRow: {
@@ -977,35 +967,8 @@ const styles = StyleSheet.create({
   },
   input: {
     height: "100%",
-    fontFamily: "monospace",
+    fontFamily: "JetBrainsMono_400Regular",
     fontSize: 15,
-  },
-  footer: {
-    marginTop: 12,
-  },
-  saveButton: {
-    height: 56,
-    borderRadius: 20,
-    borderCurve: "continuous" as any,
-    borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontFamily: "Lexend_700Bold",
-  },
-  pushButton: {
-    height: 56,
-    borderRadius: 20,
-    borderCurve: "continuous" as any,
-    borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1023,7 +986,7 @@ const styles = StyleSheet.create({
   },
   loaderText: {
     fontSize: 14,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
   },
   infoContent: {
     paddingVertical: 12,
@@ -1031,6 +994,6 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    fontFamily: "Lexend_400Regular",
+    fontFamily: "YsabeauInfant_400Regular",
   },
 });

@@ -48,8 +48,8 @@ const PickerItem = React.memo(
               opacity: isSelected ? 1 : 0.5,
               fontSize: isSelected ? 18 : 16,
               fontFamily: isSelected
-                ? "Lexend_600SemiBold"
-                : "Lexend_400Regular",
+                ? "YsabeauInfant_600SemiBold"
+                : "YsabeauInfant_400Regular",
             },
           ]}
         >

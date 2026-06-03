@@ -1,14 +1,7 @@
 import { useAppTheme } from "@/hooks/useAppTheme";
 import React from "react";
-import {
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { PressableScale } from "./pressable-scale";
-
 
 export type ConfirmModalProps = {
   visible: boolean;
@@ -55,7 +48,6 @@ export function ConfirmModal({
             },
           ]}
         >
-
           <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
             {message}
@@ -72,7 +64,7 @@ export function ConfirmModal({
                   style={{
                     color: colors.textSecondary,
                     fontSize: 15,
-                    fontFamily: "Lexend_600SemiBold",
+                    fontFamily: "YsabeauInfant_600SemiBold",
                   }}
                 >
                   {cancelText}
@@ -99,17 +91,15 @@ export function ConfirmModal({
                 style={{
                   color: isDestructive ? colors.danger : colors.statusActive,
                   fontSize: 15,
-                  fontFamily: "Lexend_700Bold",
+                  fontFamily: "YsabeauInfant_700Bold",
                 }}
               >
                 {isAlert ? "OK" : confirmText}
               </Text>
             </PressableScale>
-
           </View>
         </View>
       </TouchableOpacity>
-
     </Modal>
   );
 }
@@ -125,7 +115,7 @@ const styles = StyleSheet.create({
   modalBox: {
     width: "100%",
     maxWidth: 340,
-    borderRadius: 32,
+    borderRadius: 24,
     borderCurve: "continuous",
     borderWidth: 1,
     padding: 20,
@@ -137,13 +127,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "YsabeauInfant_800ExtraBold",
     marginBottom: 8,
     letterSpacing: -0.5,
   },
   message: {
     fontSize: 15,
-    fontFamily: "Lexend_400Regular",
+    fontFamily: "YsabeauInfant_400Regular",
     lineHeight: 22,
     marginBottom: 32,
   },

@@ -10,11 +10,12 @@ import {
   IconFileText,
   IconFolderOff,
   IconPlayerRecordFilled,
-  IconSquareRoundedFilled,
   IconTerminal2,
   IconTrash,
+  IconSquareFilled,
+  IconXFilled,
 } from "@tabler/icons-react-native";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Modal,
@@ -173,11 +174,13 @@ SessionCard.displayName = "SessionCard";
 const ActiveRecordingBanner = ({
   startTime,
   onStop,
+  onCancel,
 }: {
   startTime: number;
   onStop: () => void;
+  onCancel: () => void;
 }) => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { sessionBuffer } = useGnssStore();
   const [elapsed, setElapsed] = useState(0);
 
@@ -188,40 +191,80 @@ const ActiveRecordingBanner = ({
   }, [startTime]);
 
   return (
-    <PressableScale
+    <View
       style={[
         styles.logButton,
         {
           backgroundColor: colors.dangerSurface,
           borderColor: colors.dangerBorder,
           borderWidth: 1,
+          height: 84,
         },
       ]}
-      onPress={onStop}
     >
       <View style={styles.row}>
-        <View style={styles.leftSide}>
-          <IconSquareRoundedFilled color={colors.danger} size={24} />
-          <View>
-            <Text style={[styles.logLabel, { color: colors.danger }]}>
-              Recording...
-            </Text>
-            <Text style={[styles.logHint, { color: colors.textTertiary }]}>
-              {sessionBuffer.length} lines captured
-            </Text>
-          </View>
+        {/* Left Side: Stop Button (■) */}
+        <PressableScale
+          onPress={onStop}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 19,
+            backgroundColor: colors.danger,
+            justifyContent: "center",
+            alignItems: "center",
+            marginRight: 12,
+          }}
+        >
+          <IconSquareFilled size={14} color="#0F172A" />
+        </PressableScale>
+
+        {/* Left-Middle: "Recording..." and subtitle */}
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text
+            style={[styles.logLabel, { color: colors.danger }]}
+            numberOfLines={1}
+          >
+            Recording...
+          </Text>
+          <Text
+            style={[styles.logHint, { color: colors.textTertiary }]}
+            numberOfLines={1}
+          >
+            {sessionBuffer.length} lines
+          </Text>
         </View>
-        <Text style={[styles.timer, { color: colors.danger }]}>
+
+        {/* Middle-Right: Live Timer */}
+        <Text
+          style={[styles.timer, { color: colors.danger, marginRight: 16 }]}
+          numberOfLines={1}
+        >
           {formatElapsed(elapsed)}
         </Text>
+
+        {/* Right Side: Cancel Button (✕) */}
+        <PressableScale
+          onPress={onCancel}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 19,
+            backgroundColor: isDark ? "#2D3748" : "#E2E8F0",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <IconXFilled size={14} color={isDark ? "#9CA3AF" : "#4B5563"} />
+        </PressableScale>
       </View>
-    </PressableScale>
+    </View>
   );
 };
 
 export default function LogsScreen() {
   const { colors, isDark } = useAppTheme();
-  const { isLogging, setLogging, clearSession } = useGnssStore();
+  const { isLogging, setLogging } = useGnssStore();
   const {
     sessions,
     exportNmea,
@@ -232,6 +275,8 @@ export default function LogsScreen() {
     activeSessionId,
     setExportDirectory,
     exportBulk,
+    stopLogging: stopLoggingGlobal,
+    cancelLogging: cancelLoggingGlobal,
   } = useLogStore();
 
   const [showPicker, setShowPicker] = useState(false);
@@ -239,7 +284,6 @@ export default function LogsScreen() {
   const [timerHours, setTimerHours] = useState("00");
   const [timerMinutes, setTimerMinutes] = useState("01");
   const [timerSeconds, setTimerSeconds] = useState("00");
-  const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [confirmConfig, setConfirmConfig] = useState<{
     visible: boolean;
@@ -253,35 +297,20 @@ export default function LogsScreen() {
     visible: false,
     title: "",
     message: "",
-    onConfirm: () => { },
+    onConfirm: () => {},
   });
 
   async function stopLogging() {
-    if (autoStopRef.current) {
-      clearTimeout(autoStopRef.current);
-      autoStopRef.current = null;
-    }
-    const freshLogState = useLogStore.getState();
-    const freshGnssState = useGnssStore.getState();
-    const sid = freshLogState.activeSessionId;
+    await stopLoggingGlobal();
+  }
 
-    if (sid) {
-      const lines = freshGnssState.sessionBuffer;
-      const fixCount = lines.filter((l) => l.includes("GGA")).length;
-      await freshLogState.endSession(sid, lines, fixCount);
-    }
-    clearSession();
-    setLogging(false);
+  async function handleCancelLogging() {
+    await cancelLoggingGlobal();
   }
 
   async function startLogging(sec: number) {
     setLogging(true);
-    await startSession([]);
-    if (sec > 0) {
-      autoStopRef.current = setTimeout(() => {
-        stopLogging();
-      }, sec * 1000);
-    }
+    await startSession([], sec);
   }
 
   function handleStartTimed() {
@@ -391,7 +420,7 @@ export default function LogsScreen() {
                 styles.modal,
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
-              onPress={() => { }}
+              onPress={() => {}}
             >
               <View style={{ marginBottom: 20 }}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -479,7 +508,6 @@ export default function LogsScreen() {
                   </Text>
                 </PressableScale>
 
-
                 <View style={{ flexDirection: "row", gap: 12 }}>
                   <PressableScale
                     hitSlop={12}
@@ -523,7 +551,6 @@ export default function LogsScreen() {
                       Start
                     </Text>
                   </PressableScale>
-
                 </View>
               </View>
             </Pressable>
@@ -548,7 +575,7 @@ export default function LogsScreen() {
                 styles.modal,
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
-              onPress={() => { }}
+              onPress={() => {}}
             >
               <View style={{ marginBottom: 20 }}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -600,7 +627,6 @@ export default function LogsScreen() {
                     Close
                   </Text>
                 </PressableScale>
-
               </View>
             </Pressable>
           </View>
@@ -630,6 +656,7 @@ export default function LogsScreen() {
                   Date.now()
                 }
                 onStop={() => stopLogging()}
+                onCancel={() => handleCancelLogging()}
               />
             ) : (
               <View style={{ flexDirection: "row", gap: 12 }}>
@@ -766,7 +793,7 @@ export default function LogsScreen() {
                 },
                 onCancel: res.needsPermission
                   ? () =>
-                    setConfirmConfig((prev) => ({ ...prev, visible: false }))
+                      setConfirmConfig((prev) => ({ ...prev, visible: false }))
                   : undefined,
               });
             }}
@@ -790,7 +817,7 @@ export default function LogsScreen() {
                 },
                 onCancel: res.needsPermission
                   ? () =>
-                    setConfirmConfig((prev) => ({ ...prev, visible: false }))
+                      setConfirmConfig((prev) => ({ ...prev, visible: false }))
                   : undefined,
               });
             }}
@@ -828,7 +855,7 @@ const styles = StyleSheet.create({
   modalMount: { width: "100%", alignItems: "center" },
   modal: {
     width: "100%",
-    borderRadius: 32,
+    borderRadius: 24,
     borderCurve: "continuous",
     borderWidth: 1,
     padding: 24,
@@ -842,12 +869,12 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 24,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "YsabeauInfant_800ExtraBold",
     letterSpacing: -0.5,
   },
   modalSubtitle: {
     fontSize: 14,
-    fontFamily: "Lexend_400Regular",
+    fontFamily: "YsabeauInfant_400Regular",
     marginTop: 4,
   },
 
@@ -856,7 +883,7 @@ const styles = StyleSheet.create({
   pickerColumn: { flex: 1, alignItems: "center", gap: 8 },
   pickerLabel: {
     fontSize: 12,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
     textTransform: "uppercase",
     letterSpacing: 1,
   },
@@ -875,11 +902,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
   },
-  footerBtnText: { fontSize: 15, fontFamily: "Lexend_700Bold" },
+  footerBtnText: { fontSize: 15, fontFamily: "YsabeauInfant_700Bold" },
 
   logButton: {
     height: 80,
-    borderRadius: 32,
+    borderRadius: 24,
     borderCurve: "continuous",
     borderWidth: 1,
     paddingHorizontal: 20,
@@ -891,11 +918,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   leftSide: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-  logLabel: { fontSize: 15, fontFamily: "Lexend_700Bold" },
-  logHint: { fontSize: 12, fontFamily: "Lexend_400Regular", marginTop: 2 },
+  logLabel: { fontSize: 15, fontFamily: "YsabeauInfant_700Bold" },
+  logHint: {
+    fontSize: 12,
+    fontFamily: "YsabeauInfant_400Regular",
+    marginTop: 2,
+  },
   timer: {
     fontSize: 22,
-    fontFamily: "Lexend_300Light",
+    fontFamily: "YsabeauInfant_300Light",
     fontVariant: ["tabular-nums"],
     letterSpacing: -0.5,
   },
@@ -906,11 +937,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 2,
   },
-  title: { fontSize: 18, fontFamily: "Lexend_800ExtraBold" },
-  clearAll: { fontSize: 14, fontFamily: "Lexend_700Bold" },
+  title: { fontSize: 18, fontFamily: "YsabeauInfant_800ExtraBold" },
 
   card: {
-    borderRadius: 32,
+    borderRadius: 24,
     borderCurve: "continuous",
     borderWidth: 1,
     padding: 20,
@@ -922,7 +952,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  sessionDate: { fontSize: 16, fontFamily: "Lexend_800ExtraBold" },
+  sessionDate: { fontSize: 16, fontFamily: "YsabeauInfant_800ExtraBold" },
 
   badgeRow: {
     flexDirection: "row",
@@ -931,7 +961,7 @@ const styles = StyleSheet.create({
   },
   miniBadgeText: {
     fontSize: 12,
-    fontFamily: "Lexend_500Medium",
+    fontFamily: "YsabeauInfant_500Medium",
     fontVariant: ["tabular-nums"],
     lineHeight: 16,
   },
@@ -943,7 +973,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  optionText: { fontSize: 16, fontFamily: "Lexend_600SemiBold" },
+  optionText: { fontSize: 16, fontFamily: "YsabeauInfant_600SemiBold" },
 
   divider: { height: 1, width: "100%" },
 
@@ -961,13 +991,13 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderColor: "rgba(0,0,0,0.1)",
   },
-  actionBtnText: { fontSize: 13, fontFamily: "Lexend_700Bold" },
+  actionBtnText: { fontSize: 13, fontFamily: "YsabeauInfant_700Bold" },
 
   emptyState: { alignItems: "center", gap: 16, paddingVertical: 64 },
-  emptyTitle: { fontSize: 20, fontFamily: "Lexend_700Bold" },
+  emptyTitle: { fontSize: 20, fontFamily: "YsabeauInfant_700Bold" },
   emptyDesc: {
     fontSize: 14,
-    fontFamily: "Lexend_400Regular",
+    fontFamily: "YsabeauInfant_400Regular",
     textAlign: "center",
     lineHeight: 22,
     maxWidth: 280,

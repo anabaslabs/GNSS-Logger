@@ -23,22 +23,10 @@ interface GnssState {
 }
 
 interface GnssActions {
-  applyGga: (data: Partial<NmeaFix>) => void;
-  applyRmc: (data: Partial<NmeaFix & NmeaVelocity>) => void;
-  applyVtg: (data: NmeaVelocity) => void;
-  applyGsa: (data: NmeaDop) => void;
-  applyGsv: (data: {
-    talkerId: string;
-    satellites: NmeaSatellite[];
-    msgNum: number;
-    numMsg: number;
-  }) => void;
-  appendRaw: (line: string) => void;
   applyBatch: (sentences: NmeaParsedSentence[], rawLines: string[]) => void;
   setLogging: (active: boolean) => void;
   clearSession: () => void;
   clearLiveData: () => void;
-  reset: () => void;
 }
 
 const defaultFix: NmeaFix = {
@@ -73,104 +61,6 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
   rawBuffer: [],
   sessionBuffer: [],
   isLogging: false,
-
-  applyGga: (data) => {
-    set((s) => ({ fix: { ...s.fix, ...data } }));
-  },
-
-  applyRmc: (data) => {
-    const { speedKmh, courseTrue, mode, ...fixData } = data as Partial<
-      NmeaFix & NmeaVelocity
-    >;
-    set((s) => ({
-      fix: { ...s.fix, ...fixData },
-      velocity: {
-        ...s.velocity,
-        ...(speedKmh !== undefined && { speedKmh }),
-        ...(courseTrue !== undefined && { courseTrue }),
-        ...(mode !== undefined && { mode }),
-      },
-    }));
-  },
-
-  applyVtg: (data) => {
-    set((s) => ({ velocity: { ...s.velocity, ...data } }));
-  },
-
-  applyGsa: (data) => {
-    set((s) => {
-      const usedSet = new Set(data.satellitesUsed);
-      const updatedSats = s.satellites.map((sat) => {
-        let isMatch = sat.talkerId === data.talkerId;
-
-        if (!isMatch && data.talkerId === "GN" && data.systemId != null) {
-          const sysMap: Record<number, string> = {
-            1: "GP",
-            2: "GL",
-            3: "GA",
-            4: "GB",
-            5: "GQ",
-            6: "GI",
-          };
-          isMatch = sat.talkerId === sysMap[data.systemId];
-        }
-
-        return isMatch ? { ...sat, usedInFix: usedSet.has(sat.prn) } : sat;
-      });
-
-      return {
-        dop: data,
-        satellites: updatedSats,
-        fix: {
-          ...s.fix,
-          pdop: data.pdop,
-          vdop: data.vdop,
-          fixMode: data.fixMode,
-          hdop: data.hdop ?? s.fix.hdop,
-        },
-      };
-    });
-  },
-
-  applyGsv: (data) => {
-    set((s) => {
-      const now = Date.now();
-      const { talkerId, satellites: newSats } = data;
-
-      const satMap = new Map<string, NmeaSatellite>();
-      s.satellites.forEach((sat) => {
-        const key = `${sat.talkerId}-${sat.prn}-${sat.signalId ?? 0}`;
-        satMap.set(key, sat);
-      });
-
-      newSats.forEach((newSat) => {
-        const key = `${newSat.talkerId}-${newSat.prn}-${newSat.signalId ?? 0}`;
-        const existing = satMap.get(key);
-
-        satMap.set(key, {
-          ...newSat,
-          usedInFix: existing?.usedInFix ?? false,
-          lastSeen: now,
-        });
-      });
-
-      const filteredSats = Array.from(satMap.values()).filter(
-        (sat) => now - sat.lastSeen < SAT_STALE_TIMEOUT_MS,
-      );
-
-      return { satellites: filteredSats };
-    });
-  },
-
-  appendRaw: (line) => {
-    set((s) => {
-      const raw = [line, ...s.rawBuffer].slice(0, RAW_BUFFER_MAX);
-      const session = s.isLogging
-        ? [...s.sessionBuffer, line]
-        : s.sessionBuffer;
-      return { rawBuffer: raw, sessionBuffer: session };
-    });
-  },
 
   applyBatch: (sentences, rawLines) => {
     set((s) => {
@@ -297,19 +187,6 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
       velocity: { ...defaultVelocity },
       dop: null,
       antenna: null,
-    });
-  },
-
-  reset: () => {
-    set({
-      fix: { ...defaultFix },
-      satellites: [],
-      velocity: { ...defaultVelocity },
-      dop: null,
-      antenna: null,
-      rawBuffer: [],
-      sessionBuffer: [],
-      isLogging: false,
     });
   },
 }));

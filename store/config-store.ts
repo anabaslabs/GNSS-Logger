@@ -28,7 +28,6 @@ interface ConfigActions {
   setSbasEnabled: (enabled: boolean) => void;
   setFirmwareVersion: (version: string | null) => void;
   clearDeviceData: () => void;
-  resetConfig: () => void;
 }
 
 const defaultConfig: DeviceConfig = {
@@ -106,8 +105,6 @@ export const useConfigStore = create<ConfigState & ConfigActions>()(
             firmwareVersion: null,
           },
         })),
-
-      resetConfig: () => set({ deviceConfig: { ...defaultConfig } }),
     }),
     {
       name: "gnss-config-storage",

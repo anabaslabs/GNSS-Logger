@@ -1,23 +1,32 @@
 import type { LogSession } from "@/types/gnss";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
+import * as Notifications from "expo-notifications";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { useConfigStore } from "./config-store";
+import { useGnssStore } from "./gnss-store";
 
 interface LogState {
   sessions: LogSession[];
   activeSessionId: string | null;
   exportDirectoryUri: string | null;
+  autoStopAt: number | null;
+  activeNotificationId: string | null;
 }
 
 interface LogActions {
-  startSession: (nmeaLines: string[]) => Promise<string | null>;
+  startSession: (
+    nmeaLines: string[],
+    durationSecs?: number,
+  ) => Promise<string | null>;
   endSession: (
     sessionId: string,
     nmeaLines: string[],
     fixCount: number,
   ) => Promise<void>;
+  stopLogging: () => Promise<void>;
+  cancelLogging: () => Promise<void>;
   exportNmea: (sessionId: string) => Promise<{
     success: boolean;
     message: string;
@@ -38,6 +47,16 @@ interface LogActions {
   clearAll: () => Promise<void>;
   setExportDirectory: () => Promise<boolean>;
   resetExportDirectory: () => void;
+}
+
+let activeNotificationTimer: NodeJS.Timeout | null = null;
+
+function formatTime(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
 }
 
 const LOGS_DIR = `${FileSystem.documentDirectory}gnss-logs/`;
@@ -100,14 +119,32 @@ function nmeaToCsv(lines: string[]): string {
   return [header, ...rows].join("\n");
 }
 
+async function requestNotificationPermission(): Promise<boolean> {
+  try {
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    return finalStatus === "granted";
+  } catch (e) {
+    console.error("[Notifications] Permission request failed:", e);
+    return false;
+  }
+}
+
 export const useLogStore = create<LogState & LogActions>()(
   persist(
     (set, get) => ({
       sessions: [],
       activeSessionId: null,
       exportDirectoryUri: null,
+      autoStopAt: null,
+      activeNotificationId: null,
 
-      startSession: async (nmeaLines) => {
+      startSession: async (nmeaLines, durationSecs) => {
         await ensureLogsDir();
         const id = `session_${Date.now()}`;
         const startTime = Date.now();
@@ -134,9 +171,70 @@ export const useLogStore = create<LogState & LogActions>()(
           filePathCsv,
         };
 
+        const autoStopAt =
+          durationSecs && durationSecs > 0
+            ? startTime + durationSecs * 1000
+            : null;
+
+        if (activeNotificationTimer) {
+          clearInterval(activeNotificationTimer);
+          activeNotificationTimer = null;
+        }
+
+        let notificationId: string | null = null;
+        try {
+          const hasPermission = await requestNotificationPermission();
+          if (hasPermission) {
+            notificationId = await Notifications.scheduleNotificationAsync({
+              identifier: "active-session-notification",
+              content: {
+                title: "Recording...",
+                body: "00:00:00",
+                color: "#3B82F6",
+                categoryIdentifier: "recordingControls",
+                android: {
+                  sticky: true,
+                  ongoing: true,
+                  color: "#3B82F6",
+                  priority: "high",
+                },
+              },
+              trigger: null,
+            });
+
+            activeNotificationTimer = setInterval(async () => {
+              const elapsed = Date.now() - startTime;
+              try {
+                await Notifications.scheduleNotificationAsync({
+                  identifier: "active-session-notification",
+                  content: {
+                    title: "Recording...",
+                    body: formatTime(elapsed),
+                    color: "#3B82F6",
+                    categoryIdentifier: "recordingControls",
+                    android: {
+                      sticky: true,
+                      ongoing: true,
+                      color: "#3B82F6",
+                      priority: "high",
+                    },
+                  },
+                  trigger: null,
+                });
+              } catch (err) {
+                console.error("[Notifications] Present failed:", err);
+              }
+            }, 1000);
+          }
+        } catch (err) {
+          console.error("[Notifications] Present failed:", err);
+        }
+
         set((s) => ({
           sessions: [session, ...s.sessions],
           activeSessionId: id,
+          autoStopAt,
+          activeNotificationId: notificationId,
         }));
         return id;
       },
@@ -156,6 +254,25 @@ export const useLogStore = create<LogState & LogActions>()(
           nmeaToCsv(filteredLines),
         );
 
+        if (activeNotificationTimer) {
+          clearInterval(activeNotificationTimer);
+          activeNotificationTimer = null;
+        }
+
+        const notifId = get().activeNotificationId;
+        if (notifId) {
+          try {
+            await Notifications.dismissNotificationAsync(notifId);
+          } catch (e) {
+            console.error("[Notifications] Dismiss failed:", e);
+          }
+        }
+        try {
+          await Notifications.dismissNotificationAsync(
+            "active-session-notification",
+          );
+        } catch {}
+
         set((s) => ({
           sessions: s.sessions.map((sess) =>
             sess.id === sessionId
@@ -163,7 +280,90 @@ export const useLogStore = create<LogState & LogActions>()(
               : sess,
           ),
           activeSessionId: null,
+          autoStopAt: null,
+          activeNotificationId: null,
         }));
+      },
+
+      stopLogging: async () => {
+        const sid = get().activeSessionId;
+        if (sid) {
+          const freshGnssState = useGnssStore.getState();
+          const lines = freshGnssState.sessionBuffer;
+          const fixCount = lines.filter((l) => l.includes("GGA")).length;
+          await get().endSession(sid, lines, fixCount);
+        }
+
+        if (activeNotificationTimer) {
+          clearInterval(activeNotificationTimer);
+          activeNotificationTimer = null;
+        }
+
+        const notifId = get().activeNotificationId;
+        if (notifId) {
+          try {
+            await Notifications.dismissNotificationAsync(notifId);
+          } catch (e) {
+            console.error("[Notifications] Dismiss failed:", e);
+          }
+        }
+        try {
+          await Notifications.dismissNotificationAsync(
+            "active-session-notification",
+          );
+        } catch {}
+
+        useGnssStore.getState().clearSession();
+        useGnssStore.getState().setLogging(false);
+        set({ activeNotificationId: null });
+      },
+
+      cancelLogging: async () => {
+        const sid = get().activeSessionId;
+        if (sid) {
+          // Delete temp files without saving
+          const session = get().sessions.find((s) => s.id === sid);
+          if (session) {
+            try {
+              await FileSystem.deleteAsync(session.filePath, {
+                idempotent: true,
+              });
+            } catch {}
+            try {
+              await FileSystem.deleteAsync(session.filePathCsv, {
+                idempotent: true,
+              });
+            } catch {}
+          }
+          set((s) => ({
+            sessions: s.sessions.filter((sess) => sess.id !== sid),
+            activeSessionId: null,
+            autoStopAt: null,
+          }));
+        }
+
+        if (activeNotificationTimer) {
+          clearInterval(activeNotificationTimer);
+          activeNotificationTimer = null;
+        }
+
+        const notifId = get().activeNotificationId;
+        if (notifId) {
+          try {
+            await Notifications.dismissNotificationAsync(notifId);
+          } catch (e) {
+            console.error("[Notifications] Dismiss failed:", e);
+          }
+        }
+        try {
+          await Notifications.dismissNotificationAsync(
+            "active-session-notification",
+          );
+        } catch {}
+
+        useGnssStore.getState().clearSession();
+        useGnssStore.getState().setLogging(false);
+        set({ activeNotificationId: null });
       },
 
       exportNmea: async (sessionId) => {

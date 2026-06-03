@@ -12,6 +12,8 @@ import { useGnssStore } from "@/store/gnss-store";
 import { useLogStore } from "@/store/log-store";
 import { useThemeStore } from "@/store/theme-store";
 import {
+  IconBluetooth,
+  IconBluetoothOff,
   IconCopyright,
   IconDeviceMobile,
   IconExternalLink,
@@ -32,7 +34,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from "react-native";
@@ -70,8 +71,6 @@ export default function SettingsScreen() {
     isScanning,
     connectedDeviceId,
     connectedDeviceName,
-    autoReconnect,
-    setAutoReconnect,
     lastError,
     scanTimer,
   } = useBleStore();
@@ -243,12 +242,16 @@ export default function SettingsScreen() {
                 }
                 accessibilityRole="button"
               >
-                {status === "connecting" && (
+                {status === "connecting" ? (
                   <ActivityIndicator
                     size="small"
-                    color={colors.tint}
+                    color={colors.statusActive}
                     style={{ marginRight: 4 }}
                   />
+                ) : isConnected ? (
+                  <IconBluetoothOff size={18} color={colors.danger} />
+                ) : (
+                  <IconBluetooth size={18} color={colors.statusActive} />
                 )}
                 <Text
                   style={[
@@ -263,25 +266,9 @@ export default function SettingsScreen() {
                       ? `Scanning (${scanTimer}s)`
                       : status === "connecting"
                         ? "Connecting…"
-                        : "Scan & Connect"}
+                        : "Connect"}
                 </Text>
               </PressableScale>
-            }
-          />
-
-          <SettingRow
-            label="Auto-Reconnect"
-            description="Automatically reconnect if the BLE connection drops"
-            right={
-              <Switch
-                value={autoReconnect}
-                onValueChange={setAutoReconnect}
-                trackColor={{
-                  false: colors.borderLight,
-                  true: colors.statusActive,
-                }}
-                thumbColor={isDark ? "#FFF" : "#F4F3F4"}
-              />
             }
           />
         </View>
@@ -592,7 +579,7 @@ export default function SettingsScreen() {
                 <Text
                   style={[styles.badgeText, { color: colors.statusActive }]}
                 >
-                  v{Constants.expoConfig?.version ?? "1.0.0"}
+                  v{Constants.expoConfig?.version ?? "1.4.0"}
                 </Text>
               </View>
             </View>
@@ -629,7 +616,7 @@ export default function SettingsScreen() {
                       styles.copyrightText,
                       {
                         color: colors.tint,
-                        fontFamily: "Lexend_700Bold",
+                        fontFamily: "YsabeauInfant_700Bold",
                       },
                     ]}
                   >
@@ -658,7 +645,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContainer: { padding: 16, paddingBottom: 40, gap: 16 },
   section: {
-    borderRadius: 32,
+    borderRadius: 24,
     borderCurve: "continuous",
     borderWidth: 1,
     padding: 20,
@@ -666,7 +653,7 @@ const styles = StyleSheet.create({
   } as any,
   sectionHeader: {
     fontSize: 12,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "YsabeauInfant_800ExtraBold",
     letterSpacing: 1.2,
     textTransform: "uppercase",
     marginBottom: 12,
@@ -678,12 +665,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     gap: 16,
   },
-  rowLabel: { fontSize: 16, fontFamily: "Lexend_600SemiBold" },
+  rowLabel: { fontSize: 16, fontFamily: "YsabeauInfant_600SemiBold" },
   rowDesc: {
     fontSize: 13,
     marginTop: 4,
     lineHeight: 18,
-    fontFamily: "Lexend_400Regular",
+    fontFamily: "YsabeauInfant_400Regular",
   },
   actionButton: {
     flexDirection: "row",
@@ -692,21 +679,20 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 16,
     height: 48,
-    minWidth: 100,
-    paddingHorizontal: 16,
+    width: 130,
     borderWidth: 0,
     borderColor: "transparent",
   },
-  actionButtonText: { fontSize: 14, fontFamily: "Lexend_700Bold" },
+  actionButtonText: { fontSize: 14, fontFamily: "YsabeauInfant_700Bold" },
   uuidBlock: {
     paddingVertical: 12,
     borderTopWidth: 1,
     gap: 4,
   },
-  uuidLabel: { fontSize: 12, fontFamily: "Lexend_700Bold" },
+  uuidLabel: { fontSize: 12, fontFamily: "YsabeauInfant_700Bold" },
   uuidValue: {
     fontSize: 12,
-    fontFamily: "monospace",
+    fontFamily: "JetBrainsMono_400Regular",
     fontVariant: ["tabular-nums"],
   },
   aboutBlock: { paddingTop: 10, gap: 8 },
@@ -716,8 +702,12 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 4,
   },
-  aboutTitle: { fontSize: 18, fontFamily: "Lexend_800ExtraBold" },
-  aboutDesc: { fontSize: 14, lineHeight: 22, fontFamily: "Lexend_400Regular" },
+  aboutTitle: { fontSize: 18, fontFamily: "YsabeauInfant_800ExtraBold" },
+  aboutDesc: {
+    fontSize: 14,
+    lineHeight: 22,
+    fontFamily: "YsabeauInfant_400Regular",
+  },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -726,7 +716,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 12,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "JetBrainsMono_400Regular",
   },
   themePicker: {
     flexDirection: "row",
@@ -746,7 +736,7 @@ const styles = StyleSheet.create({
   },
   themeLabel: {
     fontSize: 12,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "YsabeauInfant_700Bold",
   },
   footer: {
     marginTop: 24,
@@ -763,7 +753,7 @@ const styles = StyleSheet.create({
   },
   copyrightText: {
     fontSize: 12,
-    fontFamily: "Lexend_400Regular",
+    fontFamily: "YsabeauInfant_400Regular",
     textAlign: "center",
   },
 });

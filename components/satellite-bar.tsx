@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 9,
-    fontFamily: "Lexend_700Bold",
+    fontFamily: "YsabeauInfant_700Bold",
     letterSpacing: 0.2,
     textTransform: "uppercase",
   },
@@ -138,16 +138,16 @@ const styles = StyleSheet.create({
   },
   bandLabel: {
     fontSize: 9,
-    fontFamily: "Lexend_800ExtraBold",
+    fontFamily: "YsabeauInfant_800ExtraBold",
   },
   prn: {
     fontSize: 13,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
     fontVariant: ["tabular-nums"],
   },
   elev: {
     fontSize: 13,
-    fontFamily: "Lexend_500Medium",
+    fontFamily: "YsabeauInfant_500Medium",
     fontVariant: ["tabular-nums"],
   },
   snrContainer: {
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   },
   snrText: {
     fontSize: 13,
-    fontFamily: "Lexend_600SemiBold",
+    fontFamily: "YsabeauInfant_600SemiBold",
     fontVariant: ["tabular-nums"],
     textAlign: "center",
   },
