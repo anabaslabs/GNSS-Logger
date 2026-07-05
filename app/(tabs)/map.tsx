@@ -2,7 +2,7 @@ import LeafletMap from "@/components/leaflet-map";
 import { PressableScale } from "@/components/pressable-scale";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useGnssStore } from "@/store/gnss-store";
-import { IconCompass, IconMap } from "@tabler/icons-react-native";
+import { IconCurrentLocation, IconStack } from "@tabler/icons-react-native";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
@@ -80,7 +80,7 @@ export default function MapScreen() {
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           >
-            <IconCompass size={22} color={colors.text} />
+            <IconCurrentLocation size={22} color={colors.text} />
           </PressableScale>
 
           <PressableScale
@@ -90,7 +90,7 @@ export default function MapScreen() {
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           >
-            <IconMap size={22} color={colors.text} />
+            <IconStack size={22} color={colors.text} />
           </PressableScale>
         </View>
       </View>
