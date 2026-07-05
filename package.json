@@ -4,7 +4,7 @@
   "version": "1.4.0",
   "scripts": {
     "clean": "pnpm clean:android",
-    "clean:android": "cd android && gradlew clean",
+    "clean:android": "cd android && gradlew clean -x :app:externalNativeBuildCleanDebug -x :app:externalNativeBuildCleanRelease",
     "build": "pnpm prebuild && pnpm build:android",
     "build:android": "cd android && gradlew assembleRelease",
     "prebuild": "expo prebuild",
