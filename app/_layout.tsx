@@ -12,8 +12,8 @@ import { useBleStore } from "@/store/ble-store";
 import { useConfigStore } from "@/store/config-store";
 import { useGnssStore } from "@/store/gnss-store";
 import { useLogStore } from "@/store/log-store";
-import * as Notifications from "expo-notifications";
 import type { BleDevice, NmeaParsedSentence } from "@/types/gnss";
+import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono";
 import {
   useFonts,
   YsabeauInfant_300Light,
@@ -23,12 +23,12 @@ import {
   YsabeauInfant_700Bold,
   YsabeauInfant_800ExtraBold,
 } from "@expo-google-fonts/ysabeau-infant";
-import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono";
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
+import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -44,6 +44,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: false,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 

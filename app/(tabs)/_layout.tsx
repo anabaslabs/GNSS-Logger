@@ -2,6 +2,7 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import {
   IconDashboard,
   IconFolder,
+  IconMapPin,
   IconPlanet,
   IconSettings,
 } from "@tabler/icons-react-native";
@@ -79,6 +80,20 @@ export default function TabLayout() {
           tabBarLabel: "Logs",
           tabBarIcon: ({ color, focused }) => (
             <IconFolder
+              color={color}
+              size={24}
+              strokeWidth={focused ? 2.5 : 2}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: "Map",
+          tabBarLabel: "Map",
+          tabBarIcon: ({ color, focused }) => (
+            <IconMapPin
               color={color}
               size={24}
               strokeWidth={focused ? 2.5 : 2}
