@@ -10,11 +10,18 @@
    ```bash
    pnpm prebuild
    ```
-3. Run the production build command:
+3. Target `arm64-v8a` only (reduces build time and prevents CMake long-path errors).
+   In [android/gradle.properties](file:///d:/Anabas-Labs/GNSS-Logger/android/gradle.properties#L31), update:
+   ```properties
+   reactNativeArchitectures=arm64-v8a
+   ```
+
+4. Run the production build command:
    ```bash
    pnpm build:android
    ```
    _APK Location: `android/app/build/outputs/apk/release/app-release.apk`_
+
 
 ### 2. After Build (Restore Local Development)
 
