@@ -72,14 +72,14 @@ export default function DashboardScreen() {
           { backgroundColor: colors.surface, borderColor: colors.border },
         ]}
       >
-        <View style={styles.statusGrid}>
-          <View style={styles.gridItem}>
-            <Text style={[styles.gridLabel, { color: colors.textTertiary }]}>
+        <View style={styles.coordRow}>
+          <View style={styles.coordItem}>
+            <Text style={[styles.coordLabel, { color: colors.textTertiary }]}>
               ANTENNA POWER
             </Text>
             <Text
               style={[
-                styles.gridValue,
+                styles.coordValue,
                 {
                   color:
                     isConnected && antenna?.power
@@ -87,17 +87,19 @@ export default function DashboardScreen() {
                       : colors.textTertiary,
                 },
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               {isConnected ? (antenna?.power ? "ON" : "OFF") : "-"}
             </Text>
           </View>
-          <View style={styles.gridItem}>
-            <Text style={[styles.gridLabel, { color: colors.textTertiary }]}>
+          <View style={styles.coordItem}>
+            <Text style={[styles.coordLabel, { color: colors.textTertiary }]}>
               ANTENNA STATUS
             </Text>
             <Text
               style={[
-                styles.gridValue,
+                styles.coordValue,
                 {
                   color:
                     isConnected && antenna?.status === "Normal"
@@ -107,32 +109,41 @@ export default function DashboardScreen() {
                         : colors.textTertiary,
                 },
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               {isConnected && antenna ? antenna.status.toUpperCase() : "-"}
             </Text>
           </View>
-          <View style={styles.gridItem}>
-            <Text style={[styles.gridLabel, { color: colors.textTertiary }]}>
+        </View>
+
+        <View style={styles.coordRow}>
+          <View style={styles.coordItem}>
+            <Text style={[styles.coordLabel, { color: colors.textTertiary }]}>
               FIX MODE
             </Text>
             <Text
               style={[
-                styles.gridValue,
+                styles.coordValue,
                 { color: isConnected ? fixColor : colors.textTertiary },
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               {isConnected ? fixStatus : "-"}
             </Text>
           </View>
-          <View style={styles.gridItem}>
-            <Text style={[styles.gridLabel, { color: colors.textTertiary }]}>
+          <View style={styles.coordItem}>
+            <Text style={[styles.coordLabel, { color: colors.textTertiary }]}>
               FIX QUALITY
             </Text>
             <Text
               style={[
-                styles.gridValue,
+                styles.coordValue,
                 { color: isConnected ? colors.text : colors.textTertiary },
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               {isConnected ? FIX_QUALITY_LABEL[fix.quality] || "-" : "-"}
             </Text>
@@ -150,6 +161,8 @@ export default function DashboardScreen() {
                 { color: isConnected ? colors.text : colors.textTertiary },
               ]}
               selectable
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               {isConnected ? formatCoord(fix.latitude, "lat") : "-"}
             </Text>
@@ -164,18 +177,46 @@ export default function DashboardScreen() {
                 { color: isConnected ? colors.text : colors.textTertiary },
               ]}
               selectable
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               {isConnected ? formatCoord(fix.longitude, "lon") : "-"}
             </Text>
           </View>
         </View>
-        <View style={styles.timeRow}>
-          <Text style={[styles.timeText, { color: colors.textSecondary }]}>
-            IST: {isConnected ? getIstValue(fix.utcTime) : "--:--:--"}
-          </Text>
-          <Text style={[styles.timeText, { color: colors.textSecondary }]}>
-            UTC: {isConnected ? getUtcValue(fix.utcTime) : "--:--:--"}
-          </Text>
+        <View style={styles.coordRow}>
+          <View style={styles.coordItem}>
+            <Text style={[styles.coordLabel, { color: colors.textTertiary }]}>
+              IST
+            </Text>
+            <Text
+              style={[
+                styles.coordValue,
+                { color: isConnected ? colors.text : colors.textTertiary },
+              ]}
+              selectable
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {isConnected ? getIstValue(fix.utcTime) : "--:--:--"}
+            </Text>
+          </View>
+          <View style={styles.coordItem}>
+            <Text style={[styles.coordLabel, { color: colors.textTertiary }]}>
+              UTC
+            </Text>
+            <Text
+              style={[
+                styles.coordValue,
+                { color: isConnected ? colors.text : colors.textTertiary },
+              ]}
+              selectable
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {isConnected ? getUtcValue(fix.utcTime) : "--:--:--"}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -437,28 +478,10 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 16,
   } as any,
-  statusGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-    marginBottom: 8,
-  },
-  gridItem: {
-    width: "47%",
-    gap: 2,
-  },
-  gridLabel: {
-    fontSize: 10,
-    fontFamily: "YsabeauInfant_700Bold",
-    letterSpacing: 0.5,
-  },
-  gridValue: {
-    fontSize: 16,
-    fontFamily: "YsabeauInfant_600SemiBold",
-    textTransform: "uppercase",
-  },
+
   coordRow: {
-    gap: 12,
+    flexDirection: "row",
+    gap: 16,
   },
   coordItem: {
     flex: 1,
@@ -470,21 +493,13 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   coordValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontFamily: "YsabeauInfant_600SemiBold",
     fontVariant: ["tabular-nums"],
     letterSpacing: -1,
     marginTop: 2,
   },
-  timeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  timeText: {
-    fontSize: 14,
-    fontFamily: "YsabeauInfant_500Medium",
-    fontVariant: ["tabular-nums"],
-  },
+
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
