@@ -317,7 +317,7 @@ export default function SettingsScreen() {
           ]}
         >
           <Text style={[styles.sectionHeader, { color: colors.textTertiary }]}>
-            GNSS Data
+            Clear Cache
           </Text>
           <SettingRow
             label="Clear Live Data"
