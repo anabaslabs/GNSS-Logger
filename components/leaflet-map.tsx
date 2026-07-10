@@ -1,6 +1,8 @@
 "use dom";
 
+import { IconMapPinFilled } from "@tabler/icons-react-native";
 import React, { useEffect, useRef } from "react";
+import { createRoot } from "react-dom/client";
 
 interface LeafletMapProps {
   latitude: number;
@@ -11,6 +13,8 @@ interface LeafletMapProps {
   tintColor: string;
   backgroundColor: string;
   dom?: import("expo/dom").DOMProps;
+  heading: number | null;
+  mapRotation: number;
 }
 
 export default function LeafletMap({
@@ -21,6 +25,8 @@ export default function LeafletMap({
   recenterCount,
   tintColor,
   backgroundColor,
+  heading,
+  mapRotation,
 }: LeafletMapProps) {
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
@@ -33,6 +39,16 @@ export default function LeafletMap({
     link.rel = "stylesheet";
     link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
     document.head.appendChild(link);
+
+    const style = document.createElement("style");
+    style.innerHTML = `
+      .custom-gps-marker svg path {
+        stroke: #000000 !important;
+        stroke-width: 1px !important;
+        stroke-linejoin: round !important;
+      }
+    `;
+    document.head.appendChild(style);
 
     const script = document.createElement("script");
     script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
@@ -68,30 +84,22 @@ export default function LeafletMap({
         osmLayer.addTo(map);
       }
 
+      const container = document.createElement("div");
+      container.id = "gps-marker-inner";
+      container.style.display = "flex";
+      container.style.alignItems = "center";
+      container.style.justifyContent = "center";
+      container.style.filter = "drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.3))";
+      container.style.transition = "transform 0.3s ease-out";
+
+      const root = createRoot(container);
+      root.render(<IconMapPinFilled size={32} color="#FF3B30" />);
+
       const customIcon = L.divIcon({
         className: "custom-gps-marker",
-        html: `
-          <div style="
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background-color: ${backgroundColor};
-            border: 3px solid ${tintColor};
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          ">
-            <div style="
-              width: 10px;
-              height: 10px;
-              border-radius: 50%;
-              background-color: ${tintColor};
-            "></div>
-          </div>
-        `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        html: container,
+        iconSize: [32, 32],
+        iconAnchor: [16, 30],
       });
 
       const marker = L.marker([latitude, longitude], {
@@ -110,6 +118,7 @@ export default function LeafletMap({
     return () => {
       link.remove();
       script.remove();
+      style.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -135,7 +144,8 @@ export default function LeafletMap({
     const map = mapRef.current;
     if (!map) return;
 
-    map.setView([latitude, longitude]);
+    const maxZoom = mapType === "satellite" ? 18 : 19;
+    map.setView([latitude, longitude], maxZoom);
 
     if (markerRef.current) {
       markerRef.current.setLatLng([latitude, longitude]);
@@ -157,16 +167,38 @@ export default function LeafletMap({
     polylineRef.current.setLatLngs(trail.map((p) => [p.latitude, p.longitude]));
   }, [trail]);
 
+  useEffect(() => {
+    const inner = document.getElementById("gps-marker-inner");
+    if (inner) {
+      inner.style.transform = `rotate(${mapRotation}deg)`;
+    }
+  }, [mapRotation]);
+
   return (
     <div
-      id="map-container"
       style={{
         width: "100vw",
         height: "100vh",
-        margin: 0,
-        padding: 0,
+        position: "relative",
+        overflow: "hidden",
         backgroundColor: backgroundColor,
       }}
-    />
+    >
+      <div
+        id="map-container"
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          width: "150vmax",
+          height: "150vmax",
+          marginLeft: "-75vmax",
+          marginTop: "-75vmax",
+          transform: `rotate(${-mapRotation}deg)`,
+          transformOrigin: "center center",
+          transition: "transform 0.3s ease-out",
+        }}
+      />
+    </div>
   );
 }

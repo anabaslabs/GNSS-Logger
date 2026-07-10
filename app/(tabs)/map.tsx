@@ -2,7 +2,12 @@ import LeafletMap from "@/components/leaflet-map";
 import { PressableScale } from "@/components/pressable-scale";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useGnssStore } from "@/store/gnss-store";
-import { IconCurrentLocation, IconStack } from "@tabler/icons-react-native";
+import {
+  IconCurrentLocation,
+  IconStack,
+  IconCompass,
+  IconMapNorth,
+} from "@tabler/icons-react-native";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
@@ -11,8 +16,9 @@ const DEFAULT_LONGITUDE = 0;
 
 export default function MapScreen() {
   const { colors } = useAppTheme();
-  const { fix, isLogging } = useGnssStore();
+  const { fix, velocity, isLogging } = useGnssStore();
 
+  const heading = velocity.courseTrue;
   const hasFix = fix.latitude !== null && fix.longitude !== null;
 
   const [mapType, setMapType] = useState<"standard" | "satellite">("standard");
@@ -20,6 +26,9 @@ export default function MapScreen() {
     [],
   );
   const [recenterCount, setRecenterCount] = useState(0);
+  const [followHeading, setFollowHeading] = useState(false);
+
+  const mapRotation = followHeading && heading !== null ? heading : 0;
 
   useEffect(() => {
     if (
@@ -65,12 +74,47 @@ export default function MapScreen() {
           recenterCount={recenterCount}
           tintColor={colors.tint}
           backgroundColor={colors.background}
+          heading={heading}
+          mapRotation={mapRotation}
           dom={{
             scrollEnabled: false,
             contentInsetAdjustmentBehavior: "never",
             style: styles.map,
           }}
         />
+
+        <View style={styles.topRightControls}>
+          <PressableScale
+            onPress={() => {
+              if (heading !== null) {
+                setFollowHeading((prev) => !prev);
+              }
+            }}
+            style={[
+              styles.floatingBtn,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                opacity: heading === null ? 0.5 : 1,
+              },
+            ]}
+          >
+            <View
+              style={{
+                width: 22,
+                height: 22,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {followHeading && heading !== null ? (
+                <IconCompass size={22} color={colors.text} />
+              ) : (
+                <IconMapNorth size={22} color="#FF3B30" />
+              )}
+            </View>
+          </PressableScale>
+        </View>
 
         <View style={styles.floatingControls}>
           <PressableScale
@@ -114,9 +158,15 @@ const styles = StyleSheet.create({
   floatingControls: {
     position: "absolute",
     bottom: 12,
-    left: 12,
+    right: 12,
     gap: 8,
   },
+  topRightControls: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+  },
+
   floatingBtn: {
     width: 44,
     height: 44,
