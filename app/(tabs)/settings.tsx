@@ -567,21 +567,23 @@ export default function SettingsScreen() {
               <Text style={[styles.aboutTitle, { color: colors.text }]}>
                 GNSS Logger
               </Text>
-              <View
-                style={[
-                  styles.badge,
-                  {
-                    backgroundColor: colors.statusSurface,
-                    borderColor: colors.statusActive + "30",
-                  },
-                ]}
-              >
-                <Text
-                  style={[styles.badgeText, { color: colors.statusActive }]}
+              {Constants.expoConfig?.version && (
+                <View
+                  style={[
+                    styles.badge,
+                    {
+                      backgroundColor: colors.statusSurface,
+                      borderColor: colors.statusActive + "30",
+                    },
+                  ]}
                 >
-                  v{Constants.expoConfig?.version ?? "1.4.0"}
-                </Text>
-              </View>
+                  <Text
+                    style={[styles.badgeText, { color: colors.statusActive }]}
+                  >
+                    v{Constants.expoConfig.version}
+                  </Text>
+                </View>
+              )}
             </View>
             <Text style={[styles.aboutDesc, { color: colors.textSecondary }]}>
               An advanced GNSS data logger and visualizer. Connects to external
