@@ -22,13 +22,12 @@ static float mockAlt = 15.5;
 static float mockSpeed = 0.0;
 static float mockCourse = 45.0;
 static int mockSatsUsed = 12;
-static int mockFixQuality = 1; // 1 = GPS fix
+static int mockFixQuality = 1;  // 1 = GPS fix
 static bool mockHasFix = true;
 static int mockUpdateCount = 0;
 
 // Satellite info for GSV (simulated constellation)
-struct SatInfo
-{
+struct SatInfo {
   int prn;
   int elevation;
   int azimuth;
@@ -37,24 +36,24 @@ struct SatInfo
 };
 
 static SatInfo mockSatellites[] = {
-    {3, 45, 120, 42, "GP"},
-    {6, 67, 230, 38, "GP"},
-    {9, 23, 45, 35, "GP"},
-    {12, 78, 310, 44, "GP"},
-    {17, 34, 180, 40, "GP"},
-    {19, 56, 90, 41, "GP"},
-    {65, 40, 150, 36, "GL"},
-    {66, 55, 270, 39, "GL"},
-    {67, 30, 60, 33, "GL"},
-    {1, 50, 200, 40, "GA"},
-    {2, 62, 320, 43, "GA"},
-    {3, 28, 100, 37, "GA"},
-    {11, 48, 140, 38, "GB"},
-    {14, 35, 250, 35, "GB"},
-    {1, 60, 180, 41, "GI"},
-    {2, 42, 220, 39, "GI"},
-    {193, 70, 100, 45, "GQ"},
-    {194, 55, 140, 42, "GQ"},
+  { 3, 45, 120, 42, "GP" },
+  { 6, 67, 230, 38, "GP" },
+  { 9, 23, 45, 35, "GP" },
+  { 12, 78, 310, 44, "GP" },
+  { 17, 34, 180, 40, "GP" },
+  { 19, 56, 90, 41, "GP" },
+  { 65, 40, 150, 36, "GL" },
+  { 66, 55, 270, 39, "GL" },
+  { 67, 30, 60, 33, "GL" },
+  { 1, 50, 200, 40, "GA" },
+  { 2, 62, 320, 43, "GA" },
+  { 3, 28, 100, 37, "GA" },
+  { 11, 48, 140, 38, "GB" },
+  { 14, 35, 250, 35, "GB" },
+  { 1, 60, 180, 41, "GI" },
+  { 2, 42, 220, 39, "GI" },
+  { 193, 70, 100, 45, "GQ" },
+  { 194, 55, 140, 42, "GQ" },
 };
 static const int NUM_SATELLITES = sizeof(mockSatellites) / sizeof(mockSatellites[0]);
 static unsigned long lastMockUpdate = 0;
@@ -63,17 +62,13 @@ static unsigned long lastMockUpdate = 0;
 // NMEA Helper Functions (Mock specific)
 // ============================================================================
 
-static void decimalToNMEA(float decimal, char *buffer, int isLon)
-{
+static void decimalToNMEA(float decimal, char *buffer, int isLon) {
   float absVal = abs(decimal);
   int degrees = (int)absVal;
   float minutes = (absVal - degrees) * 60.0;
-  if (isLon)
-  {
+  if (isLon) {
     snprintf(buffer, 16, "%03d%07.4f", degrees, minutes);
-  }
-  else
-  {
+  } else {
     snprintf(buffer, 16, "%02d%07.4f", degrees, minutes);
   }
 }
@@ -82,15 +77,13 @@ static void decimalToNMEA(float decimal, char *buffer, int isLon)
 // Mock NMEA Sentence Generators
 // ============================================================================
 
-static void generateGGA()
-{
+static void generateGGA() {
   char sentence[128];
   unsigned long ms = millis();
   int hours = (ms / 3600000) % 24;
   int mins = (ms / 60000) % 60;
   int secs = (ms / 1000) % 60;
-  if (mockHasFix)
-  {
+  if (mockHasFix) {
     char latStr[16], lonStr[16];
     decimalToNMEA(mockLat, latStr, 0);
     decimalToNMEA(mockLon, lonStr, 1);
@@ -98,9 +91,7 @@ static void generateGGA()
              "$GNGGA,%02d%02d%02d.00,%s,%c,%s,%c,%d,%02d,0.9,%.1f,M,0.0,M,,",
              hours, mins, secs, latStr, mockLat >= 0 ? 'N' : 'S',
              lonStr, mockLon >= 0 ? 'E' : 'W', mockFixQuality, mockSatsUsed, mockAlt);
-  }
-  else
-  {
+  } else {
     snprintf(sentence, sizeof(sentence),
              "$GNGGA,%02d%02d%02d.00,,,,,0,00,99.9,,,,,,",
              hours, mins, secs);
@@ -108,15 +99,13 @@ static void generateGGA()
   sendNMEA(sentence);
 }
 
-static void generateRMC()
-{
+static void generateRMC() {
   char sentence[128];
   unsigned long ms = millis();
   int hours = (ms / 3600000) % 24;
   int mins = (ms / 60000) % 60;
   int secs = (ms / 1000) % 60;
-  if (mockHasFix)
-  {
+  if (mockHasFix) {
     char latStr[16], lonStr[16];
     decimalToNMEA(mockLat, latStr, 0);
     decimalToNMEA(mockLon, lonStr, 1);
@@ -124,9 +113,7 @@ static void generateRMC()
              "$GNRMC,%02d%02d%02d.00,A,%s,%c,%s,%c,%.1f,%.1f,020426,,,A",
              hours, mins, secs, latStr, mockLat >= 0 ? 'N' : 'S',
              lonStr, mockLon >= 0 ? 'E' : 'W', mockSpeed, mockCourse);
-  }
-  else
-  {
+  } else {
     snprintf(sentence, sizeof(sentence),
              "$GNRMC,%02d%02d%02d.00,V,,,,,%.1f,%.1f,020426,,,N",
              hours, mins, secs, mockSpeed, mockCourse);
@@ -134,35 +121,26 @@ static void generateRMC()
   sendNMEA(sentence);
 }
 
-static void generateVTG()
-{
+static void generateVTG() {
   char sentence[128];
   float speedKmh = mockSpeed * 1.852;
-  if (mockHasFix)
-  {
+  if (mockHasFix) {
     snprintf(sentence, sizeof(sentence), "$GNVTG,%.1f,T,,M,%.1f,N,%.1f,K,A", mockCourse, mockSpeed, speedKmh);
-  }
-  else
-  {
+  } else {
     snprintf(sentence, sizeof(sentence), "$GNVTG,,T,,M,,N,,K,N");
   }
   sendNMEA(sentence);
 }
 
-static void generateGSA(const char *talkerId)
-{
+static void generateGSA(const char *talkerId) {
   char sentence[128];
   char prns[64] = "";
   int prnCount = 0;
-  if (mockHasFix)
-  {
-    for (int i = 0; i < NUM_SATELLITES && prnCount < 12; i++)
-    {
-      if (strcmp(mockSatellites[i].talkerId, talkerId) == 0)
-      {
+  if (mockHasFix) {
+    for (int i = 0; i < NUM_SATELLITES && prnCount < 12; i++) {
+      if (strcmp(mockSatellites[i].talkerId, talkerId) == 0) {
         // Only include in the active fix solution if SNR is >= 38
-        if (mockSatellites[i].snr >= 38)
-        {
+        if (mockSatellites[i].snr >= 38) {
           char prn[8];
           snprintf(prn, sizeof(prn), "%02d,", mockSatellites[i].prn);
           strcat(prns, prn);
@@ -173,23 +151,18 @@ static void generateGSA(const char *talkerId)
   }
   for (int i = prnCount; i < 12; i++)
     strcat(prns, ",");
-  if (mockHasFix)
-  {
+  if (mockHasFix) {
     snprintf(sentence, sizeof(sentence), "$%sGSA,A,3,%s1.5,0.9,1.2,1", talkerId, prns);
-  }
-  else
-  {
+  } else {
     snprintf(sentence, sizeof(sentence), "$%sGSA,A,1,%s99.0,99.0,99.0,1", talkerId, prns);
   }
   sendNMEA(sentence);
 }
 
-static void generateGSV(const char *talkerId)
-{
+static void generateGSV(const char *talkerId) {
   int satCount = 0;
   int satIndices[12];
-  for (int i = 0; i < NUM_SATELLITES && satCount < 12; i++)
-  {
+  for (int i = 0; i < NUM_SATELLITES && satCount < 12; i++) {
     if (strcmp(mockSatellites[i].talkerId, talkerId) == 0)
       satIndices[satCount++] = i;
   }
@@ -197,12 +170,10 @@ static void generateGSV(const char *talkerId)
     return;
   int numMessages = (satCount + 3) / 4;
   int satIdx = 0;
-  for (int msg = 1; msg <= numMessages; msg++)
-  {
+  for (int msg = 1; msg <= numMessages; msg++) {
     char sentence[128];
     char satData[80] = "";
-    for (int s = 0; s < 4 && satIdx < satCount; s++, satIdx++)
-    {
+    for (int s = 0; s < 4 && satIdx < satCount; s++, satIdx++) {
       SatInfo &sat = mockSatellites[satIndices[satIdx]];
       char satStr[24];
       snprintf(satStr, sizeof(satStr), ",%02d,%02d,%03d,%02d", sat.prn, sat.elevation, sat.azimuth, sat.snr);
@@ -213,23 +184,19 @@ static void generateGSV(const char *talkerId)
   }
 }
 
-static void generateGLL()
-{
+static void generateGLL() {
   char sentence[128];
   unsigned long ms = millis();
   int hours = (ms / 3600000) % 24;
   int mins = (ms / 60000) % 60;
   int secs = (ms / 1000) % 60;
-  if (mockHasFix)
-  {
+  if (mockHasFix) {
     char latStr[16], lonStr[16];
     decimalToNMEA(mockLat, latStr, 0);
     decimalToNMEA(mockLon, lonStr, 1);
     snprintf(sentence, sizeof(sentence), "$GNGLL,%s,%c,%s,%c,%02d%02d%02d.00,A,A",
              latStr, mockLat >= 0 ? 'N' : 'S', lonStr, mockLon >= 0 ? 'E' : 'W', hours, mins, secs);
-  }
-  else
-  {
+  } else {
     snprintf(sentence, sizeof(sentence), "$GNGLL,,,,,%02d%02d%02d.00,V,N",
              hours, mins, secs);
   }
@@ -240,8 +207,7 @@ static void generateGLL()
 // Mock System Update Loop
 // ============================================================================
 
-void updateMockData()
-{
+void updateMockData() {
   mockUpdateCount++;
 
   // Oscillate fix status: 20 seconds in-fix, 10 seconds out-of-fix
@@ -249,8 +215,7 @@ void updateMockData()
   mockFixQuality = mockHasFix ? 1 : 0;
 
   static bool lastFixState = true;
-  if (mockHasFix != lastFixState)
-  {
+  if (mockHasFix != lastFixState) {
     lastFixState = mockHasFix;
     Serial.printf("[MOCK] Fix status changed to: %s\n", mockHasFix ? "FIXED (3D)" : "NO FIX");
   }
@@ -262,8 +227,7 @@ void updateMockData()
     mockAlt = 0;
 
   int satsUsedCount = 0;
-  for (int i = 0; i < NUM_SATELLITES; i++)
-  {
+  for (int i = 0; i < NUM_SATELLITES; i++) {
     mockSatellites[i].snr += random(-2, 3);
     if (mockSatellites[i].snr < 20)
       mockSatellites[i].snr = 20;
@@ -271,16 +235,14 @@ void updateMockData()
       mockSatellites[i].snr = 50;
 
     // A satellite is used in the fix if its SNR is >= 38
-    if (mockSatellites[i].snr >= 38)
-    {
+    if (mockSatellites[i].snr >= 38) {
       satsUsedCount++;
     }
   }
   mockSatsUsed = mockHasFix ? satsUsedCount : 0;
 }
 
-void sendMockNMEABurst()
-{
+void sendMockNMEABurst() {
   updateMockData();
   generateGGA();
   delay(30);
@@ -304,4 +266,4 @@ void sendMockNMEABurst()
   generateGSV("GQ");
 }
 
-#endif // MOCK_DATA_H
+#endif  // MOCK_DATA_H
