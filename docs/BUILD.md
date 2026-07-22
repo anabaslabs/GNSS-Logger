@@ -2,7 +2,7 @@
 
 ### 1. Before Build (Production APK Size Optimization)
 
-1. Remove `"expo-dev-client"` from `devDependencies` in `package.json`.
+1. Remove `"expo-dev-client"` from `devDependencies` in [`package.json`](../package.json).
 
 2. Sync packages and configurations:
 
@@ -15,7 +15,7 @@
    ```
 
 3. Target `arm64-v8a` only (reduces build time and prevents CMake long-path errors).
-   In [android/gradle.properties](file:///d:/Anabas-Labs/GNSS-Logger/android/gradle.properties#L31), update:
+   In [`android/gradle.properties`](../android/gradle.properties), update:
 
    ```properties
    reactNativeArchitectures=arm64-v8a
@@ -25,11 +25,11 @@
    ```bash
    pnpm build:android
    ```
-   _APK Location: `android/app/build/outputs/apk/release/app-release.apk`_
+   _APK Location: [`android/app/build/outputs/apk/release/app-release.apk`](../android/app/build/outputs/apk/release/app-release.apk)_
 
 ### 2. After Build (Restore Local Development)
 
-1. Add `"expo-dev-client": "~6.0.21"` back to `devDependencies` in `package.json`.
+1. Add `"expo-dev-client": "~6.0.21"` back to `devDependencies` in [`package.json`](../package.json).
 
 2. Re-sync package dependencies:
    ```bash

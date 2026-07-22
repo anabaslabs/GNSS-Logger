@@ -48,6 +48,14 @@
           "bluetoothAlwaysPermission": "Allow GNSS Logger to use Bluetooth to connect to the ESP32 receiver"
         }
       ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "reactNativeArchitectures": ["arm64-v8a"]
+          }
+        }
+      ],
       "expo-font"
     ],
     "experiments": {

@@ -1,4 +1,4 @@
-import { PressableScale } from "@/components/pressable-scale";
+import { PressableScale } from "@/components/ui/pressable-scale";
 import { SatelliteBar } from "@/components/satellite-bar";
 import { CONSTELLATION_COLOR, CONSTELLATION_LABEL } from "@/constants/nmea";
 import { useAppTheme } from "@/hooks/useAppTheme";

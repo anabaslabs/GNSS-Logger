@@ -1,6 +1,6 @@
-import { ConfirmModal } from "@/components/confirm-modal";
-import { PressableScale } from "@/components/pressable-scale";
-import { WheelPicker } from "@/components/wheel-picker";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { PressableScale } from "@/components/ui/pressable-scale";
+import { WheelPicker } from "@/components/ui/wheel-picker";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useGnssStore } from "@/store/gnss-store";
 import { useLogStore } from "@/store/log-store";

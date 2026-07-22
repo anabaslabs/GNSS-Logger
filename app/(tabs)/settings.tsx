@@ -1,5 +1,5 @@
-import { ConfirmModal } from "@/components/confirm-modal";
-import { PressableScale } from "@/components/pressable-scale";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { PressableScale } from "@/components/ui/pressable-scale";
 import {
   NUS_RX_CHAR_UUID,
   NUS_SERVICE_UUID,

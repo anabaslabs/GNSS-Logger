@@ -6,7 +6,7 @@
     "clean": "pnpm clean:android",
     "clean:android": "cd android && gradlew clean -x :app:externalNativeBuildCleanDebug -x :app:externalNativeBuildCleanRelease",
     "build": "pnpm prebuild && pnpm build:android",
-    "build:android": "cd android && gradlew assembleRelease",
+    "build:android": "cd android && gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a",
     "prebuild": "expo prebuild",
     "start": "expo start",
     "android": "expo run:android",
@@ -54,7 +54,7 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "eslint-import-resolver-typescript": "^4.4.4",
-    "expo-dev-client": "~6.0.21",
+    "expo-build-properties": "^57.0.6",
     "prettier": "^3.2.5",
     "typescript": "~5.9.2"
   },

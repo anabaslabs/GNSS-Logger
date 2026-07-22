@@ -11,7 +11,7 @@ import {
 import { useRouter } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { PressableScale } from "./pressable-scale";
+import { PressableScale } from "./ui/pressable-scale";
 
 const STATUS_COLOR: Record<string, string> = {
   scanning: "#0EA5E9",

@@ -20,11 +20,6 @@ interface GnssState {
   rawBuffer: string[];
   sessionBuffer: string[];
   isLogging: boolean;
-  pathStatus: {
-    isNlos: boolean;
-    prediction: number;
-    updatedAt: number;
-  } | null;
   losFix: {
     latitude: number;
     longitude: number;
@@ -72,7 +67,6 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
   rawBuffer: [],
   sessionBuffer: [],
   isLogging: false,
-  pathStatus: null,
   losFix: null,
 
   applyBatch: (sentences, rawLines) => {
@@ -81,7 +75,6 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
       let nextVelocity = { ...s.velocity };
       let nextSats = [...s.satellites];
       let nextDop = s.dop;
-      let nextPathStatus = s.pathStatus ? { ...s.pathStatus } : null;
       let nextLosFix = s.losFix ? { ...s.losFix } : null;
 
       for (const parsed of sentences) {
@@ -169,12 +162,7 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
             set({ antenna: parsed.data });
             break;
           case "PMPATH": {
-            const { isNlos, prediction } = parsed.data;
-            nextPathStatus = {
-              isNlos,
-              prediction,
-              updatedAt: Date.now(),
-            };
+            const { isNlos } = parsed.data;
             if (
               !isNlos &&
               nextFix.latitude !== null &&
@@ -204,7 +192,6 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
         dop: nextDop,
         rawBuffer: raw,
         sessionBuffer: session,
-        pathStatus: nextPathStatus,
         losFix: nextLosFix,
       };
     });
@@ -225,7 +212,6 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
       velocity: { ...defaultVelocity },
       dop: null,
       antenna: null,
-      pathStatus: null,
       losFix: null,
     });
   },

@@ -1,5 +1,5 @@
 import LeafletMap from "@/components/leaflet-map";
-import { PressableScale } from "@/components/pressable-scale";
+import { PressableScale } from "@/components/ui/pressable-scale";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useGnssStore } from "@/store/gnss-store";
 import {

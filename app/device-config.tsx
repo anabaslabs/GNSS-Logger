@@ -1,5 +1,6 @@
-import { ConfirmModal } from "@/components/confirm-modal";
-import { PressableScale } from "@/components/pressable-scale";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { PressableScale } from "@/components/ui/pressable-scale";
+import { ToggleButton } from "@/components/ui/toggle-button";
 import { CONSTELLATION_COLOR } from "@/constants/nmea";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { onNmeaLine, sendCommand } from "@/lib/ble-manager";
@@ -9,7 +10,6 @@ import { useConfigStore } from "@/store/config-store";
 import { IconRefresh } from "@tabler/icons-react-native";
 import { Stack } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { ToggleButton } from "@/components/toggle-button";
 import {
   ActivityIndicator,
   Alert,
