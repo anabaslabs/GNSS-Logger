@@ -2,17 +2,17 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import React, { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet } from "react-native";
 
-interface ToogleButtonProps {
+interface ToggleButtonProps {
   value: boolean;
   onValueChange: (value: boolean) => void;
   disabled?: boolean;
 }
 
-export function ToogleButton({
+export function ToggleButton({
   value,
   onValueChange,
   disabled,
-}: ToogleButtonProps) {
+}: ToggleButtonProps) {
   const { isDark } = useAppTheme();
   const animatedValue = useRef(new Animated.Value(value ? 1 : 0)).current;
 

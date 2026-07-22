@@ -9,7 +9,7 @@ import { useConfigStore } from "@/store/config-store";
 import { IconRefresh } from "@tabler/icons-react-native";
 import { Stack } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { ToogleButton } from "@/components/toogle-button";
+import { ToggleButton } from "@/components/toggle-button";
 import {
   ActivityIndicator,
   Alert,
@@ -554,7 +554,7 @@ export default function DeviceConfigScreen() {
             label="Log Combined Talker (GN)"
             description="If disabled, sentences starting with $GN (like GNGGA) will be removed from recorded logs."
             right={
-              <ToogleButton
+              <ToggleButton
                 value={deviceConfig.showCombinedTalker}
                 onValueChange={setShowCombinedTalker}
               />
@@ -567,7 +567,7 @@ export default function DeviceConfigScreen() {
             label="Enable SBAS"
             description="Satellite Based Augmentation Systems (WAAS, EGNOS, GAGAN)."
             right={
-              <ToogleButton
+              <ToggleButton
                 value={deviceConfig.sbasEnabled}
                 onValueChange={handleToggleSbas}
               />

@@ -315,6 +315,15 @@ export function parseNmea(raw: string): NmeaParsedSentence | null {
       const data = parsePAIR067(fields);
       return data ? { type: "PAIR67", data, raw: sentence } : null;
     }
+    case "PATH": {
+      const isNlos = fields[1] === "1";
+      const prediction = parseFloat_(fields[2]) ?? 0;
+      return {
+        type: "PMPATH",
+        data: { isNlos, prediction },
+        raw: sentence,
+      };
+    }
     default:
       return { type: "UNKNOWN", raw: sentence };
   }

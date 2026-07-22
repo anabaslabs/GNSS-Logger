@@ -20,6 +20,17 @@ interface GnssState {
   rawBuffer: string[];
   sessionBuffer: string[];
   isLogging: boolean;
+  pathStatus: {
+    isNlos: boolean;
+    prediction: number;
+    updatedAt: number;
+  } | null;
+  losFix: {
+    latitude: number;
+    longitude: number;
+    hdop: number | null;
+    updatedAt: number;
+  } | null;
 }
 
 interface GnssActions {
@@ -61,6 +72,8 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
   rawBuffer: [],
   sessionBuffer: [],
   isLogging: false,
+  pathStatus: null,
+  losFix: null,
 
   applyBatch: (sentences, rawLines) => {
     set((s) => {
@@ -68,6 +81,8 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
       let nextVelocity = { ...s.velocity };
       let nextSats = [...s.satellites];
       let nextDop = s.dop;
+      let nextPathStatus = s.pathStatus ? { ...s.pathStatus } : null;
+      let nextLosFix = s.losFix ? { ...s.losFix } : null;
 
       for (const parsed of sentences) {
         switch (parsed.type) {
@@ -153,6 +168,27 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
           case "ANT":
             set({ antenna: parsed.data });
             break;
+          case "PMPATH": {
+            const { isNlos, prediction } = parsed.data;
+            nextPathStatus = {
+              isNlos,
+              prediction,
+              updatedAt: Date.now(),
+            };
+            if (
+              !isNlos &&
+              nextFix.latitude !== null &&
+              nextFix.longitude !== null
+            ) {
+              nextLosFix = {
+                latitude: nextFix.latitude,
+                longitude: nextFix.longitude,
+                hdop: nextFix.hdop,
+                updatedAt: Date.now(),
+              };
+            }
+            break;
+          }
         }
       }
 
@@ -168,6 +204,8 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
         dop: nextDop,
         rawBuffer: raw,
         sessionBuffer: session,
+        pathStatus: nextPathStatus,
+        losFix: nextLosFix,
       };
     });
   },
@@ -187,6 +225,8 @@ export const useGnssStore = create<GnssState & GnssActions>((set, get) => ({
       velocity: { ...defaultVelocity },
       dop: null,
       antenna: null,
+      pathStatus: null,
+      losFix: null,
     });
   },
 }));

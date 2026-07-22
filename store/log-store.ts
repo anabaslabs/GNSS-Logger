@@ -49,7 +49,7 @@ interface LogActions {
   resetExportDirectory: () => void;
 }
 
-let activeNotificationTimer: NodeJS.Timeout | null = null;
+let activeNotificationTimer: ReturnType<typeof setInterval> | null = null;
 
 function formatTime(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
@@ -198,7 +198,7 @@ export const useLogStore = create<LogState & LogActions>()(
                   color: "#3B82F6",
                   priority: "high",
                 },
-              },
+              } as any,
               trigger: null,
             });
 
@@ -218,7 +218,7 @@ export const useLogStore = create<LogState & LogActions>()(
                       color: "#3B82F6",
                       priority: "high",
                     },
-                  },
+                  } as any,
                   trigger: null,
                 });
               } catch (err) {
