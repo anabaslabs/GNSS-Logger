@@ -1,7 +1,7 @@
 {
   "name": "gnss-logger",
   "main": "expo-router/entry",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "scripts": {
     "clean": "pnpm clean:android",
     "clean:android": "cd android && gradlew clean -x :app:externalNativeBuildCleanDebug -x :app:externalNativeBuildCleanRelease",
