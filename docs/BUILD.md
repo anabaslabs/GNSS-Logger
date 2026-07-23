@@ -10,10 +10,6 @@
    pnpm i
    ```
 
-   ```bash
-   pnpm prebuild
-   ```
-
 3. Target `arm64-v8a` only (reduces build time and prevents CMake long-path errors).
    In [`android/gradle.properties`](../android/gradle.properties), update:
 
@@ -23,9 +19,9 @@
 
 4. Run the production build command:
    ```bash
-   pnpm build:android
+   pnpm build
    ```
-   _APK Location: [`android/app/build/outputs/apk/release/app-release.apk`](../android/app/build/outputs/apk/release/app-release.apk)_
+   _APK Location: [`android/app/build/outputs/apk/release`](../android/app/build/outputs/apk/release)_ -> `app-release.apk`
 
 ### 2. After Build (Restore Local Development)
 
@@ -34,7 +30,4 @@
 2. Re-sync package dependencies:
    ```bash
    pnpm i
-   ```
-   ```bash
-   pnpm prebuild
    ```
